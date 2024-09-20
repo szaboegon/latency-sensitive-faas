@@ -1,0 +1,6 @@
+@echo off
+
+echo echo Starting minikube cluster...
+minikube start -p knative
+echo Starting tunnel...
+minikube tunnel -p knative
