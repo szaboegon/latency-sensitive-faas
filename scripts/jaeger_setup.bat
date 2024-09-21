@@ -3,8 +3,7 @@ rem If using minikube, make sure that the minikube tunnel command is running, ot
 
 set JAEGER_INSTANCE_PATH="jaeger\allinone_instance.yaml"
 set SERVING_TRACE_CONFIG_PATH="knative\serving_trace_config.yaml"
-set MAX_RETRIES=5
-set RETRY_COUNT=0
+set EVENTING_TRACE_CONFIG_PATH="knative\eventing_trace_config.yaml"
 
 echo Installing prerequisite: Cert Manager
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.6.3/cert-manager.yaml
@@ -54,6 +53,12 @@ if errorlevel 1 (
 kubectl apply -f %SERVING_TRACE_CONFIG_PATH%
 if errorlevel 1 (
     echo Failed to apply modifications to knative serving configmap
+    exit /b 1
+)
+
+kubectl apply -f %EVENTING_TRACE_CONFIG_PATH%
+if errorlevel 1 (
+    echo Failed to apply modifications to knative eventing configmap
     exit /b 1
 )
 
