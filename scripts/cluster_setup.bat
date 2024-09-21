@@ -1,10 +1,10 @@
 @echo off
 set NUM_NODES=2
-set SERVING_YAML_PATH="knative-serving.yaml"
+set SERVING_YAML_PATH="knative\knative_serving.yaml"
 
 echo %cd%
 echo Starting minikube cluster with %NUM_NODES% nodes...
-minikube start --nodes %NUM_NODES% -p knative
+minikube start --nodes %NUM_NODES% -p knative --addons=ingress
 
 if errorlevel 1 (
     echo Failed to start Minikube cluster.
