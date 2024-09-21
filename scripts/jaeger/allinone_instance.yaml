@@ -13,8 +13,8 @@ spec:
     options:
       memory:
         max-traces: 100000
-  # ingress:
-  #   enabled: false
+  ingress:
+    enabled: true
   # agent:
   #   strategy: DaemonSet
   # annotations:

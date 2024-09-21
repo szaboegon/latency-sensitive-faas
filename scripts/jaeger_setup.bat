@@ -2,6 +2,7 @@
 rem If using minikube, make sure that the minikube tunnel command is running, otherwise DNS services won't work
 
 set JAEGER_INSTANCE_PATH="jaeger\allinone_instance.yaml"
+set SERVING_TRACE_CONFIG_PATH="knative\\serving_trace_config.yaml"
 set MAX_RETRIES=5
 set RETRY_COUNT=0
 
@@ -33,10 +34,28 @@ if errorlevel 1 (
 echo Jaeger operator installed successfully in the observability namespace.
 
 echo Deploying Jaeger instance into cluster...
-kubectl apply -f %JAEGER_INSTANCE_PATH%
+rem Retry if deploy fails, it means the operator is not initialized yet
+set MAX_RETRIES=10
+set RETRY_COUNT=0
+:RETRY
+kubectl apply -f %JAEGER_INSTANCE_PATH% -n observability
 if errorlevel 1 (
-    echo Failed to deploy Jaeger instance
+    set /a RETRY_COUNT+=1
+    if %RETRY_COUNT% lss %MAX_RETRIES% (
+        echo Retry %RETRY_COUNT% of %MAX_RETRIES% failed. Retrying...
+        timeout /t 10 >nul
+        goto RETRY
+    ) else (
+        echo Failed to deploy Jaeger instance after %MAX_RETRIES% retries
+        exit /b 1
+    )
+)
+
+kubectl apply -f %SERVING_TRACE_CONFIG_PATH%
+if errorlevel 1 (
+    echo Failed to apply modifications to knative serving configmap
     exit /b 1
 )
 
-exit /b 0
+echo Port forwarding Jaeger UI to localhost port 16686
+kubectl port-forward -n observability  deployments/my-jaeger 16686
