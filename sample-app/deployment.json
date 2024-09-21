@@ -1,0 +1,273 @@
+{
+ "APPLICATION-NAME": "object_detection",
+ "LAYOUT": {
+  "FUNC_PARTITIONS": {
+   "ImageGrab": [
+    [
+	"IMAGEGRAB"
+    ],
+    "Lambda_128"
+   ],
+   "Resize": [
+    [
+	"RESIZE"
+    ],
+    "Lambda_128"
+   ],
+   "Grayscale": [
+    [
+	"Lambda_128"
+    ],
+    "Lambda_MAX"
+   ],
+   "ObjectDetection1": [
+    [
+	"OBJECTDETECT"
+    ],
+    "Lambda_MAX"
+   ],
+   "Cut": [
+    [
+	"CUT"
+    ],
+    "Lambda_128"
+   ],
+   "ObjectDetection2": [
+    [
+	"OBJECTDETECT2"
+    ],
+    "Lambda_MAX"
+   ],
+   "Tag": [
+    [
+	"TAG"
+    ],
+    "Lambda_128"
+   ]
+  },
+  "DATA_PARTITIONS": {
+    "StateStore": [
+    [
+     "STORE1"
+    ],
+    "Redis_t3.medium"
+   ]
+  },
+  "INV_MAPPING": {
+    "i1": "SDK",
+    "i2": "SDK",
+    "i3": "SDK",
+    "i4": "SDK",
+    "i5": "SDK",
+    "i6": "SDK",
+    "i7": "SDK"
+  }
+ },
+ "PLATFORM": {
+  "RFLAVOR": {
+   "Lambda_128": {
+    "TYPE": "Lambda",
+    "CPU": null,
+    "MEM": 128
+   },
+   "Lambda_MAX": {
+    "TYPE": "Lambda",
+    "CPU": null,
+    "MEM": 1792
+   }
+  },
+  "DFLAVOR": {
+   "Redis_t3.medium": {
+    "TYPE": "Cache",
+    "CACHE": "Redis",
+    "NODETYPE": "cache.t3.medium",
+    "PLACEMENT": "cloud",
+    "IO": 300
+   }
+  },
+  "IFLAVOR": {
+   "APIGateway": {
+    "TYPE": "Platform",
+    "DATA": 130
+   },
+   "SDK": {
+    "TYPE": "Async",
+    "DATA": 130
+   },
+   "IoT": {
+    "TYPE": "IoT",
+    "DATA": 128
+   },
+   "Local": {
+    "TYPE": "Local",
+    "DATA": Infinity
+   }
+  }
+ },
+ "SERVICE": {
+  "service_id": "object_detect",
+  "directed": true,
+  "multigraph": true,
+  "graph": {
+      "critical_paths": {
+	  "test_cp": [
+          [
+          "IMAGEGRAB",
+	      "RESIZE",
+	      "GRAYSCALE",
+	      "OBJECTDETECT",
+	      "CUT",
+	      "OBJECTDETECT2"
+          ],
+          1.5
+        ]
+      }
+  },
+  "nodes": [
+   {
+    "id": "P",
+    "type": "PlatformNode"
+   },
+   {
+    "id": "IMAGEGRAB",
+    "type": "Function",
+    "mem_req": 185.0,
+    "exec_time": 0.35
+   },
+   {
+    "id": "RESIZE",
+    "type": "Function",
+    "mem_req": 225.0,
+    "exec_time": 0.176
+   },
+   {
+    "id": "GRAYSCALE",
+    "type": "Function",
+    "mem_req": 150.0,
+    "exec_time": 0.063
+   },
+   {
+    "id": "OBJECTDETECT",
+    "type": "Function",
+    "mem_req": 250.0,
+    "exec_time": 0.257
+   },
+   {
+    "id": "CUT",
+    "type": "Function",
+    "mem_req": 200.0,
+    "exec_time": 0.176
+   },
+   {
+    "id": "OBJECTDETECT2",
+    "type": "Function",
+    "mem_req": 270.0,
+    "exec_time": 0.389
+   },
+   {
+    "id": "TAG",
+    "type": "Function",
+    "mem_req": 185.0,
+    "exec_time": 0.4
+   }
+  ],
+  "links": [
+   {
+     "id": "i1",
+     "type": "Invocation",
+     "src": "P",
+     "dst": "IMAGEGRAB",
+     "rate": 5,
+     "unit_size": 1
+   },
+   {
+    "id": "i2",
+    "type": "Invocation",
+    "src": "IMAGEGRAB",
+    "dst": "RESIZE",
+    "rate": 5,
+    "unit_size": 1
+   },
+   {
+    "id": "i3",
+    "type": "Invocation",
+    "src": "RESIZE",
+    "dst": "GRAYSCALE",
+    "rate": 5,
+    "unit_size": 1
+   },
+   {
+    "id": "i4",
+    "type": "Invocation",
+    "src": "GRAYSCALE",
+    "dst": "OBJECTDETECT",
+    "rate": 5,
+    "unit_size": 1
+   },
+   {
+    "id": "i5",
+    "type": "Invocation",
+    "src": "OBJECTDETECT",
+    "dst": "CUT",
+    "rate": 5,
+    "unit_size": 1
+   },
+   {
+    "id": "i6",
+    "type": "Invocation",
+    "src": "CUT",
+    "dst": "OBJECTDETECT2",
+    "rate": 5,
+    "unit_size": 1
+   },
+   {
+    "id": "r1",
+    "type": "Read",
+    "src": "STORE1",
+    "dst": "RESIZE",
+    "rate": 5,
+    "unit_size": 1
+   },
+   {
+    "id": "r2",
+    "type": "Read",
+    "src": "STORE1",
+    "dst": "CUT",
+    "rate": 5,
+    "unit_size": 1
+   },
+   {
+    "id": "r3",
+    "type": "Read",
+    "src": "STORE1",
+    "dst": "OBJECTDETECT2",
+    "rate": 5,
+    "unit_size": 1
+   },
+   {
+    "id": "w1",
+    "type": "Write",
+    "src": "IMAGEGRAB",
+    "dst": "STORE1",
+    "rate": 5,
+    "unit_size": 1
+   },
+   {
+    "id": "w2",
+    "type": "Write",
+    "src": "CUT",
+    "dst": "STORE1",
+    "rate": 5,
+    "unit_size": 1
+   },
+   {
+    "id": "w3",
+    "type": "Write",
+    "src": "OBJECTDETECT2",
+    "dst": "STORE1",
+    "rate": 5,
+    "unit_size": 1
+   }
+  ]
+ }
+}

@@ -2,7 +2,7 @@
 rem If using minikube, make sure that the minikube tunnel command is running, otherwise DNS services won't work
 
 set JAEGER_INSTANCE_PATH="jaeger\allinone_instance.yaml"
-set SERVING_TRACE_CONFIG_PATH="knative\\serving_trace_config.yaml"
+set SERVING_TRACE_CONFIG_PATH="knative\serving_trace_config.yaml"
 set MAX_RETRIES=5
 set RETRY_COUNT=0
 
