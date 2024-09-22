@@ -1,6 +1,9 @@
 from parliament import Context
 from flask import Request
 import json
+import base64
+import cv2
+import numpy as np
 
 
 # parse request body, json data or URL query parameters
@@ -43,21 +46,34 @@ def pretty_print(req: Request) -> str:
 
     return ret
 
+def image_to_base64(image):
+    retval, buffer = cv2.imencode('.jpg', image)
+    return base64.b64encode(buffer).decode("utf-8")
+
+def base64_to_image(text):
+    image = base64.b64decode(text)
+    image = np.frombuffer(image, dtype=np.uint8)
+    return cv2.imdecode(image, flags=1)
 
 def main(context: Context):
-    """
-    Function template
-    The context parameter contains the Flask request object and any
-    CloudEvent received with the request.
-    """
+    # Convert image from base64
+    image = base64_to_image(context.request.get("image"))
 
-    # Add your business logic here
-    print("Received request")
+    # Resize image
+    (h, w) = image.shape[:2]
 
-    if 'request' in context.keys():
-        ret = pretty_print(context.request)
-        print(ret, flush=True)
-        return payload_print(context.request), 200
-    else:
-        print("Empty request", flush=True)
-        return "{}", 200
+    # Resize image
+    scale_percent = int(25)  # percent of original size
+    width = int(image.shape[1] * scale_percent / 100)
+    height = int(image.shape[0] * scale_percent / 100)
+    dim = (width, height)
+
+    image = cv2.resize(image, dim, interpolation=cv2.INTER_AREA)
+
+    # Trigger grayscale function
+    event_out = {"image": image_to_base64(image),
+                 "origin_location": context.request["origin_location"],
+                 "origin_h": h,
+                 "origin_w": w}
+    
+    return payload_print(event_out), 200

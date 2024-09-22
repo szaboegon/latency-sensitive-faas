@@ -1,63 +1,30 @@
 from parliament import Context
 from flask import Request
-import json
+import base64
+import cv2
+import numpy as np
+import requests
 
+def image_to_base64(image):
+    retval, buffer = cv2.imencode('.jpg', image)
+    return base64.b64encode(buffer).decode("utf-8")
 
-# parse request body, json data or URL query parameters
-def payload_print(req: Request) -> str:
-    if req.method == "POST":
-        if req.is_json:
-            return json.dumps(req.json) + "\n"
-        else:
-            # MultiDict needs some iteration
-            ret = "{"
-
-            for key in req.form.keys():
-                ret += '"' + key + '": "'+ req.form[key] + '", '
-
-            return ret[:-2] + "}\n" if len(ret) > 2 else "{}"
-
-    elif req.method == "GET":
-        # MultiDict needs some iteration
-        ret = "{"
-
-        for key in req.args.keys():
-            ret += '"' + key + '": "' + req.args[key] + '", '
-
-        return ret[:-2] + "}\n" if len(ret) > 2 else "{}"
-
-
-# pretty print the request to stdout instantaneously
-def pretty_print(req: Request) -> str:
-    ret = str(req.method) + ' ' + str(req.url) + ' ' + str(req.host) + '\n'
-    for (header, values) in req.headers:
-        ret += "  " + str(header) + ": " + values + '\n'
-
-    if req.method == "POST":
-        ret += "Request body:\n"
-        ret += "  " + payload_print(req) + '\n'
-
-    elif req.method == "GET":
-        ret += "URL Query String:\n"
-        ret += "  " + payload_print(req) + '\n'
-
-    return ret
-
+def base64_to_image(text):
+    image = base64.b64decode(text)
+    image = np.frombuffer(image, dtype=np.uint8)
+    return cv2.imdecode(image, flags=1)
 
 def main(context: Context):
-    """
-    Function template
-    The context parameter contains the Flask request object and any
-    CloudEvent received with the request.
-    """
+     # Convert image from base64
+    image = base64_to_image(context.request.get("image"))
 
-    # Add your business logic here
-    print("Received request")
+    # Grayscale image
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-    if 'request' in context.keys():
-        ret = pretty_print(context.request)
-        print(ret, flush=True)
-        return payload_print(context.request), 200
-    else:
-        print("Empty request", flush=True)
-        return "{}", 200
+    # Trigger object detection function
+    event_out = {"image": image_to_base64(image),
+                 "origin_location": context.request["origin_location"],
+                 "origin_h": context.request["origin_h"],
+                 "origin_w": context.request["origin_w"]}
+    
+    requests.post("http://objectdetect.default.svc.cluster.local", json=event_out)

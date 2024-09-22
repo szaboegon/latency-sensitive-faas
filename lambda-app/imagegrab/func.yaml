@@ -1,4 +1,7 @@
 specVersion: 0.36.0
 name: imagegrab
 runtime: python
+registry: registry.hub.docker.com/szaboegon
 created: 2024-09-21T15:28:42.4120386+02:00
+build:
+  builder: pack

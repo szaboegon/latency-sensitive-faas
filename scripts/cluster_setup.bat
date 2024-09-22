@@ -39,6 +39,12 @@ if errorlevel 1 (
     exit /b 1
 )
 
+istioctl verify-install
+if errorlevel 1 (
+    echo Failed to verify networking layer.
+    exit /b 1
+)
+
 echo Configuring DNS...
 kubectl apply -f https://github.com/knative/serving/releases/download/knative-v1.15.2/serving-default-domain.yaml
 if errorlevel 1 (

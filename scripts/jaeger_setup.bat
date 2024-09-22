@@ -13,7 +13,7 @@ if errorlevel 1 (
 )
 
 rem Cert if Cert Manager webhooks are ready with cmctl 
-cmctl check api --wait=2m
+cmctl check api --wait=5m
 
 echo Creating observability namespace and installing Jaeger operator...
 rem Create namespace
