@@ -25,7 +25,7 @@ metadata:
     knative.dev/example-checksum: "26614636"
 data:
   backend: "zipkin"
-  zipkin-endpoint: "http://jaeger-collector.jaeger.svc.cluster.local:9411/api/v2/spans"
+  zipkin-endpoint: "http://jaeger-collector.observability.svc.cluster.local:9411/api/v2/spans"
   _example: |
     ################################
     #                              #
