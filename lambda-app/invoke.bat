@@ -1,0 +1,1 @@
+kn func invoke --file=test-1.jpg --content-type=image/jpeg
