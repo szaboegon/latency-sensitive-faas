@@ -4,6 +4,29 @@ import base64
 import cv2
 import numpy as np
 import requests
+from opentelemetry import trace
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.baggage.propagation import W3CBaggagePropagator
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+
+trace.set_tracer_provider(
+TracerProvider(
+    resource=Resource.create({SERVICE_NAME: "grayscale"})
+)
+)
+jaeger_exporter = JaegerExporter(
+collector_endpoint="http://jaeger-collector.observability.svc.cluster.local:14268/api/traces"
+)
+
+trace.get_tracer_provider().add_span_processor(
+BatchSpanProcessor(jaeger_exporter)
+)
+tracer = trace.get_tracer(__name__)
+RequestsInstrumentor().instrument(tracer_provider=trace.get_tracer_provider())
 
 def image_to_base64(image):
     retval, buffer = cv2.imencode('.jpg', image)
@@ -16,6 +39,7 @@ def base64_to_image(text):
 
 def main(context: Context):
      # Convert image from base64
+    return {}, 200
     image = base64_to_image(context.request.get("image"))
 
     # Grayscale image

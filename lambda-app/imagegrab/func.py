@@ -6,39 +6,54 @@ import numpy as np
 import os
 import requests
 import base64
+from concurrent.futures import ThreadPoolExecutor
+from opentelemetry import trace
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.baggage.propagation import W3CBaggagePropagator
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+
+trace.set_tracer_provider(
+TracerProvider(
+    resource=Resource.create({SERVICE_NAME: "imagegrab"})
+)
+)
+jaeger_exporter = JaegerExporter(
+collector_endpoint="http://jaeger-collector.observability.svc.cluster.local:14268/api/traces"
+)
+
+trace.get_tracer_provider().add_span_processor(
+BatchSpanProcessor(jaeger_exporter)
+)
+tracer = trace.get_tracer(__name__)
+RequestsInstrumentor().instrument(tracer_provider=trace.get_tracer_provider())
 
 def image_to_base64(image):
     retval, buffer = cv2.imencode('.jpg', image)
     return base64.b64encode(buffer).decode("utf-8")
-
-def base64_to_image(text):
-    image = base64.b64decode(text)
-    image = np.frombuffer(image, dtype=np.uint8)
-    return cv2.imdecode(image, flags=1)
-
-def process_image(image):
-    # cap = cv2.VideoCapture(picture)
-    # ret, image = cap.read()
-    
-    if not np.any(np.equal(image, None)):
-        # Trigger resize function
-        event_out = {"image": image_to_base64(image),
-                     "original_image": image_to_base64(image)} #TODO the original image (without modifications), this should be renamed and readjusted in all following functions
-        return event_out   
-    else:
-        return None
+ 
+def fire_and_forget(url, json=None):
+    with ThreadPoolExecutor() as executor:
+        future = executor.submit(requests.post, url, json=json)
     
 def main(context: Context):
-    base64 = context.request.data
-    image = base64_to_image(base64)
-    event_out = process_image(image)
+    data = context.request.data
+    event_out = {
+        "image": data,
+        "original_image": data
+    }
 
     if event_out is not None:
         # TODO replace this later with an event omit possibly
-        requests.post("http://resize.default.svc.cluster.local", json=event_out)
-        return "{}", 200
+        #fire_and_forget("http://resize.default.svc.cluster.local", json=event_out)
+        #resp = requests.post("http://imagegrab.default.127.0.0.1.sslip.io", json=event_out)
+        resp = requests.post("http://resize.default.svc.cluster.local", data=event_out)
+        return resp.text, 200
     
     return "{'message': 'No image found'}", 400
-    
+
 
     

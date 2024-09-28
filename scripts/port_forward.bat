@@ -1,1 +1,1 @@
-kubectl port-forward -n observability  deployments/my-jaeger 16686
+kubectl port-forward -n observability  deployments/jaeger 16686

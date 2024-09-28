@@ -1,0 +1,5 @@
+@echo off
+
+start cmd /c "cd .\imagegrab && kn func deploy -v"
+start cmd /c "cd .\resize && kn func deploy -v"
+start cmd /c "cd .\grayscale && kn func deploy -v"

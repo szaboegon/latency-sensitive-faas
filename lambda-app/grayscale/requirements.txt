@@ -1,2 +1,9 @@
 parliament-functions==0.1.0
-opencv-python
+opencv-python-headless
+requests
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation
+opentelemetry-exporter-jaeger
+opentelemetry-instrumentation-flask
+opentelemetry-instrumentation-requests

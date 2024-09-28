@@ -4,47 +4,30 @@ import json
 import base64
 import cv2
 import numpy as np
+import requests
+from opentelemetry import trace
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.baggage.propagation import W3CBaggagePropagator
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
+trace.set_tracer_provider(
+TracerProvider(
+    resource=Resource.create({SERVICE_NAME: "resize"})
+)
+)
+jaeger_exporter = JaegerExporter(
+collector_endpoint="http://jaeger-collector.observability.svc.cluster.local:14268/api/traces"
+)
 
-# parse request body, json data or URL query parameters
-def payload_print(req: Request) -> str:
-    if req.method == "POST":
-        if req.is_json:
-            return json.dumps(req.json) + "\n"
-        else:
-            # MultiDict needs some iteration
-            ret = "{"
-
-            for key in req.form.keys():
-                ret += '"' + key + '": "'+ req.form[key] + '", '
-
-            return ret[:-2] + "}\n" if len(ret) > 2 else "{}"
-
-    elif req.method == "GET":
-        # MultiDict needs some iteration
-        ret = "{"
-
-        for key in req.args.keys():
-            ret += '"' + key + '": "' + req.args[key] + '", '
-
-        return ret[:-2] + "}\n" if len(ret) > 2 else "{}"
-
-
-# pretty print the request to stdout instantaneously
-def pretty_print(req: Request) -> str:
-    ret = str(req.method) + ' ' + str(req.url) + ' ' + str(req.host) + '\n'
-    for (header, values) in req.headers:
-        ret += "  " + str(header) + ": " + values + '\n'
-
-    if req.method == "POST":
-        ret += "Request body:\n"
-        ret += "  " + payload_print(req) + '\n'
-
-    elif req.method == "GET":
-        ret += "URL Query String:\n"
-        ret += "  " + payload_print(req) + '\n'
-
-    return ret
+trace.get_tracer_provider().add_span_processor(
+BatchSpanProcessor(jaeger_exporter)
+)
+tracer = trace.get_tracer(__name__)
+RequestsInstrumentor().instrument(tracer_provider=trace.get_tracer_provider())
 
 def image_to_base64(image):
     retval, buffer = cv2.imencode('.jpg', image)
@@ -57,7 +40,8 @@ def base64_to_image(text):
 
 def main(context: Context):
     # Convert image from base64
-    image = base64_to_image(context.request.get("image"))
+    data = context.request.data
+    image = base64_to_image(data.get("image"))
 
     # Resize image
     (h, w) = image.shape[:2]
@@ -72,8 +56,10 @@ def main(context: Context):
 
     # Trigger grayscale function
     event_out = {"image": image_to_base64(image),
-                 "origin_location": context.request["origin_location"],
-                 "origin_h": h,
-                 "origin_w": w}
+                "original_image": data.get("original_image"),
+                "origin_h": h,
+                "origin_w": w}
     
-    return payload_print(event_out), 200
+    resp = requests.post("http://grayscale.default.svc.cluster.local", data=event_out)
+
+    return '{"message":"ok from resize"}', 200

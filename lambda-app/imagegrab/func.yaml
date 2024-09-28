@@ -2,10 +2,12 @@ specVersion: 0.36.0
 name: imagegrab
 runtime: python
 registry: registry.hub.docker.com/szaboegon
+image: registry.hub.docker.com/szaboegon/imagegrab:latest
 namespace: default
 created: 2024-09-21T15:28:42.4120386+02:00
+invoke: http
 build:
   builder: pack
 deploy:
   namespace: default
-  image: registry.hub.docker.com/szaboegon/imagegrab@sha256:0fb9c60302426d5ac1e2c96421a6c6374f15608c7acfcef8d4723b73da06c872
+  image: registry.hub.docker.com/szaboegon/imagegrab@sha256:d703d4dac4c0a789d8b9f065916134c5ff37e26cef601510e3a3e35ad41924d7

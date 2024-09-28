@@ -1,0 +1,8 @@
+run:
+  envs:
+  - name: OTEL_SERVICE_NAME
+    value: grayscale
+  - name: OTEL_TRACES_EXPORTER
+    value: jaeger
+  - name: OTEL_EXPORTER_JAEGER_ENDPOINT
+    value: http://jaeger-collector.observability.svc.cluster.local:14268/api/traces

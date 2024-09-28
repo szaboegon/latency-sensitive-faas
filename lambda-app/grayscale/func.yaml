@@ -1,4 +1,16 @@
 specVersion: 0.36.0
 name: grayscale
 runtime: python
+registry: registry.hub.docker.com/szaboegon
+image: registry.hub.docker.com/szaboegon/grayscale:latest
+namespace: default
 created: 2024-09-21T15:29:53.5550171+02:00
+invoke: http
+build:
+  builder: pack
+deploy:
+  namespace: default
+  image: registry.hub.docker.com/szaboegon/grayscale@sha256:78e19f698b3e0d542109fe28d4223fa6a860807ad7c6ab47749399e933016d12
+  healthEndpoints:
+    liveness: /health/liveness
+    readiness: /health/readiness
