@@ -34,5 +34,5 @@ def handler(context: Context):
                  "origin_h": json_data.get("origin_h"),
                  "origin_w": json_data.get("origin_w")}
     
-    return "ok from grayscale", 200
-    requests.post("http://objectdetect.default.svc.cluster.local", json=event_out)
+    resp = requests.post("http://objectdetect.default.svc.cluster.local", json=event_out)
+    return resp.text, 200

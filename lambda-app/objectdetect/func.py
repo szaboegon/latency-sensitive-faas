@@ -5,6 +5,7 @@ import tracing
 import base64
 import cv2
 import numpy as np
+import requests
 
 #TODO move this to env
 CONFIDENCE_MIN=0.4
@@ -27,7 +28,9 @@ def handler(context: Context):
     # Trigger cut function
     event_out = {"cropped_coords": coords,
                  "original_image": json_data.get("original_image"),}
-    context.downstream_functions.CUT.call(event_out, context)
+    
+    resp = requests.post("http://cut.default.svc.cluster.local", json=event_out)
+    return resp.text, 200
 
 # Initialize the list of class labels MobileNet SSD was trained to detect
 CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",

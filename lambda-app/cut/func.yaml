@@ -1,0 +1,13 @@
+specVersion: 0.36.0
+name: cut
+runtime: python
+registry: registry.hub.docker.com/szaboegon
+image: registry.hub.docker.com/szaboegon/cut:latest
+namespace: default
+created: 2024-09-29T16:28:11.1727528+02:00
+invoke: http
+build:
+  builder: pack
+deploy:
+  namespace: default
+  image: registry.hub.docker.com/szaboegon/cut@sha256:335c6c6b71b0ec91751ca1928120399b600399f433cc4363f4878d9b616245b3
