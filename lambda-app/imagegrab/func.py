@@ -8,10 +8,11 @@ import requests
 import base64
 from concurrent.futures import ThreadPoolExecutor
 import tracing
+from opentelemetry.propagate import inject, extract
     
 def main(context: Context):
     tracer = tracing.instrument_app()
-    with tracer.start_as_current_span("start") as span:
+    with tracer.start_as_current_span("start_imagegrab", context=extract(context.request.headers)) as span:
         return handler(context=context)
     
 def handler(context: Context):
@@ -23,7 +24,9 @@ def handler(context: Context):
     }
     if event_out is not None:
         # TODO replace this later with an event omit possibly
-        resp = requests.post("http://resize.default.svc.cluster.local", json=event_out)
+        headers = {}
+        inject(headers)
+        resp = requests.post("http://resize.default.svc.cluster.local", json=event_out, headers=headers)
         return resp.text, 200
     
     return "{'message': 'No image found'}", 400

@@ -6,13 +6,14 @@ import base64
 import cv2
 import numpy as np
 import requests
+from opentelemetry.propagate import inject, extract
 
 #TODO move this to env
 CONFIDENCE_MIN=0.4
 
 def main(context: Context):
     tracer = tracing.instrument_app()
-    with tracer.start_as_current_span("start") as span:
+    with tracer.start_as_current_span("start_objectdetect", context=extract(context.request.headers)) as span:
         return handler(context=context)
     
 def handler(context: Context):
@@ -29,7 +30,9 @@ def handler(context: Context):
     event_out = {"cropped_coords": coords,
                  "original_image": json_data.get("original_image"),}
     
-    resp = requests.post("http://cut.default.svc.cluster.local", json=event_out)
+    headers = {}
+    inject(headers)
+    resp = requests.post("http://cut.default.svc.cluster.local", json=event_out, headers=headers)
     return resp.text, 200
 
 # Initialize the list of class labels MobileNet SSD was trained to detect

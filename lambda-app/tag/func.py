@@ -5,10 +5,11 @@ import tracing
 import cv2
 import numpy as np
 import base64
+from opentelemetry.propagate import inject, extract
 
 def main(context: Context):
     tracer = tracing.instrument_app()
-    with tracer.start_as_current_span("start") as span:
+    with tracer.start_as_current_span("start_tag", context=extract(context.request.headers)) as span:
         return handler(context=context)
     
 def handler(context: Context):

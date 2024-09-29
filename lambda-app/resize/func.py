@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import requests
 import tracing
+from opentelemetry.propagate import inject, extract
 
 def image_to_base64(image):
     retval, buffer = cv2.imencode('.jpg', image)
@@ -18,7 +19,7 @@ def base64_to_image(text):
 
 def main(context: Context):
     tracer = tracing.instrument_app()
-    with tracer.start_as_current_span("start") as span:
+    with tracer.start_as_current_span("start_resize", context=extract(context.request.headers)) as span:
         return handler(context=context)
 
 def handler(context: Context):
@@ -43,6 +44,8 @@ def handler(context: Context):
                 "origin_h": h,
                 "origin_w": w}
     
-    resp = requests.post("http://grayscale.default.svc.cluster.local", json=event_out)
+    headers = {}
+    inject(headers)
+    resp = requests.post("http://grayscale.default.svc.cluster.local", json=event_out, headers=headers)
 
     return resp.text, 200

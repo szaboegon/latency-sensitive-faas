@@ -10,4 +10,4 @@ build:
   builder: pack
 deploy:
   namespace: default
-  image: registry.hub.docker.com/szaboegon/imagegrab@sha256:8c8c9bb6a8ce48be19e042e788a0f45f5b9ec84484dacdcad447011a5aca7738
+  image: registry.hub.docker.com/szaboegon/imagegrab@sha256:194823fb3a768f11ba07bcb0540a5bd388966bcd83086fcd865a75fc215084f0
