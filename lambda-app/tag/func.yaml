@@ -1,0 +1,13 @@
+specVersion: 0.36.0
+name: tag
+runtime: python
+registry: registry.hub.docker.com/szaboegon
+image: registry.hub.docker.com/szaboegon/tag:latest
+namespace: default
+created: 2024-09-29T16:59:49.6669603+02:00
+invoke: http
+build:
+  builder: pack
+deploy:
+  namespace: default
+  image: registry.hub.docker.com/szaboegon/tag@sha256:2958c867a11ab8950d05c4f3719091a3d82b96d75f5619c68870af533b7c51ad

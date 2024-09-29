@@ -31,7 +31,6 @@ def handler(context: Context):
                          "original_image": json_data.get("original_image")}
             img_id += 1
 
-            return "ok from cut", 200
             resp = requests.post("http://objectdetect2.default.svc.cluster.local", json=event_out)
             return resp.text, 200
     else:
