@@ -1,0 +1,12 @@
+specVersion: 0.36.0
+name: objectdetect
+runtime: python
+registry: registry.hub.docker.com/szaboegon
+image: registry.hub.docker.com/szaboegon/objectdetect:latest
+namespace: default
+created: 2024-09-29T16:17:31.7844041+02:00
+invoke: http
+build:
+  builder: pack
+deploy:
+  namespace: default
