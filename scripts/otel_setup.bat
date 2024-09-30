@@ -1,9 +1,10 @@
 @echo off
 rem If using minikube, make sure that the minikube tunnel command is running, otherwise DNS services won't work
 
+set OTEL_COLLECTOR_PATH="otel\otelcollector.yaml"
 set JAEGER_INSTANCE_PATH="jaeger\allinone_instance.yaml"
-set SERVING_TRACE_CONFIG_PATH="jaeger\serving_trace_config.yaml"
-set EVENTING_TRACE_CONFIG_PATH="jaeger\eventing_trace_config.yaml"
+set SERVING_TRACE_CONFIG_PATH="otel\serving_trace_config.yaml"
+set EVENTING_TRACE_CONFIG_PATH="otel\eventing_trace_config.yaml"
 
 echo Installing prerequisite: Cert Manager
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.6.3/cert-manager.yaml
@@ -30,7 +31,29 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo Jaeger operator installed successfully in the observability namespace.
+echo Installing OpenTelemtry operator...
+kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/download/v0.40.0/opentelemetry-operator.yaml
+if errorlevel 1 (
+    echo Error creating otel operator
+    exit /b 1
+)
+
+echo Installing Otel Collector...
+set MAX_RETRIES=10
+set RETRY_COUNT=0
+:RETRY_OTEL_COLLECTOR
+kubectl apply -f %OTEL_COLLECTOR_PATH%
+if errorlevel 1 (
+    set /a RETRY_COUNT+=1
+    if %RETRY_COUNT% lss %MAX_RETRIES% (
+        echo Retry %RETRY_COUNT% of %MAX_RETRIES% failed. Retrying...
+        timeout /t 10 >nul
+        goto RETRY_OTEL_COLLECTOR
+    ) else (
+        echo Failed to deploy Jaeger instance after %MAX_RETRIES% retries
+        exit /b 1
+    )
+)
 
 echo Deploying Jaeger instance into cluster...
 rem Retry if deploy fails, it means the operator is not initialized yet

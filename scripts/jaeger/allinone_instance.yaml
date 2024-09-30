@@ -8,6 +8,10 @@ spec:
     image: jaegertracing/all-in-one:latest
     options:
       log-level: debug
+      query:
+        base-path: /jaeger
+    metricsStorage:
+      type: prometheus
   storage:
     type: memory
     options:
