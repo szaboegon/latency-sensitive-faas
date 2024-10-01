@@ -7,13 +7,23 @@ import os
 import requests
 import base64
 from concurrent.futures import ThreadPoolExecutor
-import tracing
 from opentelemetry.propagate import inject, extract
+import tracing
     
 def main(context: Context):
     tracer = tracing.instrument_app()
-    with tracer.start_as_current_span("start_imagegrab", context=extract(context.request.headers)) as span:
-        return handler(context=context)
+    for i in range(100):
+        test(tracer)
+    return "ok", 200
+    # with tracer.start_as_current_span("start_imagegrab", context=extract(context.request.headers)) as span:
+    #     return handler(context=context)
+    
+def test(tracer):
+    try:
+        with tracer.start_as_current_span("test_span") as span:
+            span.set_attribute("message", "hello world")
+    except Exception as e:
+        return e, 400
     
 def handler(context: Context):
     image_bytes = context.request.data

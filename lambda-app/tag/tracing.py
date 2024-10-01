@@ -16,10 +16,8 @@ def instrument_app():
         resource=Resource.create({SERVICE_NAME: service_name})
     )
     )
-    otel_exporter = OTLPSpanExporter(endpoint="http://otel-collector.observability:9411/api/v2/spans", insecure=True)
-    # jaeger_exporter = JaegerExporter(
-    # collector_endpoint="http://jaeger-collector.observability.svc.cluster.local:14268/api/traces"
-    # )
+    otel_exporter = OTLPSpanExporter(endpoint="otel-collector.observability.svc.cluster.local:4317", insecure=True)
+
     trace.get_tracer_provider().add_span_processor(
     BatchSpanProcessor(otel_exporter)
     )
