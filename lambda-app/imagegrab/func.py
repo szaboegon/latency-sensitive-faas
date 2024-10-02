@@ -12,19 +12,9 @@ import tracing
     
 def main(context: Context):
     tracer = tracing.instrument_app()
-    for i in range(100):
-        test(tracer)
-    return "ok", 200
-    # with tracer.start_as_current_span("start_imagegrab", context=extract(context.request.headers)) as span:
-    #     return handler(context=context)
-    
-def test(tracer):
-    try:
-        with tracer.start_as_current_span("test_span") as span:
-            span.set_attribute("message", "hello world")
-    except Exception as e:
-        return e, 400
-    
+    with tracer.start_as_current_span("start_imagegrab", context=extract(context.request.headers)) as span:
+        return handler(context=context)
+   
 def handler(context: Context):
     image_bytes = context.request.data
     base64_image = image_bytes.decode('utf-8')
