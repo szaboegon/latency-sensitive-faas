@@ -10,4 +10,4 @@ build:
   builder: pack
 deploy:
   namespace: default
-  image: registry.hub.docker.com/szaboegon/objectdetect2@sha256:43cca47bd5827d55675c372493e27ec6ad516bfaa70e083e2da702e3721db6fb
+  image: registry.hub.docker.com/szaboegon/objectdetect2@sha256:01dd9dd8c792322ca33c919ac668ca77755d1f94e3a3aab73f82167e42384b20

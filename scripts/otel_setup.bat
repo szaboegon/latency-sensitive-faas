@@ -5,6 +5,8 @@ set OTEL_COLLECTOR_PATH="otel\otelcollector.yaml"
 set JAEGER_INSTANCE_PATH="jaeger\allinone_instance.yaml"
 set SERVING_TRACE_CONFIG_PATH="otel\serving_trace_config.yaml"
 set EVENTING_TRACE_CONFIG_PATH="otel\eventing_trace_config.yaml"
+set SERVING_METRICS_CONFIG_PATH="otel\serving_metrics_config.yaml"
+set EVENTING_METRICS_CONFIG_PATH="otel\eventing_metrics_config.yaml"
 
 echo Installing prerequisite: Cert Manager
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.6.3/cert-manager.yaml
@@ -53,6 +55,19 @@ if errorlevel 1 (
         echo Failed to deploy Jaeger instance after %MAX_RETRIES% retries
         exit /b 1
     )
+)
+
+echo Modifying knative config maps...
+rem This is needed to route metrics from knative to the otel collector metrics endpoint
+kubectl apply -f %SERVING_METRICS_CONFIG_PATH%
+if errorlevel 1 (
+    echo Error patching serving configmap
+    exit /b 1
+)
+kubectl apply -f %EVENTING_METRICS_CONFIG_PATH%
+if errorlevel 1 (
+    echo Error patching eventing configmap
+    exit /b 1
 )
 
 echo Deploying Jaeger instance into cluster...

@@ -13,20 +13,35 @@ spec:
           http:
             endpoint: 0.0.0.0:4318
 
+      opencensus:
+        endpoint: 0.0.0.0:55678
+
     processors:
       batch:
 
     exporters:
       logging:
         loglevel: debug
+      prometheus:
+        endpoint: 0.0.0.0:8889
       otlp:
         endpoint: jaeger-collector.observability.svc.cluster.local:4317
         tls:
           insecure: true
 
+    extensions:
+        health_check:
+        pprof:
+        zpages:
+
     service:
+      extensions: [health_check, pprof, zpages]
       pipelines:
         traces:
           receivers: [otlp]
           processors: [batch]
           exporters: [logging, otlp]
+        metrics:
+          receivers: [opencensus]
+          processors: []
+          exporters: [logging, prometheus]
