@@ -1,5 +1,5 @@
 @echo off
-set NUM_NODES=2
+set NUM_NODES=3
 set SERVING_YAML_PATH="knative\serving.yaml"
 set EVENTING_YAML_PATH="knative\eventing.yaml"
 
