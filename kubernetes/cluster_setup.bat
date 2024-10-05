@@ -1,16 +1,25 @@
 @echo off
 set NUM_NODES=3
+set MEMORY_LIMIT="6g"
+set CPUS=3
+
 set SERVING_YAML_PATH="knative\serving.yaml"
 set EVENTING_YAML_PATH="knative\eventing.yaml"
 
 echo %cd%
 echo Starting minikube cluster with %NUM_NODES% nodes...
-minikube start --nodes %NUM_NODES% -p knative --addons=ingress
-
+minikube start --nodes %NUM_NODES% -p knative --memory %MEMORY_LIMIT% --cpus %CPUS% --addons=ingress
 if errorlevel 1 (
     echo Failed to start Minikube cluster.
     exit /b 1
 )
+
+echo Configuring addons for elasticsearch to work properly...
+minikube addons disable storage-provisioner -p knative
+minikube addons disable default-storageclass -p knative
+minikube addons enable volumesnapshots -p knative
+minikube addons enable csi-hostpath-driver -p knative
+kubectl patch storageclass csi-hostpath-sc --patch-file storageclass_patch.json
 
 echo Installing knative operator...
 kubectl apply -f https://github.com/knative/operator/releases/download/knative-v1.15.4/operator.yaml
