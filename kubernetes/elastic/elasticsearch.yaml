@@ -1,0 +1,33 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: elasticsearch
+  namespace: observability
+spec:
+  version: 8.2.0
+  nodeSets:
+  - name: default
+    count: 3
+    podTemplate:
+      spec:
+        initContainers:
+        - name: sysctl
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']
+    config:
+      # On Elasticsearch versions before 7.9.0, replace the node.roles configuration with the following:
+      # node.master: true
+      node.roles: ["master", "data"]
+      # xpack.ml.enabled: true
+    # volumeClaimTemplates:
+    # - metadata:
+    #     name: elasticsearch-data # Do not change this name unless you set up a volume mount for the data path.
+    #   spec:
+    #     accessModes:
+    #     - ReadWriteOnce
+    #     resources:
+    #       requests:
+    #         storage: 1Gi
+    #     storageClassName: standard

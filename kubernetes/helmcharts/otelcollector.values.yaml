@@ -9,9 +9,17 @@ presets:
   hostMetrics:
     enabled: true
 
+# should disable this later and use NODE_IP from env variable to send data to collector, this solution will send data to a random collector pod instead of the closest one
+service:
+  enabled: true
+
 config:
   exporters:
     debug: {}
+    otlp/elastic: 
+      endpoint: 'http://apm-server-apm-server.observability.svc.cluster.local:8200'
+      tls:
+        insecure: true
   extensions:
     # The health_check extension is mandatory for this chart.
     # Without the health_check extension the collector will fail the readiness and liveliness probes.
@@ -48,6 +56,7 @@ config:
       metrics:
         exporters:
           - debug
+          - otlp/elastic
         processors:
           - batch
         receivers:
@@ -56,6 +65,7 @@ config:
       traces:
         exporters:
           - debug
+          - otlp/elastic
         processors:
           - batch
         receivers:

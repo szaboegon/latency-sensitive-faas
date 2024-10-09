@@ -24,7 +24,7 @@ resources:
 
 secret:
   enabled: true
-  password: "admin" # generated randomly if not defined
+  password: "elastic" # generated randomly if not defined
 
 # Hard means that by default pods will only be scheduled if there are enough nodes for them
 # and that they will never end up on the same node. Setting this to soft will do this "best effort"

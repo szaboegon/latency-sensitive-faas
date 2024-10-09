@@ -10,7 +10,7 @@ build:
   builder: pack
 deploy:
   namespace: default
-  image: registry.hub.docker.com/szaboegon/grayscale@sha256:b0a408fa5928a78845ecf0d38084c8f3caded2796b236b0701cf00ff353e9dbb
+  image: registry.hub.docker.com/szaboegon/grayscale@sha256:e6ea87146a50ce7dc12ff9eebf4f9a675315b96dea18b796cea7cac4c567f564
   healthEndpoints:
     liveness: /health/liveness
     readiness: /health/readiness

@@ -26,13 +26,6 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo Installing kibana from helm chart...
-helm install kibana elastic/kibana -n observability --values %KIBANA_HELMCHART_VALUES%
-if errorlevel 1 (
-    echo Error installing kibana
-    exit /b 1
-)
-
 echo Installing apm-server from helm chart...
 helm install apm-server elastic/apm-server -n observability --values %APM_SERVER_HELMCHART_VALUES%
 if errorlevel 1 (
@@ -47,11 +40,18 @@ if errorlevel 1 (
     exit /b 1
 )
 
+echo Installing kibana from helm chart...
+helm install kibana elastic/kibana -n observability --values %KIBANA_HELMCHART_VALUES%
+if errorlevel 1 (
+    echo Error installing kibana
+    exit /b 1
+)
+
 echo Port forwarding Kibana to local port 5601
 set MAX_RETRIES=10
 set RETRY_COUNT=0
 :RETRY_PORT_FORWARD
-kubectl port-forward service/kibana 5601:5601 -n observability
+kubectl port-forward service/kibana-kibana 5601:5601 -n observability
 if errorlevel 1 (
     set /a RETRY_COUNT+=1
     if %RETRY_COUNT% lss %MAX_RETRIES% (

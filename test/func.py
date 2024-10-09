@@ -4,11 +4,13 @@ import requests
 import json
 import time
 import uuid
-
+import os
 
 def main(context: Context):
+    #node_ip = os.environ['NODE_IP']
     # OTLP HTTP endpoint (replace with your collector's OTLP HTTP endpoint)
-    otlp_endpoint = "http://otel-collector.observability.svc.cluster.local:4318/v1/traces"
+    otlp_endpoint = f"http://otel-collector-opentelemetry-collector.observability:4318/v1/traces"
+    apm_endpoint = "http://apm-server-apm-server.observability.svc.cluster.local:8200"
 
     # Trace and Span ID generation (must be 16-byte hexadecimal for span_id, 32-byte for trace_id)
     trace_id = uuid.uuid4().hex  # 32-byte hex
@@ -59,7 +61,7 @@ def main(context: Context):
 
     # Send the HTTP POST request with the trace data
     headers = {'Content-Type': 'application/json'}
-    response = requests.post(otlp_endpoint, headers=headers, data=json.dumps(trace_payload))
+    response = requests.post(apm_endpoint, headers=headers, data=json.dumps(trace_payload))
 
     # Check the response from the OpenTelemetry collector
     if response.status_code == 200:

@@ -1,3 +1,8 @@
+# Pod for testing networking and dns resolution inside the cluster
+# Usage:
+#   kubectl apply -f dnsutils.yaml
+#   kubectl exec -i -t dnsutils -- nslookup <some-dns-name>
+
 apiVersion: v1
 kind: Pod
 metadata:
