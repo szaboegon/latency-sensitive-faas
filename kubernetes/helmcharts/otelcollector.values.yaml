@@ -8,6 +8,8 @@ presets:
     enabled: true
   hostMetrics:
     enabled: true
+  logsCollection:
+    enabled: true
 
 # should disable this later and use NODE_IP from env variable to send data to collector, this solution will send data to a random collector pod instead of the closest one
 service:
@@ -35,16 +37,22 @@ config:
     memory_limiter: null
   receivers:
     jaeger: null
+    kubeletstats:
+      insecure_skip_verify: true
+        
     otlp:
       protocols:
         grpc:
           endpoint: 0.0.0.0:4317
         http:
           endpoint: 0.0.0.0:4318
+   
     prometheus: null
     zipkin: null
+
     opencensus: 
       endpoint: 0.0.0.0:55678
+
   service:
     extensions:
       - health_check
@@ -52,6 +60,7 @@ config:
       logs:
         exporters:
           - debug
+          - otlp/elastic
         processors:
           - batch
         receivers:
@@ -65,6 +74,7 @@ config:
         receivers:
           - otlp
           - opencensus
+          - kubeletstats
       traces:
         exporters:
           - debug
