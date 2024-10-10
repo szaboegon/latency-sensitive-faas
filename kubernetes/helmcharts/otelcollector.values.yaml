@@ -54,6 +54,9 @@ config:
       endpoint: 0.0.0.0:55678
 
   service:
+    telemetry:
+      logs:
+        level: debug
     extensions:
       - health_check
     pipelines:

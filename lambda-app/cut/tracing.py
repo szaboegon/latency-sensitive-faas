@@ -12,7 +12,7 @@ def instrument_app():
         TracerProvider(resource=Resource.create({SERVICE_NAME: service_name}))
     )
 
-    otel_exporter = OTLPSpanExporter(endpoint="otel-collector.observability.svc.cluster.local:4317", insecure=True)
+    otel_exporter = OTLPSpanExporter(endpoint="otel-collector-opentelemetry-collector.observability:4317", insecure=True)
     trace.get_tracer_provider().add_span_processor(
         BatchSpanProcessor(otel_exporter)
     )
