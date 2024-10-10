@@ -4,7 +4,7 @@ metadata:
   name: elasticsearch
   namespace: observability
 spec:
-  version: 8.2.0
+  version: 8.15.0
   nodeSets:
   - name: default
     count: 3
@@ -19,7 +19,7 @@ spec:
     config:
       # On Elasticsearch versions before 7.9.0, replace the node.roles configuration with the following:
       # node.master: true
-      node.roles: ["master", "data"]
+      node.roles: ["master", "data", "ingest"]
       # xpack.ml.enabled: true
     # volumeClaimTemplates:
     # - metadata:

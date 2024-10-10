@@ -17,9 +17,12 @@ config:
   exporters:
     debug: {}
     otlp/elastic: 
-      endpoint: 'http://apm-server-apm-server.observability.svc.cluster.local:8200'
+      endpoint: 'apm-server-apm-http.observability.svc.cluster.local:8200'
+      headers:
+        Authorization: "Bearer elastic"
       tls:
         insecure: true
+        insecure_skip_verify: true
   extensions:
     # The health_check extension is mandatory for this chart.
     # Without the health_check extension the collector will fail the readiness and liveliness probes.

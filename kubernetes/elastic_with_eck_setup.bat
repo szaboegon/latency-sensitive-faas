@@ -31,7 +31,7 @@ echo Port forwarding Kibana to local port 5601
 set MAX_RETRIES=10
 set RETRY_COUNT=0
 :RETRY_PORT_FORWARD
-kubectl port-forward service/kibana-kibana 5601:5601 -n observability
+kubectl port-forward service/kibana-kb-http 5601:5601 -n observability
 if errorlevel 1 (
     set /a RETRY_COUNT+=1
     if %RETRY_COUNT% lss %MAX_RETRIES% (

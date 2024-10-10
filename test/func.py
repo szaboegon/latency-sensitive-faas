@@ -61,7 +61,7 @@ def main(context: Context):
 
     # Send the HTTP POST request with the trace data
     headers = {'Content-Type': 'application/json'}
-    response = requests.post(apm_endpoint, headers=headers, data=json.dumps(trace_payload))
+    response = requests.post(otlp_endpoint, headers=headers, data=json.dumps(trace_payload))
 
     # Check the response from the OpenTelemetry collector
     if response.status_code == 200:
