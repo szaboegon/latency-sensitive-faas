@@ -12,11 +12,11 @@ if errorlevel 1 (
     exit /b 1
 )
 
-@REM helm install otel-collector open-telemetry/opentelemetry-collector -n observability --values %OTELCOLLECTOR_HELMCHART_VALUES%
-@REM if errorlevel 1 (
-@REM     echo Error installing otel collector from helm chart
-@REM     exit /b 1
-@REM )
+helm install otel-collector open-telemetry/opentelemetry-collector -n observability --values %OTELCOLLECTOR_HELMCHART_VALUES%
+if errorlevel 1 (
+    echo Error installing otel collector from helm chart
+    exit /b 1
+)
 
 helm install elastic-operator elastic/eck-operator -n observability
 
