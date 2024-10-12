@@ -10,4 +10,4 @@ build:
   builder: pack
 deploy:
   namespace: application
-  image: registry.hub.docker.com/szaboegon/imagegrab@sha256:12e7ea77f4a80328fae93fb9d5fd5bebaf22dc24b79ee520a9198ea91fcd4d75
+  image: registry.hub.docker.com/szaboegon/imagegrab@sha256:03e2adac6ee661daa46afcf90722574526a285bbdf34ef127ba47801c1660ff0

@@ -4,8 +4,6 @@ import base64
 import cv2
 import numpy as np
 import requests
-import tracing
-from opentelemetry.propagate import inject, extract
 
 def image_to_base64(image):
     retval, buffer = cv2.imencode('.jpg', image)
@@ -17,9 +15,7 @@ def base64_to_image(text):
     return cv2.imdecode(image, flags=1)
 
 def main(context: Context):
-    tracer = tracing.instrument_app()
-    with tracer.start_as_current_span("start_grayscale", context=extract(context.request.headers)) as span:
-        return handler(context=context)
+    return handler(context=context)
 
 def handler(context: Context):
     json_data = context.request.json
@@ -35,7 +31,5 @@ def handler(context: Context):
                  "origin_h": json_data.get("origin_h"),
                  "origin_w": json_data.get("origin_w")}
     
-    headers = {}
-    inject(headers)
-    resp = requests.post("http://objectdetect.application.svc.cluster.local", json=event_out, headers=headers)
+    resp = requests.post("http://objectdetect.application.svc.cluster.local", json=event_out)
     return resp.text, 200

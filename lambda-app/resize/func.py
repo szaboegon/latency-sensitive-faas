@@ -5,8 +5,6 @@ import base64
 import cv2
 import numpy as np
 import requests
-import tracing
-from opentelemetry.propagate import inject, extract
 
 def image_to_base64(image):
     retval, buffer = cv2.imencode('.jpg', image)
@@ -18,9 +16,7 @@ def base64_to_image(text):
     return cv2.imdecode(image, flags=1)
 
 def main(context: Context):
-    tracer = tracing.instrument_app()
-    with tracer.start_as_current_span("start_resize", context=extract(context.request.headers)) as span:
-        return handler(context=context)
+    return handler(context=context)
 
 def handler(context: Context):
     # Convert image from base64
@@ -44,8 +40,6 @@ def handler(context: Context):
                 "origin_h": h,
                 "origin_w": w}
     
-    headers = {}
-    inject(headers)
-    resp = requests.post("http://grayscale.application.svc.cluster.local", json=event_out, headers=headers)
+    resp = requests.post("http://grayscale.application.svc.cluster.local", json=event_out)
 
     return resp.text, 200

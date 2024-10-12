@@ -1,17 +1,13 @@
 from parliament import Context
 from flask import Request
 import json
-import tracing
 import numpy as np
 import cv2
 import requests
 import base64
-from opentelemetry.propagate import inject, extract
 
 def main(context: Context):
-    tracer = tracing.instrument_app()
-    with tracer.start_as_current_span("start_cut", context=extract(context.request.headers)) as span:
-        return handler(context=context)
+    return handler(context=context)
 
 def handler(context: Context):
     json_data = context.request.json
@@ -32,9 +28,7 @@ def handler(context: Context):
                          "original_image": json_data.get("original_image")}
             img_id += 1
 
-            headers = {}
-            inject(headers)
-            resp = requests.post("http://objectdetect2.application.svc.cluster.local", json=event_out, headers=headers)
+            resp = requests.post("http://objectdetect2.application.svc.cluster.local", json=event_out)
             return resp.text, 200
     else:
         return "Invalid inputs", 400
