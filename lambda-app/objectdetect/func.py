@@ -32,7 +32,7 @@ def handler(context: Context):
     
     headers = {}
     inject(headers)
-    resp = requests.post("http://cut.default.svc.cluster.local", json=event_out, headers=headers)
+    resp = requests.post("http://cut.application.svc.cluster.local", json=event_out, headers=headers)
     return resp.text, 200
 
 # Initialize the list of class labels MobileNet SSD was trained to detect

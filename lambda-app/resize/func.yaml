@@ -3,14 +3,14 @@ name: resize
 runtime: python
 registry: registry.hub.docker.com/szaboegon
 image: registry.hub.docker.com/szaboegon/resize:latest
-namespace: default
+namespace: application
 created: 2024-09-21T15:29:41.604137+02:00
 invoke: http
 build:
   builder: pack
 deploy:
-  namespace: default
-  image: registry.hub.docker.com/szaboegon/resize@sha256:ea0527632283b24053b9fb618f7903768a7b006702972ab47582b51bd9c6d1e8
+  namespace: application
+  image: registry.hub.docker.com/szaboegon/resize@sha256:a714b26d799a311a53dc1ed4d44f7829371a51cea85aa9c1a766e3b006cf6f64
   healthEndpoints:
     liveness: /health/liveness
     readiness: /health/readiness

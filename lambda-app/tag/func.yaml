@@ -3,11 +3,11 @@ name: tag
 runtime: python
 registry: registry.hub.docker.com/szaboegon
 image: registry.hub.docker.com/szaboegon/tag:latest
-namespace: default
+namespace: application
 created: 2024-09-29T16:59:49.6669603+02:00
 invoke: http
 build:
   builder: pack
 deploy:
-  namespace: default
-  image: registry.hub.docker.com/szaboegon/tag@sha256:dc73c86dbb98268b94adfa28f22ce207651a0b1965aef6a66734a4dc31be9a0a
+  namespace: application
+  image: registry.hub.docker.com/szaboegon/tag@sha256:773d664a2dcd9ff7c70c0f6aa7b39c85b820e6db4590fb85f3b65b49baa5bcd1

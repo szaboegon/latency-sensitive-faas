@@ -3,11 +3,11 @@ name: objectdetect
 runtime: python
 registry: registry.hub.docker.com/szaboegon
 image: registry.hub.docker.com/szaboegon/objectdetect:latest
-namespace: default
+namespace: application
 created: 2024-09-29T16:17:31.7844041+02:00
 invoke: http
 build:
   builder: pack
 deploy:
-  namespace: default
-  image: registry.hub.docker.com/szaboegon/objectdetect@sha256:c5581790c56814fc3dcc55e07851ef4d67fb10adef369d2f773cd3f80025408c
+  namespace: application
+  image: registry.hub.docker.com/szaboegon/objectdetect@sha256:2563a2b754de343a53264738dd9360a84ad249e4a1c68e4e107bd0d176601453

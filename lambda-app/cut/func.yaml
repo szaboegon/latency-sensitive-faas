@@ -3,11 +3,11 @@ name: cut
 runtime: python
 registry: registry.hub.docker.com/szaboegon
 image: registry.hub.docker.com/szaboegon/cut:latest
-namespace: default
+namespace: application
 created: 2024-09-29T16:28:11.1727528+02:00
 invoke: http
 build:
   builder: pack
 deploy:
-  namespace: default
-  image: registry.hub.docker.com/szaboegon/cut@sha256:f9c004bd797afe105ee885968d400a11cd13151843b30684410ea54f02a67073
+  namespace: application
+  image: registry.hub.docker.com/szaboegon/cut@sha256:be3f36fb0fca78950fb3bcb412592974e6a3462005cd5f833237c8815ab4819d

@@ -26,7 +26,7 @@ def handler(context: Context):
         # TODO replace this later with an event omit possibly
         headers = {}
         inject(headers)
-        resp = requests.post("http://resize.default.svc.cluster.local", json=event_out, headers=headers)
+        resp = requests.post("http://resize.application.svc.cluster.local", json=event_out, headers=headers)
         return resp.text, 200
     
     return "{'message': 'No image found'}", 400

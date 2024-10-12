@@ -56,13 +56,14 @@ config:
   service:
     telemetry:
       logs:
-        level: debug
+        level: info
+      metrics:
+        address: ${env:MY_POD_IP}:8888
     extensions:
       - health_check
     pipelines:
       logs:
         exporters:
-          - debug
           - otlp/elastic
         processors:
           - batch
@@ -80,7 +81,6 @@ config:
           - kubeletstats
       traces:
         exporters:
-          - debug
           - otlp/elastic
         processors:
           - batch

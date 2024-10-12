@@ -12,7 +12,7 @@ metadata:
     knative.dev/example-checksum: "f46cf09d"
 data:
   metrics.backend-destination: opencensus                                                
-  metrics.opencensus-address: "otel-collector.observability.svc.cluster.local:55678"      
+  metrics.opencensus-address: "otel-collector.observability:55678"      
   _example: |
     ################################
     #                              #

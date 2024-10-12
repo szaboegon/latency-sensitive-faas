@@ -34,7 +34,7 @@ def handler(context: Context):
 
             headers = {}
             inject(headers)
-            resp = requests.post("http://objectdetect2.default.svc.cluster.local", json=event_out, headers=headers)
+            resp = requests.post("http://objectdetect2.application.svc.cluster.local", json=event_out, headers=headers)
             return resp.text, 200
     else:
         return "Invalid inputs", 400

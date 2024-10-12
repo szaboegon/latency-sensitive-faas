@@ -12,7 +12,7 @@ metadata:
 data:
   metrics.backend-destination: opencensus                                                
   metrics.request-metrics-backend-destination: opencensus                                 
-  metrics.opencensus-address: "otel-collector.observability.svc.cluster.local:55678"      
+  metrics.opencensus-address: "otel-collector.observability:55678"      
   _example: |
     ################################
     #                              #

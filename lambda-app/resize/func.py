@@ -46,6 +46,6 @@ def handler(context: Context):
     
     headers = {}
     inject(headers)
-    resp = requests.post("http://grayscale.default.svc.cluster.local", json=event_out, headers=headers)
+    resp = requests.post("http://grayscale.application.svc.cluster.local", json=event_out, headers=headers)
 
     return resp.text, 200

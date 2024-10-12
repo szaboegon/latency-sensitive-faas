@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: application
+  labels:
+    name: application
+  annotations:
+    instrumentation.opentelemetry.io/inject-python: "true"

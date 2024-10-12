@@ -1,3 +1,3 @@
 #!/bin/sh
 
-exec opentelemetry-instrument python -m parliament "$(dirname "$0")"
+exec python -m parliament "$(dirname "$0")"
