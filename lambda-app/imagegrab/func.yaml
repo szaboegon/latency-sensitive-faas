@@ -8,6 +8,10 @@ created: 2024-09-21T15:28:42.4120386+02:00
 invoke: http
 build:
   builder: pack
+run:
+  envs:
+  - name: OTEL_SERVICE_NAME
+    value: imagegrab
 deploy:
   namespace: application
-  image: registry.hub.docker.com/szaboegon/imagegrab@sha256:03e2adac6ee661daa46afcf90722574526a285bbdf34ef127ba47801c1660ff0
+  image: registry.hub.docker.com/szaboegon/imagegrab@sha256:682dc5b05cc5495215f7d8ed167c3d075c942cc627da7caa937f1b0b0b09f06f

@@ -1,6 +1,5 @@
 @echo off
 
-set OTELCOLLECTOR_HELMCHART_VALUES="helmcharts\otelcollector.values.yaml"
 set OTELCOLLECTOR_CONFIG="otel\otelcollector.yaml"
 set ES_CONFIG="elastic\elasticsearch.yaml"
 set KIBANA_CONFIG="elastic\kibana.yaml"

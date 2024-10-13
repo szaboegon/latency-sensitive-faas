@@ -8,6 +8,10 @@ created: 2024-09-29T16:59:49.6669603+02:00
 invoke: http
 build:
   builder: pack
+run:
+  envs:
+  - name: OTEL_SERVICE_NAME
+    value: tag
 deploy:
   namespace: application
-  image: registry.hub.docker.com/szaboegon/tag@sha256:5af23ed18296cb4f7f19ede7416b36a9adec3d9e0d1396e5ea431047d59cdc17
+  image: registry.hub.docker.com/szaboegon/tag@sha256:59ac2fc9aefa669765cc5beec46962729056b3d382a36f9dc0dac51ba94532e0

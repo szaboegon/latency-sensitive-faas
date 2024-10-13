@@ -1,0 +1,1 @@
+kubectl port-forward service/elasticsearch-es-http 9200:9200 -n observability 

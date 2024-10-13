@@ -8,6 +8,10 @@ created: 2024-09-29T16:28:11.1727528+02:00
 invoke: http
 build:
   builder: pack
+run:
+  envs:
+  - name: OTEL_SERVICE_NAME
+    value: cut
 deploy:
   namespace: application
-  image: registry.hub.docker.com/szaboegon/cut@sha256:556e3b9276c5906f37102588051cf8a2933509cf25c479067601e738eb8528d4
+  image: registry.hub.docker.com/szaboegon/cut@sha256:ddfed34bfdfde846dac232b5272542bccd3a4c1a67360e35bd3a21cef64dc451

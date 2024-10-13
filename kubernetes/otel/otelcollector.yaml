@@ -97,6 +97,9 @@ spec:
             endpoint: 0.0.0.0:4317
           http:
             endpoint: 0.0.0.0:4318
+      opencensus: 
+        endpoint: 0.0.0.0:55678
+
     service:
       extensions:
         - health_check
@@ -117,6 +120,7 @@ spec:
             - batch
           receivers:
             - otlp
+            - opencensus
             - kubeletstats
         traces:
           exporters:

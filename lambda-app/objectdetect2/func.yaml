@@ -8,6 +8,10 @@ created: 2024-09-29T16:47:10.3153487+02:00
 invoke: http
 build:
   builder: pack
+run:
+  envs:
+  - name: OTEL_SERVICE_NAME
+    value: objectdetect2
 deploy:
   namespace: application
-  image: registry.hub.docker.com/szaboegon/objectdetect2@sha256:91a0d30f20f2225e90199face9f921bdc8962c73d8eb1018c2cbdd62afe7e885
+  image: registry.hub.docker.com/szaboegon/objectdetect2@sha256:71155606c6b1e28520f0a147a0cddad8e3d6f5e3d413f4586ca2a0138e26a7e1

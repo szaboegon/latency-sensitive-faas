@@ -8,9 +8,13 @@ created: 2024-09-21T15:29:41.604137+02:00
 invoke: http
 build:
   builder: pack
+run:
+  envs:
+  - name: OTEL_SERVICE_NAME
+    value: resize
 deploy:
   namespace: application
-  image: registry.hub.docker.com/szaboegon/resize@sha256:0350e2da90770e7dc728bbd46f6656bc12ec9606615d5bbaeabc3e93985c0de3
+  image: registry.hub.docker.com/szaboegon/resize@sha256:d644c6ef85c2bbd9eecfefcecdc0c959f49bb6c4922e5074fcf1c1cb43389c7e
   healthEndpoints:
     liveness: /health/liveness
     readiness: /health/readiness

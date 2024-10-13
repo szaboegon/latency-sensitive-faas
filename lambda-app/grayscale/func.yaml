@@ -8,9 +8,13 @@ created: 2024-09-21T15:29:53.5550171+02:00
 invoke: http
 build:
   builder: pack
+run:
+  envs:
+  - name: OTEL_SERVICE_NAME
+    value: grayscale
 deploy:
   namespace: application
-  image: registry.hub.docker.com/szaboegon/grayscale@sha256:577262fd9f905a18ae65ee1987d3fb04becbaab8334fc66f3a2bd1886b36814f
+  image: registry.hub.docker.com/szaboegon/grayscale@sha256:84f48b25561a1468235d59cf5abe09b36d400443c68d243e1f34b174e97eb6ba
   healthEndpoints:
     liveness: /health/liveness
     readiness: /health/readiness
