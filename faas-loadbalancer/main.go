@@ -1,62 +1,89 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
+	"faas-loadbalancer/internal/metrics"
+	"io"
 	"log"
-
-	"github.com/elastic/go-elasticsearch/v8"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
+var apiKeyConfig metrics.ApiKeyConfig
+
+func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Ok"))
+}
+
+func RouteRequestHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func TestHandler(w http.ResponseWriter, r *http.Request) {
+	reader, _ := metrics.NewMetricsReader(apiKeyConfig)
+	json, _ := reader.Test()
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(json))
+}
+
+func readESCredentials() (metrics.ApiKeyConfig, error) {
+	apikeyFile, err := os.Open("apikey.json")
+	if err != nil {
+		return metrics.ApiKeyConfig{}, err
+	}
+
+	defer apikeyFile.Close()
+	byteValue, err := io.ReadAll(apikeyFile)
+	if err != nil {
+		return metrics.ApiKeyConfig{}, err
+	}
+
+	err = json.Unmarshal(byteValue, &apiKeyConfig)
+	if err != nil {
+		return metrics.ApiKeyConfig{}, err
+	}
+
+	return apiKeyConfig, nil
+}
+
 func main() {
-	// Initialize the Elasticsearch client
-	cfg := elasticsearch.Config{
-		Addresses: []string{
-			"http://localhost:9200", // Replace with your Elasticsearch endpoint
-		},
-	}
-	es, err := elasticsearch.NewClient(cfg)
+	apiKey, err := readESCredentials()
 	if err != nil {
-		log.Fatalf("Error creating Elasticsearch client: %s", err)
+		log.Fatal("Failed to get apikey from file:", err)
+		panic(err)
 	}
 
-	// Example query to retrieve APM metrics
-	var buf bytes.Buffer
-	query := map[string]interface{}{
-		"query": map[string]interface{}{
-			"match": map[string]interface{}{
-				"service.name": "your-service-name", // Replace with your service name
-			},
-		},
-	}
-	if err := json.NewEncoder(&buf).Encode(query); err != nil {
-		log.Fatalf("Error encoding query: %s", err)
-	}
-
-	// Perform the search request
-	res, err := es.Search(
-		es.Search.WithContext(context.Background()),
-		es.Search.WithIndex("apm-*-metrics-*"), // Replace with your APM metrics index pattern
-		es.Search.WithBody(&buf),
-	)
+	_, err = metrics.NewMetricsWatcher(apiKey)
 	if err != nil {
-		log.Fatalf("Error performing search request: %s", err)
+		log.Fatal("Failed to create metrics watcher:", err)
+		panic(err)
 	}
-	defer res.Body.Close()
+	//watcher.Watch()
 
-	// Handle the response
-	if res.IsError() {
-		log.Fatalf("Error response: %s", res.Status())
+	s := &http.Server{Addr: ":8080"}
+	http.HandleFunc("/healthz", HealthCheckHandler)
+	http.HandleFunc("/", RouteRequestHandler)
+	http.HandleFunc("/test", TestHandler)
+
+	go func() {
+		log.Printf("Server listening on %v", s.Addr)
+		if err := s.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("HTTP server error: %v", err)
+		}
+	}()
+	// handle graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan // wait for termination signal
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(time.Minute*5))
+	defer cancel()
+	if err := s.Shutdown(ctx); err != nil {
+		log.Fatalf("Shutdown error: %v", err)
 	}
-
-	// Parse the response
-	var response map[string]interface{}
-	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
-		log.Fatalf("Error parsing the response body: %s", err)
-	}
-
-	// Print the hits
-	fmt.Printf("Search results:\n%s\n", response)
 }

@@ -1,0 +1,46 @@
+{
+    "nodes":[
+        {
+            "name": "knative",
+            "func-partitions" : [
+                {
+                    "name" :"func-1",
+                    "components": [
+                       "imagegrab",
+                       "resize"
+                    ]
+                },
+                {
+                    "name" :"func-2",
+                    "components": [
+                       "cut",
+                       "grayscale"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "knative-m02",
+            "func-partitions" : [
+                {
+                    "name" :"func-1",
+                    "components": [
+                       "objectdetect"
+                    ]
+                },
+                {
+                    "name" :"func-2",
+                    "components": [
+                       "objectdetect2"
+                    ]
+                },
+                {
+                    "name" :"func-2",
+                    "components": [
+                       "tag"
+                    ]
+                }
+            ]
+        }
+    ]
+}
