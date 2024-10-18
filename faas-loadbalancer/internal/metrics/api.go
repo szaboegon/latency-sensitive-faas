@@ -1,6 +1,9 @@
 package metrics
 
+import "faas-loadbalancer/internal/k8s"
+
 type NodeMetrics struct {
+	Node   k8s.Node
 	Cpu    cpu    `json:"cpu"`
 	Memory memory `json:"memory"`
 }
@@ -14,6 +17,6 @@ type memory struct {
 }
 
 type MetricsReader interface {
-	GetNodeMetrics() (map[string]NodeMetrics, error)
+	QueryNodeMetrics() ([]NodeMetrics, error)
 	Test() (string, error)
 }

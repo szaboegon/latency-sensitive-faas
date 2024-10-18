@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"faas-loadbalancer/internal/k8s"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
@@ -25,7 +26,7 @@ type metricsClient struct {
 	client *elasticsearch.TypedClient
 }
 
-func NewMetricsReader(apiKeyConfig ApiKeyConfig) (MetricsReader, error) {
+func NewMetricsReader() (MetricsReader, error) {
 	cfg := elasticsearch.Config{
 		Addresses: []string{
 			"http://localhost:9200",
@@ -42,9 +43,12 @@ func NewMetricsReader(apiKeyConfig ApiKeyConfig) (MetricsReader, error) {
 	}, nil
 }
 
-func (c metricsClient) GetNodeMetrics() (map[string]NodeMetrics, error) {
+func (c metricsClient) QueryNodeMetrics() ([]NodeMetrics, error) {
 	size := 1
 	nameField := "kubernetes.node.name"
+	cpuUtilField := "k8s.node.cpu.utilization"
+	nodesAggName := "nodes"
+	metricsAggName := "latest_metrics"
 	res, err := c.client.Search().
 		Size(0).
 		Index(metricsIndex).
@@ -54,24 +58,24 @@ func (c metricsClient) GetNodeMetrics() (map[string]NodeMetrics, error) {
 					Must: []types.Query{
 						{
 							Exists: &types.ExistsQuery{
-								Field: "k8s.node.cpu.utilization",
+								Field: cpuUtilField,
 							},
 						},
 						{
 							Exists: &types.ExistsQuery{
-								Field: "kubernetes.node.name",
+								Field: nameField,
 							},
 						},
 					},
 				},
 			},
 			Aggregations: map[string]types.Aggregations{
-				"nodes": {
+				nodesAggName: {
 					Terms: &types.TermsAggregation{
 						Field: &nameField,
 					},
 					Aggregations: map[string]types.Aggregations{
-						"latest_metrics": {
+						metricsAggName: {
 							TopHits: &types.TopHitsAggregation{
 								Sort: []types.SortCombinations{
 									types.SortOptions{
@@ -95,7 +99,7 @@ func (c metricsClient) GetNodeMetrics() (map[string]NodeMetrics, error) {
 		return nil, err
 	}
 
-	aggregation := res.Aggregations["nodes"]
+	aggregation := res.Aggregations[nodesAggName]
 	nodesAgg, ok := aggregation.(*types.StringTermsAggregate)
 	if !ok {
 		return nil, errors.New("incorrect aggregation type")
@@ -105,9 +109,9 @@ func (c metricsClient) GetNodeMetrics() (map[string]NodeMetrics, error) {
 	if !ok {
 		return nil, errors.New("incorrect bucket type")
 	}
-	nodeMetricsMap := make(map[string]NodeMetrics)
+	ret := []NodeMetrics{}
 	for _, bucket := range buckets {
-		aggregation = bucket.Aggregations["latest_metrics"]
+		aggregation = bucket.Aggregations[metricsAggName]
 		bucketAgg := aggregation.(*types.TopHitsAggregate)
 		source := bucketAgg.Hits.Hits[0].Source_
 
@@ -115,79 +119,15 @@ func (c metricsClient) GetNodeMetrics() (map[string]NodeMetrics, error) {
 		if err != nil {
 			return nil, err
 		}
-
-		nodeMetricsMap[bucket.Key.(string)] = nodeMetrics
+		nodeMetrics.Node = bucket.Key.(k8s.Node)
+		ret = append(ret, nodeMetrics)
 	}
 
-	return nodeMetricsMap, nil
+	return ret, nil
 }
 
 func (c metricsClient) Test() (string, error) {
-	size := 1
-	nameField := "kubernetes.node.name"
-	res, _ := c.client.Search().
-		Size(0).
-		Index(metricsIndex).
-		Request(&search.Request{
-			Query: &types.Query{
-				Bool: &types.BoolQuery{
-					Must: []types.Query{
-						{
-							Exists: &types.ExistsQuery{
-								Field: "k8s.node.cpu.utilization",
-							},
-						},
-						{
-							Exists: &types.ExistsQuery{
-								Field: "kubernetes.node.name",
-							},
-						},
-					},
-				},
-			},
-			Aggregations: map[string]types.Aggregations{
-				"nodes": {
-					Terms: &types.TermsAggregation{
-						Field: &nameField,
-					},
-					Aggregations: map[string]types.Aggregations{
-						"latest_metrics": {
-							TopHits: &types.TopHitsAggregation{
-								Sort: []types.SortCombinations{
-									types.SortOptions{
-										SortOptions: map[string]types.FieldSort{
-											"@timestamp": types.FieldSort{
-												Order: &sortorder.Desc,
-											},
-										},
-									},
-								},
-								Size: &size,
-							},
-						},
-					},
-				},
-			},
-		}).
-		Do(context.Background())
-
-	aggregation := res.Aggregations["nodes"]
-	nodesAgg, _ := aggregation.(*types.StringTermsAggregate)
-
-	buckets, _ := nodesAgg.Buckets.([]types.StringTermsBucket)
-	for _, bucket := range buckets {
-		aggregation = bucket.Aggregations["latest_metrics"]
-		bucketAgg := aggregation.(*types.TopHitsAggregate)
-		source := bucketAgg.Hits.Hits[0].Source_
-		return string(source), nil
-	}
-
-	//
-	// for i, v := range res.Aggregations["nodes"] {
-
-	// }
-
-	return "asd", nil
+	return "test", nil
 }
 
 func unmarshalSource(source json.RawMessage) (NodeMetrics, error) {

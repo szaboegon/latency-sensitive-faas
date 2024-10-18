@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"faas-loadbalancer/internal/metrics"
+	"faas-loadbalancer/internal/routing"
 	"io"
 	"log"
 	"net/http"
@@ -14,7 +15,7 @@ import (
 	"time"
 )
 
-var apiKeyConfig metrics.ApiKeyConfig
+var router routing.Router
 
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
@@ -26,8 +27,8 @@ func RouteRequestHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestHandler(w http.ResponseWriter, r *http.Request) {
-	reader, _ := metrics.NewMetricsReader(apiKeyConfig)
-	reader.GetNodeMetrics()
+	reader, _ := metrics.NewMetricsReader()
+	reader.Test()
 
 	w.WriteHeader(http.StatusOK)
 	//w.Write([]byte(res))
@@ -45,6 +46,7 @@ func readESCredentials() (metrics.ApiKeyConfig, error) {
 		return metrics.ApiKeyConfig{}, err
 	}
 
+	var apiKeyConfig metrics.ApiKeyConfig
 	err = json.Unmarshal(byteValue, &apiKeyConfig)
 	if err != nil {
 		return metrics.ApiKeyConfig{}, err
@@ -53,19 +55,46 @@ func readESCredentials() (metrics.ApiKeyConfig, error) {
 	return apiKeyConfig, nil
 }
 
-func main() {
-	apiKey, err := readESCredentials()
+func readFunctionLayout() (routing.FunctionLayout, error) {
+	layoutFile, err := os.Open("function-layout.json")
 	if err != nil {
-		log.Fatal("Failed to get apikey from file:", err)
+		return routing.FunctionLayout{}, err
+	}
+
+	defer layoutFile.Close()
+	byteValue, err := io.ReadAll(layoutFile)
+	if err != nil {
+		return routing.FunctionLayout{}, err
+	}
+
+	var funcLayout routing.FunctionLayout
+	err = json.Unmarshal(byteValue, &funcLayout)
+	if err != nil {
+		return routing.FunctionLayout{}, err
+	}
+
+	return funcLayout, nil
+}
+
+func main() {
+	// not using apikey as of now
+	// apiKey, err := readESCredentials()
+	// if err != nil {
+	// 	log.Fatal("Failed to get apikey from file:", err)
+	// 	panic(err)
+	// }
+
+	funcLayout, err := readFunctionLayout()
+	if err != nil {
+		log.Fatal("failed to read function layout:", err)
 		panic(err)
 	}
 
-	_, err = metrics.NewMetricsWatcher(apiKey)
+	router, err = routing.NewRouter(funcLayout)
 	if err != nil {
-		log.Fatal("Failed to create metrics watcher:", err)
+		log.Fatal("failed to create router component:", err)
 		panic(err)
 	}
-	//watcher.Watch()
 
 	s := &http.Server{Addr: ":8080"}
 	http.HandleFunc("/healthz", HealthCheckHandler)
