@@ -10,7 +10,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/sortorder"
 )
 
-var metricsIndex string = ".ds-metrics-apm.app.unknown-default-2024.10.12-000001"
+var metricsIndex string = ".ds-metrics-apm.*"
 
 type ApiKeyConfig struct {
 	Id                  string `json:"id"`
@@ -29,7 +29,7 @@ func NewMetricsReader(apiKeyConfig ApiKeyConfig) (MetricsReader, error) {
 		Addresses: []string{
 			"http://localhost:9200",
 		},
-		APIKey: apiKeyConfig.ApiKey,
+		//APIKey: apiKeyConfig.ApiKey,
 	}
 	es, err := elasticsearch.NewTypedClient(cfg)
 	if err != nil {

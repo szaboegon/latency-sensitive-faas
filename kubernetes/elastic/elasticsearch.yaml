@@ -20,7 +20,16 @@ spec:
       # On Elasticsearch versions before 7.9.0, replace the node.roles configuration with the following:
       # node.master: true
       node.roles: ["master", "data", "ingest"]
-      # xpack.ml.enabled: true
+      # # Allow anonymous access for testing purposes
+      xpack.security.authc:
+          anonymous:
+            username: anonymous
+            roles: superuser
+            authz_exception: false
+  http:
+    tls:
+      selfSignedCertificate:
+        disabled: true
     # volumeClaimTemplates:
     # - metadata:
     #     name: elasticsearch-data # Do not change this name unless you set up a volume mount for the data path.
