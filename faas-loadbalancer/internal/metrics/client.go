@@ -119,7 +119,7 @@ func (c metricsClient) QueryNodeMetrics() ([]NodeMetrics, error) {
 		if err != nil {
 			return nil, err
 		}
-		nodeMetrics.Node = bucket.Key.(k8s.Node)
+		nodeMetrics.Node = k8s.Node(bucket.Key.(string))
 		ret = append(ret, nodeMetrics)
 	}
 

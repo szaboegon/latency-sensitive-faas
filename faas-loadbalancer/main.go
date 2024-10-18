@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"faas-loadbalancer/internal/k8s"
 	"faas-loadbalancer/internal/metrics"
 	"faas-loadbalancer/internal/routing"
 	"io"
@@ -15,6 +16,7 @@ import (
 	"time"
 )
 
+var NODE k8s.Node
 var router routing.Router
 
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
@@ -77,6 +79,11 @@ func readFunctionLayout() (routing.FunctionLayout, error) {
 }
 
 func main() {
+	NODE = "default"
+	if os.Getenv("NODE_NAME") != "" {
+		NODE = k8s.Node(os.Getenv("NODE_NAME"))
+	}
+
 	// not using apikey as of now
 	// apiKey, err := readESCredentials()
 	// if err != nil {
@@ -90,7 +97,7 @@ func main() {
 		panic(err)
 	}
 
-	router, err = routing.NewRouter(funcLayout)
+	router, err = routing.NewRouter(funcLayout, NODE)
 	if err != nil {
 		log.Fatal("failed to create router component:", err)
 		panic(err)

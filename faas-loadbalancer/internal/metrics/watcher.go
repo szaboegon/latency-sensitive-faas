@@ -48,6 +48,10 @@ func (w *metricsWatcher) Watch() {
 			sort.Slice(metrics, func(i, j int) bool {
 				return w.calculateWeight(metrics[i]) < w.calculateWeight(metrics[j])
 			})
+			w.nodesWithMostResources = []k8s.Node{}
+			for _, val := range metrics {
+				w.nodesWithMostResources = append(w.nodesWithMostResources, val.Node)
+			}
 			w.mu.Unlock()
 		}
 	}()

@@ -40,7 +40,10 @@ func NewRouter(fl FunctionLayout, node k8s.Node) (Router, error) {
 }
 
 func (mr *metricsBasedRouter) RouteRequest(req Request) error {
-	//partitions := mr.routingTable[req.ToComponent]
+	// partitions := mr.routingTable[req.ToComponent]
+	// for _, p := range(partitions){
+
+	// }
 
 	return nil
 }
