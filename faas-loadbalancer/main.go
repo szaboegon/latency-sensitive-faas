@@ -27,9 +27,10 @@ func RouteRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 func TestHandler(w http.ResponseWriter, r *http.Request) {
 	reader, _ := metrics.NewMetricsReader(apiKeyConfig)
-	json, _ := reader.Test()
+	reader.GetNodeMetrics()
+
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(json))
+	//w.Write([]byte(res))
 }
 
 func readESCredentials() (metrics.ApiKeyConfig, error) {

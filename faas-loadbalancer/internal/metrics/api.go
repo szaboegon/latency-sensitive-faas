@@ -1,10 +1,19 @@
 package metrics
 
 type NodeMetrics struct {
-	CpuUtilizationPercentage float64
+	Cpu    cpu    `json:"cpu"`
+	Memory memory `json:"memory"`
+}
+
+type cpu struct {
+	Utilization float64 `json:"utilization"`
+}
+
+type memory struct {
+	Usage float64 `json:"usage"`
 }
 
 type MetricsReader interface {
-	GetNodeCpuUtilizations() (map[string]NodeMetrics, error)
+	GetNodeMetrics() (map[string]NodeMetrics, error)
 	Test() (string, error)
 }

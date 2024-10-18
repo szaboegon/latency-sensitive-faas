@@ -36,7 +36,7 @@ func (w *metricsWatcher) Watch() {
 	go func() {
 		for range ticker.C {
 			w.mu.Lock()
-			metrics, err := w.metricsReader.GetNodeCpuUtilizations()
+			metrics, err := w.metricsReader.GetNodeMetrics()
 			if err != nil {
 				log.Fatal("Failed to get metrics from metrics reader:", err)
 			}
