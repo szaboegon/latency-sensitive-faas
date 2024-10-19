@@ -1,3 +1,5 @@
+# add this to knative
+# https://stackoverflow.com/questions/56563425/how-to-communicate-with-daemonset-pod-from-another-pod-in-the-same-node
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -51,4 +53,3 @@ spec:
               value: http://otel-collector.observability:4318
             - name: METRICS_BACKEND_ADDRESS
               value: http://elasticsearch-es-http.observability.svc.cluster.local:9200
-      hostNetwork: true

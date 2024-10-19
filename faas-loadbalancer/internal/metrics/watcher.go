@@ -42,7 +42,7 @@ func (w *metricsWatcher) Watch() {
 		for range ticker.C {
 			metrics, err := w.metricsReader.QueryNodeMetrics()
 			if err != nil {
-				log.Fatal("Failed to get metrics from metrics reader: ", err)
+				log.Println("Failed to get metrics from metrics reader: ", err)
 				continue
 			}
 			sort.Slice(metrics, func(i, j int) bool {
