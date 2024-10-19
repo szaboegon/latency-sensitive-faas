@@ -1,9 +1,10 @@
 package routing
 
 import (
-	"faas-loadbalancer/internal/k8s"
 	"faas-loadbalancer/internal/metrics"
-	"log"
+	"fmt"
+	"net/http"
+	"sort"
 )
 
 type metricsBasedRouter struct {
@@ -11,39 +12,69 @@ type metricsBasedRouter struct {
 	watcher      metrics.Watcher
 }
 
-func NewRouter(fl FunctionLayout, node k8s.Node) (Router, error) {
-	watcher, err := metrics.NewMetricsWatcher(node)
-	if err != nil {
-		log.Fatal("Failed to create metrics watcher:", err)
-		return nil, err
-	}
-	watcher.Watch()
-
+func NewRouter(fl FunctionLayout, w metrics.Watcher) (Router, error) {
+	w.Watch()
 	rt := make(RoutingTable)
 	for _, partition := range fl.FuncPartitions {
 		for _, component := range partition.Components {
 			val, ok := rt[component]
 			if !ok {
-				rt[component] = []FuncPartition{
-					partition,
+				rt[component] = []Route{
+					{partition, getPartitionUrl(partition)},
 				}
 			} else {
-				rt[component] = append(val, partition)
+				rt[component] = append(val, Route{partition, getPartitionUrl(partition)})
 			}
 		}
 	}
 
 	return &metricsBasedRouter{
 		routingTable: rt,
-		watcher:      watcher,
+		watcher:      w,
 	}, nil
 }
 
 func (mr *metricsBasedRouter) RouteRequest(req Request) error {
-	// partitions := mr.routingTable[req.ToComponent]
-	// for _, p := range(partitions){
+	bestNodes := mr.watcher.GetNodesWithMostResources()
+	routes := mr.routingTable[req.ToComponent]
 
-	// }
+	var latestErr error
+	for _, n := range bestNodes {
+		i := sort.Search(len(routes), func(i int) bool {
+			return routes[i].Node == n
+		})
+		if i < len(routes) {
+			r := routes[i]
+			err := sendRequest(r.Url, req)
+			// if there was an error we try the next best option
+			if err != nil {
+				latestErr = err
+				continue
+			}
+			break
+		}
+	}
+
+	if latestErr != nil {
+		return latestErr
+	}
 
 	return nil
+}
+
+func sendRequest(url string, req Request) error {
+	r, err := http.Post(url, "application/json", req.BodyReader)
+	if err != nil {
+		return err
+	}
+
+	if r.StatusCode != http.StatusOK {
+		return fmt.Errorf("request failed with status code: %v", r.StatusCode)
+	}
+
+	return nil
+}
+
+func getPartitionUrl(p FuncPartition) string {
+	return fmt.Sprintf("http://%v.%v.svc.cluster.local", p.Name, p.Namespace)
 }

@@ -26,10 +26,10 @@ type metricsClient struct {
 	client *elasticsearch.TypedClient
 }
 
-func NewMetricsReader() (MetricsReader, error) {
+func NewMetricsReader(backendAddr string) (MetricsReader, error) {
 	cfg := elasticsearch.Config{
 		Addresses: []string{
-			"http://localhost:9200",
+			backendAddr,
 		},
 		//APIKey: apiKeyConfig.ApiKey,
 	}

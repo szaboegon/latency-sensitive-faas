@@ -4,8 +4,6 @@ metadata:
   name: loadbalancer
   labels:
     name: loadbalancer
-  # annotations:
-  #   instrumentation.opentelemetry.io/inject-python: "true"  TODO replace with go injection
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -21,9 +19,11 @@ spec:
       labels:
         app: faas-loadbalancer
     spec:
+      # to enable graceful shutdown
+      terminationGracePeriodSeconds: 300
       containers:
         - name: faas-loadbalancer
-          image: localhost/faas-loadbalancer:latest
+          image: szaboegon/faas-loadbalancer:latest
           ports:
             - containerPort: 8080
               hostPort: 8080
@@ -31,12 +31,24 @@ spec:
             requests:
               cpu: "100m"
               memory: "128Mi"
-          limits:
-            cpu: "500m"
-            memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 2
           env:
-            - name: NODE_NAME
+            - name: KUBERNETES_NODE_NAME
               valueFrom:
                 fieldRef:
-                  fieldPath: metadata.nodeName
+                  fieldPath: spec.nodeName
+            - name: OTEL_SERVICE_NAME
+              value: "faas-loadbalancer"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.observability:4318
+            - name: METRICS_BACKEND_ADDRESS
+              value: http://elasticsearch-es-http.observability.svc.cluster.local:9200
       hostNetwork: true

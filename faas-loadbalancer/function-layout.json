@@ -7,7 +7,8 @@
                "imagegrab",
                "resize"
             ],
-            "edgenode": "knative"
+            "edgenode": "knative",
+            "namespace": "application"
         },
         {
             "name" :"func-2",
@@ -15,7 +16,8 @@
                "cut",
                "grayscale"
             ],
-             "edgenode": "knative-m01"
+             "edgenode": "knative-m01",
+             "namespace": "application"
         }
     ]
 }
