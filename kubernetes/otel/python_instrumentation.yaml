@@ -16,3 +16,5 @@ spec:
     env:
       - name: OTEL_EXPORTER_OTLP_ENDPOINT
         value: http://otel-collector.observability:4318
+      - name: OTEL_PYTHON_DISABLED_INSTRUMENTATIONS
+        value: aio-pika,aiohttp-client,aiohttp-server,aiopg,asgi,asyncio,asyncpg,aws-lambda,boto,boto3sqs,botocore,cassandra,celery,confluent-kafka,dbapi,django,elasticsearch,falcon,fastapi,jinja2,kafka-python,logging,mysql,mysqlclient,pika,psycopg,psycopg2,pymemcache,pymongo,pymysql,pyramid,redis,remoulade,sqlalchemy,sqlite3,starlette,system-metrics,threading,tornado,tortoiseorm,urllib,urllib3,wsgi

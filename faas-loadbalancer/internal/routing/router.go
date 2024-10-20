@@ -51,6 +51,7 @@ func (mr *metricsBasedRouter) RouteRequest(req Request) error {
 				latestErr = err
 				continue
 			}
+			latestErr = nil
 			break
 		}
 	}
@@ -63,7 +64,14 @@ func (mr *metricsBasedRouter) RouteRequest(req Request) error {
 }
 
 func sendRequest(url string, req Request) error {
-	r, err := http.Post(url, "application/json", req.BodyReader)
+	client := &http.Client{}
+	httpReq, err := http.NewRequest("POST", url, req.BodyReader)
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("X-Forward-To", string(req.ToComponent))
+	if err != nil {
+		return err
+	}
+	r, err := client.Do(httpReq)
 	if err != nil {
 		return err
 	}
