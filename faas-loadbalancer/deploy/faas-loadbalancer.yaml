@@ -50,6 +50,6 @@ spec:
             - name: OTEL_SERVICE_NAME
               value: "faas-loadbalancer"
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: http://otel-collector.observability:4318
+              value: http://otel-collector.observability:4317
             - name: METRICS_BACKEND_ADDRESS
               value: http://elasticsearch-es-http.observability.svc.cluster.local:9200

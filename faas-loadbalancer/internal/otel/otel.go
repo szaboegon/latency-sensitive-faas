@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/stdout/stdoutlog"
-	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
-	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/log"
@@ -80,8 +80,7 @@ func newPropagator() propagation.TextMapPropagator {
 }
 
 func newTraceProvider() (*trace.TracerProvider, error) {
-	traceExporter, err := stdouttrace.New(
-		stdouttrace.WithPrettyPrint())
+	traceExporter, err := otlptracegrpc.New(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +94,7 @@ func newTraceProvider() (*trace.TracerProvider, error) {
 }
 
 func newMeterProvider() (*metric.MeterProvider, error) {
-	metricExporter, err := stdoutmetric.New()
+	metricExporter, err := otlpmetricgrpc.New(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +108,7 @@ func newMeterProvider() (*metric.MeterProvider, error) {
 }
 
 func newLoggerProvider() (*log.LoggerProvider, error) {
-	logExporter, err := stdoutlog.New()
+	logExporter, err := otlploggrpc.New(context.Background())
 	if err != nil {
 		return nil, err
 	}
