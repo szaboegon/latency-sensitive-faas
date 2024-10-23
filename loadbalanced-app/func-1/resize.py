@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 import requests
 import os
-from helper import LOADBALANCER_URL
+import helper
 
 def image_to_base64(image):
     retval, buffer = cv2.imencode('.jpg', image)
@@ -39,6 +39,6 @@ def handler(context: Context):
                 "origin_h": h,
                 "origin_w": w}
     
-    resp = requests.post(f"{LOADBALANCER_URL}/grayscale", json=event_out)
+    resp = requests.post(helper.LOADBALANCER_URL, json=event_out, headers=helper.headers("grayscale"))
 
     return resp.text, 200

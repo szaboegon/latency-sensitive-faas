@@ -4,7 +4,7 @@ import base64
 import cv2
 import numpy as np
 import requests
-from helper import LOADBALANCER_URL
+import helper
 
 def image_to_base64(image):
     retval, buffer = cv2.imencode('.jpg', image)
@@ -29,5 +29,5 @@ def handler(context: Context):
                  "origin_h": json_data.get("origin_h"),
                  "origin_w": json_data.get("origin_w")}
     
-    resp = requests.post(f"{LOADBALANCER_URL}/objectdetect", json=event_out)
+    resp = requests.post(helper.LOADBALANCER_URL, json=event_out, headers=helper.headers("objectdetect"))
     return resp.text, 200

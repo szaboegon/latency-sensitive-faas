@@ -67,7 +67,7 @@ func sendRequest(url string, req Request) error {
 	client := &http.Client{}
 	httpReq, err := http.NewRequest("POST", url, req.BodyReader)
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("X-Forward-To", string(req.ToComponent))
+	httpReq.Header.Set(ForwardToHeader, string(req.ToComponent))
 	if err != nil {
 		return err
 	}

@@ -5,7 +5,7 @@ import numpy as np
 import cv2
 import base64
 import requests
-from helper import LOADBALANCER_URL
+import helper
 
 #TODO to env variable
 CONFIDENCE_MIN = 0.4
@@ -41,7 +41,7 @@ def handler(context: Context):
                  "cropped_coords": json_data.get("cropped_coords"),
                  "original_image": json_data.get("original_image")}
     
-    resp = requests.post(f"{LOADBALANCER_URL}/tag", json=event_out)
+    resp = requests.post(helper.LOADBALANCER_URL, json=event_out, headers=helper.headers("tag"))
     return resp.text, 200
 
 CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",

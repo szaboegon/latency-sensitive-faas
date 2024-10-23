@@ -37,3 +37,7 @@ type RoutingTable map[Component][]Route
 type Router interface {
 	RouteRequest(Request) error
 }
+
+const (
+	ForwardToHeader = "X-Forward-To"
+)

@@ -5,7 +5,7 @@ import numpy as np
 import cv2
 import requests
 import base64
-from helper import LOADBALANCER_URL
+import helper
 
 def handler(context: Context):
     json_data = context.request.json
@@ -26,7 +26,7 @@ def handler(context: Context):
                          "original_image": json_data.get("original_image")}
             img_id += 1
 
-            resp = requests.post(f"{LOADBALANCER_URL}/objectdetect2", json=event_out)
+            resp = requests.post(helper.LOADBALANCER_URL, json=event_out, headers=helper.headers("objectdetect2"))
             return resp.text, 200
     else:
         return "Invalid inputs", 400

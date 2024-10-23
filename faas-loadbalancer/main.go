@@ -8,6 +8,7 @@ import (
 	"faas-loadbalancer/internal/metrics"
 	"faas-loadbalancer/internal/otel"
 	"faas-loadbalancer/internal/routing"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -42,7 +43,13 @@ func ForwardHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("[%p] %s %s", r, r.Method, r.URL)
 
-	component := r.PathValue("component")
+	component := r.Header.Get(routing.ForwardToHeader)
+	if component == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(fmt.Sprintf("no value was provied for header %v", routing.ForwardToHeader)))
+		return
+	}
+
 	forwardReq := routing.Request{
 		ToComponent: routing.Component(component),
 		BodyReader:  r.Body,
@@ -149,8 +156,8 @@ func newHTTPHanlder() http.Handler {
 	}
 
 	// Register handlers.
+	handleFunc("/", ForwardHandler)
 	handleFunc("/healthz", HealthCheckHandler)
-	handleFunc("/forward/{component}", ForwardHandler)
 	handleFunc("/test", TestHandler)
 
 	// Add HTTP instrumentation for the whole server.

@@ -63,7 +63,7 @@ func (w *metricsWatcher) Watch() {
 
 func (w *metricsWatcher) GetNodesWithMostResources() []k8s.Node {
 	w.mu.RLock()
-	defer w.mu.Unlock()
+	defer w.mu.RUnlock()
 	return w.nodesWithMostResources
 }
 
