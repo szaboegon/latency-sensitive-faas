@@ -1,12 +1,7 @@
 from parliament import Context
-from flask import Request
-import json
 import base64
 import cv2
 import numpy as np
-import requests
-import os
-import helper
 
 def image_to_base64(image):
     retval, buffer = cv2.imencode('.jpg', image)

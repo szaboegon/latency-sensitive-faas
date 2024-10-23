@@ -3,8 +3,10 @@ package otel
 import (
 	"context"
 	"errors"
+	"net/http"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -70,6 +72,11 @@ func SetupOTelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 	global.SetLoggerProvider(loggerProvider)
 
 	return
+}
+
+func WithOtelTransport(client *http.Client) *http.Client {
+	client.Transport = otelhttp.NewTransport(http.DefaultTransport)
+	return client
 }
 
 func newPropagator() propagation.TextMapPropagator {

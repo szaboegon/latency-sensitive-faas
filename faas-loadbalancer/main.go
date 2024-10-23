@@ -55,12 +55,13 @@ func ForwardHandler(w http.ResponseWriter, r *http.Request) {
 		BodyReader:  r.Body,
 	}
 
-	err := router.RouteRequest(forwardReq)
+	route, err := router.RouteRequest(forwardReq)
 	if err != nil {
 		log.Printf("failed to route request to component: %v, err: %v", forwardReq.ToComponent, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Printf("successfully routed request to component: %v, partition: %v, node: %v", forwardReq.ToComponent, route.Name, route.Node)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Ok"))

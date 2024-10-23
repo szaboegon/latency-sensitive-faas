@@ -2,6 +2,7 @@ package routing
 
 import (
 	"faas-loadbalancer/internal/metrics"
+	"faas-loadbalancer/internal/otel"
 	"fmt"
 	"net/http"
 	"sort"
@@ -34,17 +35,18 @@ func NewRouter(fl FunctionLayout, w metrics.Watcher) (Router, error) {
 	}, nil
 }
 
-func (mr *metricsBasedRouter) RouteRequest(req Request) error {
+func (mr *metricsBasedRouter) RouteRequest(req Request) (Route, error) {
 	bestNodes := mr.watcher.GetNodesWithMostResources()
 	routes := mr.routingTable[req.ToComponent]
 
+	var r Route
 	var latestErr error
 	for _, n := range bestNodes {
 		i := sort.Search(len(routes), func(i int) bool {
 			return routes[i].Node == n
 		})
 		if i < len(routes) {
-			r := routes[i]
+			r = routes[i]
 			err := sendRequest(r.Url, req)
 			// if there was an error we try the next best option
 			if err != nil {
@@ -57,14 +59,16 @@ func (mr *metricsBasedRouter) RouteRequest(req Request) error {
 	}
 
 	if latestErr != nil {
-		return latestErr
+		return Route{}, latestErr
 	}
 
-	return nil
+	return r, nil
 }
 
 func sendRequest(url string, req Request) error {
 	client := &http.Client{}
+	client = otel.WithOtelTransport(client)
+
 	httpReq, err := http.NewRequest("POST", url, req.BodyReader)
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set(ForwardToHeader, string(req.ToComponent))

@@ -35,7 +35,7 @@ func (p1 *FuncPartition) Equals(p2 FuncPartition) bool {
 type RoutingTable map[Component][]Route
 
 type Router interface {
-	RouteRequest(Request) error
+	RouteRequest(Request) (Route, error)
 }
 
 const (

@@ -9,4 +9,5 @@ build:
   builder: pack
 deploy:
   namespace: application
+  image: registry.hub.docker.com/szaboegon/func-2@sha256:13214434d651d0399c3194d321ae8f63e6bd5bd1e1727dcaca477720a91d3be0
   nodeName: knative
