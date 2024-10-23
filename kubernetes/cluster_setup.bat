@@ -7,6 +7,7 @@ set SERVING_YAML_PATH="knative\serving.yaml"
 set EVENTING_YAML_PATH="knative\eventing.yaml"
 set SCALE_CONFIG_PATH="knative\disable_scale_to_zero.yaml"
 set APP_NAMESPACE_PATH="otel\application_namespace.yaml"
+set SERVING_FEATURES_CONFIG_PATH="knative\serving_features.yaml"
 
 echo %cd%
 echo Starting minikube cluster with %NUM_NODES% nodes...
@@ -77,6 +78,12 @@ if errorlevel 1 (
 )
 
 kubectl apply -f %APP_NAMESPACE_PATH%
+if errorlevel 1 (
+    echo Failed to create namespace 'application'.
+    exit /b 1
+)
+
+kubectl apply -f %SERVING_FEATURES_CONFIG_PATH%
 if errorlevel 1 (
     echo Failed to create namespace 'application'.
     exit /b 1

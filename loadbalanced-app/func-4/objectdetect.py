@@ -1,11 +1,7 @@
 from parliament import Context
-from flask import Request
-import json
 import base64
 import cv2
 import numpy as np
-import requests
-import helper
 
 #TODO move this to env
 CONFIDENCE_MIN=0.4
@@ -24,8 +20,7 @@ def handler(context: Context):
     event_out = {"cropped_coords": coords,
                  "original_image": json_data.get("original_image"),}
     
-    resp = requests.post(helper.LOADBALANCER_URL, json=event_out, headers=helper.headers("cut"))
-    return resp.text, 200
+    return "cut", event_out
 
 # Initialize the list of class labels MobileNet SSD was trained to detect
 CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",

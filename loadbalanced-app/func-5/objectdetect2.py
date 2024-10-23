@@ -1,11 +1,7 @@
 from parliament import Context
-from flask import Request
-import json
 import numpy as np
 import cv2
 import base64
-import requests
-import helper
 
 #TODO to env variable
 CONFIDENCE_MIN = 0.4
@@ -41,8 +37,7 @@ def handler(context: Context):
                  "cropped_coords": json_data.get("cropped_coords"),
                  "original_image": json_data.get("original_image")}
     
-    resp = requests.post(helper.LOADBALANCER_URL, json=event_out, headers=helper.headers("tag"))
-    return resp.text, 200
+    return "tag", event_out
 
 CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
            "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
