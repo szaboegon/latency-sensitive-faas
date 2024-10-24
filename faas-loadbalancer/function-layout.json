@@ -16,7 +16,33 @@
                "cut",
                "grayscale"
             ],
-             "edgenode": "knative-m01",
+             "edgenode": "knative",
+             "namespace": "application"
+        },
+        {
+            "name" :"func-3",
+            "components": [
+               "objectdetect",
+               "objectdetect2"
+            ],
+             "edgenode": "knative-m02",
+             "namespace": "application"
+        },
+        {
+            "name" :"func-4",
+            "components": [
+               "objectdetect"
+            ],
+             "edgenode": "knative-m03",
+             "namespace": "application"
+        },
+        {
+            "name" :"func-5",
+            "components": [
+               "objectdetect2",
+               "tag"
+            ],
+             "edgenode": "knative-m03",
              "namespace": "application"
         }
     ]

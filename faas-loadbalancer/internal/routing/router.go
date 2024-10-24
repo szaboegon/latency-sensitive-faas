@@ -4,8 +4,8 @@ import (
 	"faas-loadbalancer/internal/metrics"
 	"faas-loadbalancer/internal/otel"
 	"fmt"
+	"log"
 	"net/http"
-	"sort"
 )
 
 type metricsBasedRouter struct {
@@ -39,30 +39,34 @@ func (mr *metricsBasedRouter) RouteRequest(req Request) (Route, error) {
 	bestNodes := mr.watcher.GetNodesWithMostResources()
 	routes := mr.routingTable[req.ToComponent]
 
-	var r Route
+	var sent *Route = nil
 	var latestErr error
-	for _, n := range bestNodes {
-		i := sort.Search(len(routes), func(i int) bool {
-			return routes[i].Node == n
-		})
-		if i < len(routes) {
-			r = routes[i]
-			err := sendRequest(r.Url, req)
-			// if there was an error we try the next best option
-			if err != nil {
-				latestErr = err
-				continue
+	for _, node := range bestNodes {
+		for _, route := range routes {
+			if route.Node == node {
+				err := sendRequest(route.Url, req)
+				// if there was an error we try the next best option
+				if err != nil {
+					log.Printf("tried sending request to partition: %v, on node: %v", route.Name, route.Node)
+					latestErr = err
+					continue
+				}
+				sent = &route
+				latestErr = nil
+				break
 			}
-			latestErr = nil
-			break
 		}
+	}
+
+	if sent == nil {
+		return Route{}, fmt.Errorf("no matching route found for component: %v", req.ToComponent)
 	}
 
 	if latestErr != nil {
 		return Route{}, latestErr
 	}
 
-	return r, nil
+	return *sent, nil
 }
 
 func sendRequest(url string, req Request) error {
