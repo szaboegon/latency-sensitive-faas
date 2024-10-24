@@ -41,7 +41,8 @@ func ForwardHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	log.Printf("[%p] %s %s", r, r.Method, r.URL)
+	headersJson, _ := json.Marshal(r.Header)
+	log.Printf("[%p] %s %s %s", r, r.Method, r.URL, headersJson)
 
 	component := r.Header.Get(routing.ForwardToHeader)
 	if component == "" {
@@ -50,9 +51,17 @@ func ForwardHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("failed to read request body, err: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	forwardReq := routing.Request{
 		ToComponent: routing.Component(component),
-		BodyReader:  r.Body,
+		Body:        bodyBytes,
+		Context:     r.Context(),
 	}
 
 	route, err := router.RouteRequest(forwardReq)

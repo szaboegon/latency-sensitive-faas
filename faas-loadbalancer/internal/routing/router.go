@@ -1,6 +1,8 @@
 package routing
 
 import (
+	"bytes"
+	"encoding/json"
 	"faas-loadbalancer/internal/metrics"
 	"faas-loadbalancer/internal/otel"
 	"fmt"
@@ -70,15 +72,18 @@ func (mr *metricsBasedRouter) RouteRequest(req Request) (Route, error) {
 }
 
 func sendRequest(url string, req Request) error {
-	client := &http.Client{}
-	client = otel.WithOtelTransport(client)
+	client := otel.WithOtelTransport(&http.Client{})
 
-	httpReq, err := http.NewRequest("POST", url, req.BodyReader)
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set(ForwardToHeader, string(req.ToComponent))
+	httpReq, err := http.NewRequestWithContext(req.Context, "POST", url, bytes.NewReader(req.Body))
 	if err != nil {
 		return err
 	}
+	otel.InjectHeaders(httpReq, req.Context)
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set(ForwardToHeader, string(req.ToComponent))
+
+	headers, _ := json.Marshal(httpReq.Header)
+	log.Printf("http req headers: %s", headers)
 	r, err := client.Do(httpReq)
 	if err != nil {
 		return err

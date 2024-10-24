@@ -26,7 +26,7 @@ def handler(context: Context):
     out_file = f"result-{json_data['cropped_img_id']}.jpg"
     print(out_file)
     cv2.imwrite(out_file, image)
-    return None, {}
+    return "", {}
 
 # Generate a set of bounding box colors for each class
 CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",

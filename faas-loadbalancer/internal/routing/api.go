@@ -1,14 +1,15 @@
 package routing
 
 import (
+	"context"
 	"faas-loadbalancer/internal/k8s"
-	"io"
 )
 
 type Component string
 type Request struct {
 	ToComponent Component
-	BodyReader  io.Reader
+	Body        []byte
+	Context     context.Context
 }
 
 type FunctionLayout struct {

@@ -79,6 +79,10 @@ func WithOtelTransport(client *http.Client) *http.Client {
 	return client
 }
 
+func InjectHeaders(req *http.Request, ctx context.Context) {
+	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
+}
+
 func newPropagator() propagation.TextMapPropagator {
 	return propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},

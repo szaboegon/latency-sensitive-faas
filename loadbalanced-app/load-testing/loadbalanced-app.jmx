@@ -161,7 +161,7 @@ vars.put(&apos;encodedFileData&apos;, base64File)</stringProp>
         </ResultCollector>
         <hashTree/>
         <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer" testname="Constant Timer">
-          <stringProp name="ConstantTimer.delay">20000</stringProp>
+          <stringProp name="ConstantTimer.delay">5000</stringProp>
         </ConstantTimer>
         <hashTree/>
       </hashTree>
