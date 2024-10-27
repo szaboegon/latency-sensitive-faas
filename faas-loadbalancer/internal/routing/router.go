@@ -48,7 +48,7 @@ func (mr *metricsBasedRouter) RouteRequest(req Request) (Route, error) {
 				err := sendRequest(route.Url, req)
 				// if there was an error we try the next best option
 				if err != nil {
-					log.Printf("tried sending request to partition: %v, on node: %v", route.Name, route.Node)
+					log.Printf("tried sending request to partition: %v, on node: %v, failed with error: %v", route.Name, route.Node, err)
 					latestErr = err
 					continue
 				}
