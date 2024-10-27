@@ -1,0 +1,1 @@
+curl -X POST https://your.api.endpoint/endpoint -H "Content-Type: image/jpeg" \ -H "X-Forward-To: imagegrab" \ -d "$(Get-Content -Raw -Path image.txt)"

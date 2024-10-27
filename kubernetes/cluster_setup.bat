@@ -64,12 +64,12 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo Installing knative eventing component...
-kubectl apply -f %EVENTING_YAML_PATH%
-if errorlevel 1 (
-    echo Failed to install eventing component.
-    exit /b 1
-)
+@REM echo Installing knative eventing component...
+@REM kubectl apply -f %EVENTING_YAML_PATH%
+@REM if errorlevel 1 (
+@REM     echo Failed to install eventing component.
+@REM     exit /b 1
+@REM )
 
 kubectl apply -f %SCALE_CONFIG_PATH%
 if errorlevel 1 (

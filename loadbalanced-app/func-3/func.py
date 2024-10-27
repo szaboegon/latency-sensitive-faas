@@ -18,7 +18,7 @@ def main(context: Context):
     match forward_to:
         case "objectdetect": 
             next_component, event_out = objectdetect(context)
-        case "grayscale":
+        case "objectdetect2":
             next_component, event_out = objectdetect2(context)
 
     if next_component != "":

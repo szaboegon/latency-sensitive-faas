@@ -41,11 +41,11 @@ func ForwardHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	headersJson, _ := json.Marshal(r.Header)
-	log.Printf("[%p] %s %s %s", r, r.Method, r.URL, headersJson)
+	log.Printf("[%p] %s %s", r, r.Method, r.URL)
 
 	component := r.Header.Get(routing.ForwardToHeader)
 	if component == "" {
+		log.Printf("no value was provided for header %v. could not route request", routing.ForwardToHeader)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(fmt.Sprintf("no value was provied for header %v", routing.ForwardToHeader)))
 		return

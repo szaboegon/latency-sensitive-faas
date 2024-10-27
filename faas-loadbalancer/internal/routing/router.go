@@ -2,7 +2,6 @@ package routing
 
 import (
 	"bytes"
-	"encoding/json"
 	"faas-loadbalancer/internal/metrics"
 	"faas-loadbalancer/internal/otel"
 	"fmt"
@@ -82,8 +81,6 @@ func sendRequest(url string, req Request) error {
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set(ForwardToHeader, string(req.ToComponent))
 
-	headers, _ := json.Marshal(httpReq.Header)
-	log.Printf("http req headers: %s", headers)
 	r, err := client.Do(httpReq)
 	if err != nil {
 		return err

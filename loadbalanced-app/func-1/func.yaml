@@ -9,7 +9,7 @@ build:
   builder: pack
 deploy:
   namespace: application
-  image: registry.hub.docker.com/szaboegon/func-1@sha256:3e8166abd210825612f653f9c696eea8337c376fc245f2bb249065d0230314fe
+  image: registry.hub.docker.com/szaboegon/func-1@sha256:6796f54ddd2b5f65b315784a3df2e542a7c5c2e6a498e6b9bfbccd598d943b40
   nodeAffinity:
     requiredNodes:
     - knative
