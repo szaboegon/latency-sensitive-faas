@@ -70,7 +70,7 @@ func (w *metricsWatcher) GetNodesWithMostResources() []k8s.Node {
 // the smaller the weight the better
 func (w *metricsWatcher) calculateWeight(nm NodeMetrics) float64 {
 	// reduce the weight of the current node, but only if enough cpu capacity is available
-	if nm.Node == w.node && nm.Cpu.Utilization < 0.9 {
+	if nm.Node == w.node && nm.Cpu.Utilization < 0.8 {
 		return nm.Cpu.Utilization * 0.8
 	}
 	return nm.Cpu.Utilization

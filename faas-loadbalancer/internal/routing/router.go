@@ -42,6 +42,7 @@ func (mr *metricsBasedRouter) RouteRequest(req Request) (Route, error) {
 
 	var sent *Route = nil
 	var latestErr error
+out:
 	for _, node := range bestNodes {
 		for _, route := range routes {
 			if route.Node == node {
@@ -54,7 +55,7 @@ func (mr *metricsBasedRouter) RouteRequest(req Request) (Route, error) {
 				}
 				sent = &route
 				latestErr = nil
-				break
+				break out
 			}
 		}
 	}
