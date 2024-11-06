@@ -6,7 +6,6 @@ import numpy as np
 import os
 import requests
 import base64
-from concurrent.futures import ThreadPoolExecutor
     
 def main(context: Context):
     return handler(context=context)
@@ -29,9 +28,6 @@ def image_to_base64(image):
     retval, buffer = cv2.imencode('.jpg', image)
     return base64.b64encode(buffer).decode("utf-8")
  
-def fire_and_forget(url, json=None):
-    with ThreadPoolExecutor() as executor:
-        future = executor.submit(requests.post, url, json=json)
 
 
     
