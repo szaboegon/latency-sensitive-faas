@@ -1,6 +1,6 @@
 @echo off
 set NUM_NODES=3
-set MEMORY_LIMIT="5g"
+set MEMORY_LIMIT="6g"
 set CPUS=4
 
 set SERVING_YAML_PATH="knative\serving.yaml"
@@ -85,7 +85,7 @@ if errorlevel 1 (
 
 kubectl apply -f %SERVING_FEATURES_CONFIG_PATH%
 if errorlevel 1 (
-    echo Failed to create namespace 'application'.
+    echo Failed to apply serving features yaml.
     exit /b 1
 )
 

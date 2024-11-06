@@ -9,7 +9,13 @@ build:
   builder: pack
 deploy:
   namespace: application
-  image: registry.hub.docker.com/szaboegon/func-5@sha256:3632b79df210c3ca24f65e571029822656e154c8a10f5a6a12779afafdda24ba
+  image: registry.hub.docker.com/szaboegon/func-5@sha256:755bd09396b16899c5fa00ee4e962e50c9a76da81279d50550ec7f4caca3fe9c
+  options:
+    scale:
+      min: 1
+      max: 3
+      metric: concurrency
+      target: 1
   nodeAffinity:
     requiredNodes:
     - knative-m03
