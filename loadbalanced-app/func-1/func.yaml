@@ -9,11 +9,11 @@ build:
   builder: pack
 deploy:
   namespace: application
-  image: registry.hub.docker.com/szaboegon/func-1@sha256:4ce1c36598b912421657de8793df64578a76ab96ed91f8f6ab1df0210bb72693
+  image: registry.hub.docker.com/szaboegon/func-1@sha256:d772547e62ca91b4378e1ff2d7bcacca16e2cdc7841852437333b5c25940fd94
   options:
     scale:
       min: 1
-      max: 3
+      max: 10
       metric: concurrency
       target: 1
   nodeAffinity:
