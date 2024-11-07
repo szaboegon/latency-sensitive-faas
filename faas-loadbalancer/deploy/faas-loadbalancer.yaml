@@ -53,3 +53,5 @@ spec:
               value: http://otel-collector.observability:4317
             - name: METRICS_BACKEND_ADDRESS
               value: http://elasticsearch-es-http.observability.svc.cluster.local:9200
+            - name: NODE_EVALUATOR_BIAS
+              value: "0.3"

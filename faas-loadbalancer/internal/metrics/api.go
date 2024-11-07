@@ -20,3 +20,7 @@ type MetricsReader interface {
 	QueryNodeMetrics() ([]NodeMetrics, error)
 	Test() (string, error)
 }
+
+type NodeEvaluator interface {
+	CalculateWeight(nm NodeMetrics) float64
+}

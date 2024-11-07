@@ -14,13 +14,13 @@ type Watcher interface {
 }
 
 type metricsWatcher struct {
-	node                   k8s.Node
 	nodesWithMostResources []k8s.Node
 	metricsReader          MetricsReader
+	nodeEvaluator          NodeEvaluator
 	mu                     sync.RWMutex
 }
 
-func NewMetricsWatcher(node k8s.Node, backendAddr string) (Watcher, error) {
+func NewMetricsWatcher(evaluator NodeEvaluator, backendAddr string) (Watcher, error) {
 	reader, err := NewMetricsReader(backendAddr)
 	nodesWithMostResources := []k8s.Node{}
 
@@ -29,8 +29,8 @@ func NewMetricsWatcher(node k8s.Node, backendAddr string) (Watcher, error) {
 	}
 
 	return &metricsWatcher{
-		node:                   node,
 		metricsReader:          reader,
+		nodeEvaluator:          evaluator,
 		nodesWithMostResources: nodesWithMostResources,
 		mu:                     sync.RWMutex{},
 	}, nil
@@ -46,7 +46,7 @@ func (w *metricsWatcher) Watch() {
 				continue
 			}
 			sort.Slice(metrics, func(i, j int) bool {
-				return w.calculateWeight(metrics[i]) < w.calculateWeight(metrics[j])
+				return w.nodeEvaluator.CalculateWeight(metrics[i]) > w.nodeEvaluator.CalculateWeight(metrics[j])
 			})
 			// local function to make sure the mutex always unlocks
 			func() {
@@ -65,13 +65,4 @@ func (w *metricsWatcher) GetNodesWithMostResources() []k8s.Node {
 	w.mu.RLock()
 	defer w.mu.RUnlock()
 	return w.nodesWithMostResources
-}
-
-// the smaller the weight the better
-func (w *metricsWatcher) calculateWeight(nm NodeMetrics) float64 {
-	// reduce the weight of the current node, but only if enough cpu capacity is available
-	if nm.Node == w.node && nm.Cpu.Utilization < 0.8 {
-		return nm.Cpu.Utilization * 0.8
-	}
-	return nm.Cpu.Utilization
 }

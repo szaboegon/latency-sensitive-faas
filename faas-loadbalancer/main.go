@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -24,6 +25,7 @@ import (
 const (
 	KUBERNETES_NODE_NAME    = "KUBERNETES_NODE_NAME"
 	METRICS_BACKEND_ADDRESS = "METRICS_BACKEND_ADDRESS"
+	NODE_EVALUATOR_BIAS     = "NODE_EVALUATOR_BIAS"
 )
 
 var node k8s.Node
@@ -96,6 +98,14 @@ func main() {
 		metricsBackendAddr = os.Getenv(METRICS_BACKEND_ADDRESS)
 	}
 
+	evaluatorBias := 0.3
+	if os.Getenv(NODE_EVALUATOR_BIAS) != "" {
+		float, err := strconv.ParseFloat(os.Getenv(NODE_EVALUATOR_BIAS), 64)
+		if err != nil {
+			evaluatorBias = float
+		}
+	}
+
 	log.Printf("Finished reading env variables. %v: %v, %v: %v", KUBERNETES_NODE_NAME, node, METRICS_BACKEND_ADDRESS, metricsBackendAddr)
 	// not using apikey as of now
 	// apiKey, err := readESCredentials()
@@ -119,7 +129,8 @@ func main() {
 		log.Fatal("failed to read function layout:", err)
 	}
 
-	watcher, err := metrics.NewMetricsWatcher(node, metricsBackendAddr)
+	evaluator := metrics.NewResourceBasedEvaluator(node, evaluatorBias)
+	watcher, err := metrics.NewMetricsWatcher(evaluator, metricsBackendAddr)
 	if err != nil {
 		log.Fatal("Failed to create metrics watcher:", err)
 	}
