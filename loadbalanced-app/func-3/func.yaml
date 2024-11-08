@@ -9,7 +9,7 @@ build:
   builder: pack
 deploy:
   namespace: application
-  image: registry.hub.docker.com/szaboegon/func-3@sha256:431c2c3b46889faaa1b3be528c0080a80da13f65d2e75eb9ecf7b190827aeb8e
+  image: registry.hub.docker.com/szaboegon/func-3@sha256:4937e32a7b551e5d20d76331c982e2239c3d8e586e80bc7033f229f526e15de0
   options:
     scale:
       min: 1

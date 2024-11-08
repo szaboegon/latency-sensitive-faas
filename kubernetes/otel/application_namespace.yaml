@@ -4,5 +4,5 @@ metadata:
   name: application
   labels:
     name: application
-  annotations:
-    instrumentation.opentelemetry.io/inject-python: "true"
+  # annotations:
+  #   instrumentation.opentelemetry.io/inject-python: "true"

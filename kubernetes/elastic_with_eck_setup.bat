@@ -59,11 +59,11 @@ if errorlevel 1 (
     )
 )
 
-kubectl apply -f %PYTHON_INSTRUMENTATION%
-if errorlevel 1 (
-    echo Error creating python instrumentation resource
-    exit /b 1
-)
+@REM kubectl apply -f %PYTHON_INSTRUMENTATION%
+@REM if errorlevel 1 (
+@REM     echo Error creating python instrumentation resource
+@REM     exit /b 1
+@REM )
 
 helm install elastic-operator elastic/eck-operator -n observability
 if errorlevel 1 (

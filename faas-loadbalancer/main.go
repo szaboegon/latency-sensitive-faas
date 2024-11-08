@@ -60,11 +60,10 @@ func ForwardHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := otel.ExtractTraceContext(r)
 	forwardReq := routing.Request{
 		ToComponent: routing.Component(component),
 		Body:        bodyBytes,
-		Context:     ctx,
+		Context:     otel.ExtractTraceContext(r),
 	}
 
 	route, err := router.RouteRequest(forwardReq)

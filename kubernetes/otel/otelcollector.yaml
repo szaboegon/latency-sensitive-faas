@@ -97,8 +97,8 @@ spec:
             endpoint: 0.0.0.0:4317
           http:
             endpoint: 0.0.0.0:4318
-      opencensus: 
-        endpoint: 0.0.0.0:55678
+      # opencensus: 
+      #   endpoint: 0.0.0.0:55678
 
     service:
       extensions:
@@ -120,7 +120,7 @@ spec:
             - batch
           receivers:
             - otlp
-            - opencensus
+            # - opencensus
             - kubeletstats
         traces:
           exporters:

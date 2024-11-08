@@ -2,7 +2,6 @@ from opentelemetry import trace
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 
 def instrument_app(service_name):
@@ -14,8 +13,6 @@ def instrument_app(service_name):
     trace.get_tracer_provider().add_span_processor(
         BatchSpanProcessor(otel_exporter)
     )
-
-    RequestsInstrumentor().instrument(tracer_provider=trace.get_tracer_provider())
     tracer = trace.get_tracer(__name__)
     return tracer
 
