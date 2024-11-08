@@ -5,6 +5,7 @@ from objectdetect2 import handler as objectdetect2
 from tag import handler as tag
 from opentelemetry.propagate import inject, extract
 import tracing
+from opentelemetry import trace
 
 LOADBALANCER_URL = f'http://{os.environ["NODE_IP"]}:8080'
 def get_headers(component):
@@ -18,7 +19,7 @@ if 'tracer' not in globals():
 
 def main(context: Context):
     forward_to = context.request.headers.get("X-Forward-To")
-    with tracer.start_as_current_span(f"start_{forward_to}", context=extract(context.request.headers)) as span:
+    with tracer.start_as_current_span(forward_to, links=trace.Link(extract(context.request.headers))) as span:
         next_component = ""
         event_out = {}
         match forward_to:

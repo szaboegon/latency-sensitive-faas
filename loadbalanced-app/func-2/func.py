@@ -5,6 +5,7 @@ from cut import handler as cut
 from grayscale import handler as grayscale
 from opentelemetry.propagate import inject, extract
 import tracing
+from opentelemetry import trace
 
 LOADBALANCER_URL = f'http://{os.environ["NODE_IP"]}:8080'
 if 'tracer' not in globals():
@@ -18,7 +19,8 @@ def get_headers(component):
 
 def main(context: Context):
     forward_to = context.request.headers.get("X-Forward-To")
-    with tracer.start_as_current_span(f"start_{forward_to}", context=extract(context.request.headers)) as span:
+    link = trace.Link(trace.get_current_span(extract(context.request.headers)).get_span_context())
+    with tracer.start_as_current_span(forward_to, links=[link]) as span:
         next_component = ""
         event_out = {}
         match forward_to:
