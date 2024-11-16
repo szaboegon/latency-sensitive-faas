@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -62,7 +63,7 @@ func ForwardHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	traceCtx := otel.ExtractTraceContext(r, context.Background())
-	_, span := tracer.Start(traceCtx, "forward-request")
+	_, span := tracer.Start(traceCtx, "forward_request", trace.WithAttributes(attribute.String("to.component", component)))
 	forwardReq := routing.Request{
 		ToComponent: routing.Component(component),
 		Body:        bodyBytes,
@@ -71,6 +72,10 @@ func ForwardHandler(w http.ResponseWriter, r *http.Request) {
 	go func(r routing.Request, span trace.Span) {
 		defer span.End()
 		route, err := router.RouteRequest(r)
+		span.AddEvent("routing_finished", trace.WithAttributes(
+			attribute.String("to.func", route.Name),
+			attribute.String("to.node", string(route.Node)),
+		))
 		if err != nil {
 			log.Printf("failed to route request to component: %v, err: %v", r.ToComponent, err)
 		} else {
