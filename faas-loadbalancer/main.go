@@ -63,7 +63,10 @@ func ForwardHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	traceCtx := otel.ExtractTraceContext(r, context.Background())
-	_, span := tracer.Start(traceCtx, "forward_request", trace.WithAttributes(attribute.String("to.component", component)))
+	_, span := tracer.Start(traceCtx, "forward_request",
+		trace.WithAttributes(attribute.String("to.component", component)),
+		trace.WithAttributes(attribute.String("current.node", string(node))),
+	)
 	forwardReq := routing.Request{
 		ToComponent: routing.Component(component),
 		Body:        bodyBytes,
