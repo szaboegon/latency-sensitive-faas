@@ -8,6 +8,11 @@ import tracing
 from opentelemetry import trace
 
 LOADBALANCER_URL = f'http://{os.environ["NODE_IP"]}:8080'
+HANDLERS = {
+    "objectdetect": objectdetect,
+    "objectdetect2": objectdetect2,
+}
+
 if 'tracer' not in globals():
     tracer = tracing.instrument_app("func-3")
     
@@ -23,32 +28,29 @@ def get_headers(component, span_context=None):
         inject(headers, context=span_context)
     return headers
 
-def handle_request(context, parent_context):
+def handle_request(context):
     """
     Handles the request by invoking the appropriate handler and preparing
     the next component's details.
     """
     forward_to = context.request.headers.get("X-Forward-To")
     if not forward_to:
-        return "", {}
+        return "", {}, None
 
-    with tracer.start_as_current_span(forward_to, context=parent_context) as span:
-        match forward_to:
-            case "objectdetect":
-                return objectdetect(context)
-            case "objectdetect2":
-                return objectdetect2(context)
-            case _:
-                return "", {}
+    with tracer.start_as_current_span(forward_to, context=extract(context.request.headers)) as span:
+        if forward_to in HANDLERS:
+            next_component, event_out = HANDLERS[forward_to](context)
+            return next_component, event_out, trace.set_span_in_context(span)
+        return None, {}, trace.set_span_in_context(span)
 
-def forward_request(next_component, event_out, parent_context):
+def forward_request(next_component, event_out, span_context):
     """
     Forwards the request to the load balancer if there is a next component.
     """
     if not next_component:
         return "ok", 200
 
-    headers = get_headers(next_component, parent_context)
+    headers = get_headers(next_component, span_context)
     response = requests.post(LOADBALANCER_URL, json=event_out, headers=headers)
     return response.text, 200
 
@@ -56,13 +58,7 @@ def main(context: Context):
     """
     Entry point of the function. Manages parent context and orchestrates the pipeline.
     """
-    parent_context = extract(context.request.headers)
-    if not parent_context:
-        with tracer.start_as_current_span("objectdetect_pipeline") as parent_span:
-            next_component, event_out = handle_request(context, trace.set_span_in_context(parent_span))
-            return forward_request(next_component, event_out, trace.set_span_in_context(parent_span))
-    else:
-        next_component, event_out = handle_request(context, parent_context)
-        return forward_request(next_component, event_out, parent_context)
+    next_component, event_out, span_context = handle_request(context)
+    return forward_request(next_component, event_out, span_context)
 
     
