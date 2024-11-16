@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/trace"
+	tracer "go.opentelemetry.io/otel/trace"
 )
 
 // setupOTelSDK bootstraps the OpenTelemetry pipeline.
@@ -74,6 +75,10 @@ func SetupOTelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 	return
 }
 
+func CreateTracer() tracer.Tracer {
+	return otel.GetTracerProvider().Tracer("faas-loadbalancer")
+}
+
 func WithOtelTransport(client *http.Client) *http.Client {
 	client.Transport = otelhttp.NewTransport(http.DefaultTransport)
 	return client
@@ -83,9 +88,9 @@ func InjectHeaders(req *http.Request, ctx context.Context) {
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(req.Header))
 }
 
-func ExtractTraceContext(r *http.Request) context.Context {
+func ExtractTraceContext(r *http.Request, context context.Context) context.Context {
 	propagator := otel.GetTextMapPropagator()
-	ctx := propagator.Extract(r.Context(), propagation.HeaderCarrier(r.Header))
+	ctx := propagator.Extract(context, propagation.HeaderCarrier(r.Header))
 	return ctx
 }
 

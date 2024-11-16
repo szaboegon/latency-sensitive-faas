@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,6 +18,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // envs
@@ -32,6 +32,7 @@ var node k8s.Node
 var metricsBackendAddr string
 
 var router routing.Router
+var tracer trace.Tracer
 
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
@@ -60,19 +61,22 @@ func ForwardHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	traceCtx := otel.ExtractTraceContext(r, context.Background())
+	_, span := tracer.Start(traceCtx, "forward-request")
 	forwardReq := routing.Request{
 		ToComponent: routing.Component(component),
 		Body:        bodyBytes,
-		Context:     otel.ExtractTraceContext(r),
+		Context:     traceCtx,
 	}
-
-	route, err := router.RouteRequest(forwardReq)
-	if err != nil {
-		log.Printf("failed to route request to component: %v, err: %v", forwardReq.ToComponent, err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	log.Printf("successfully routed request to component: %v, partition: %v, node: %v", forwardReq.ToComponent, route.Name, route.Node)
+	go func(r routing.Request, span trace.Span) {
+		defer span.End()
+		route, err := router.RouteRequest(r)
+		if err != nil {
+			log.Printf("failed to route request to component: %v, err: %v", r.ToComponent, err)
+		} else {
+			log.Printf("successfully routed request to component: %v, partition: %v, node: %v", r.ToComponent, route.Name, route.Node)
+		}
+	}(forwardReq, span)
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Ok"))
@@ -118,6 +122,7 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to initialize opentelemetry:", err)
 	}
+	tracer = otel.CreateTracer()
 
 	defer func() {
 		err = errors.Join(err, otelShutdown(context.Background()))
@@ -139,11 +144,11 @@ func main() {
 		log.Fatal("failed to create router component:", err)
 	}
 
-	s := &http.Server{
-		Addr:        ":8080",
-		BaseContext: func(_ net.Listener) context.Context { return ctx },
-		Handler:     newHTTPHanlder(),
-	}
+	s := &http.Server{Addr: ":8080"}
+	http.HandleFunc("/", ForwardHandler)
+	http.HandleFunc("/healthz", HealthCheckHandler)
+	http.HandleFunc("/test", TestHandler)
+
 	srvErr := make(chan error, 1)
 	go func() {
 		srvErr <- s.ListenAndServe()
