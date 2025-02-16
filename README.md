@@ -14,7 +14,7 @@
   2. Open the `cluster_setup.bat` script. You can set the number of nodes, and the CPU and memory reservations for each node using the variables at the top of the file. Unfortunately, ElasticSearch needs a lot of memory to function, so do not lower the memory limit too much.
   3. Run the `cluster_setup.bat` script and wait for it to finish. This will create the minikube cluster and start a tunnel for DNS services. Keep this terminal window open while using the cluster.
   4. Run the `elastic_with_eck_setup.bat` script (located in the same folder). This will setup the OpenTelemetry operator, the OpenTelemetry collector, and the required components from the Elastic stack. Once the script finishes it will also port forward Kibana to the local port `5601`, so you can reach it on localhost (keep this terminal window open aswell).
-  5. Check the `./tools` directory. Copy the `lsfunc.exe` binary to your desired location and add it to the PATH environment variable, so you can use it from the terminal.
+  5. Check the `./tools` directory. Extract the `lsfunc.zip` archive and copy the exe to your desired location and add it to the PATH environment variable, so you can use it from the terminal.
   6. Open a terminal and cd to the `./loadbalanced-app` directory. Run the `deploy.bat` script.
 
 
