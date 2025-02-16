@@ -5,6 +5,7 @@ set ES_CONFIG="elastic\elasticsearch.yaml"
 set KIBANA_CONFIG="elastic\kibana.yaml"
 set APM_SERVER_CONFIG="elastic\apmserver.yaml"
 set PYTHON_INSTRUMENTATION="otel\python_instrumentation.yaml"
+set LOADBALANCER_YAML_PATH="..\faas-loadbalancer\deploy\faas-loadbalancer.yaml"
 
 echo Creating observability namespace...
 kubectl create namespace observability
@@ -77,6 +78,13 @@ kubectl create secret generic -n observability elasticsearch-es-elastic-user --f
 kubectl apply -f %ES_CONFIG%
 kubectl apply -f %KIBANA_CONFIG%
 kubectl apply -f %APM_SERVER_CONFIG%
+
+echo Installing load balancer component
+kubectl apply -f %LOADBALANCER_YAML_PATH%
+if errorlevel 1 (
+    echo Failed to install loadbalancer component
+    exit /b 1
+)
 
 echo Port forwarding Kibana to local port 5601
 set MAX_RETRIES=50
