@@ -1,0 +1,58 @@
+[
+    {
+        "node": "node-1",
+        "components": 
+        [
+            {
+                "name": "imagegrab",
+                "next": ["resize"]
+            },
+            {
+                "name": "resize",
+                "next": ["grayscale"]
+            }
+        ]
+    },
+    {
+        "node": "node-2",
+        "components": 
+        [
+            {
+                "name": "grayscale",
+                "next": ["objectdetect"]
+            },
+            {
+                "name": "cut",
+                "next": ["objectdetect2"]
+            }
+        ]
+    },
+    {
+        "node": "node-2",
+        "components": 
+        [
+            {
+                "name": "objectdetect",
+                "next": ["cut"]
+            },
+            {
+                "name": "objectdetect2",
+                "next": ["tag"]
+            }
+        ]
+    },
+    {
+        "node": "node-3",
+        "components": 
+        [
+            {
+                "name": "objectdetect2",
+                "next": ["tag"]
+            },
+            {
+                "name": "tag",
+                "next": []
+            }
+        ]
+    }
+]

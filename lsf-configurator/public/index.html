@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Latency-sensitive FaaS</title>
+</head>
+<body>
+    <h2>Upload Components</h2>
+    <form action="/upload" method="POST" enctype="multipart/form-data">
+        <label for="files">Select files:</label>
+        <br><br>
+        <input type="file" id="files" name="files" multiple required>
+        <br><br>
+        <label for="jsonInput">Function composition schema:</label>
+        <br><br>
+        <textarea id="jsonInput" name="json" rows="4" cols="50" 
+        >
+[
+    {
+        "node": "",
+        "components": 
+        [
+            {
+                "name": "",
+                "next": []
+            }
+        ]
+    }
+]
+</textarea>
+        <br><br>
+        <button type="submit">Upload</button>
+    </form>
+</body>
+</html>
