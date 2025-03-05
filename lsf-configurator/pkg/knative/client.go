@@ -3,6 +3,7 @@ package knative
 import (
 	"context"
 	"log"
+	"lsf-configurator/pkg/bootstrapping"
 	"lsf-configurator/pkg/core"
 	"lsf-configurator/pkg/filesystem"
 	"path"
@@ -11,58 +12,65 @@ import (
 	fn "knative.dev/func/pkg/functions"
 )
 
+const CompositionTemplateName = "composition"
+
 type Client struct {
-	fnClient fn.Client
+	fnClient      *fn.Client
+	imageRegistry string
 }
 
-func NewClient() *Client {
+func NewClient(templateRepo, imageRegistry string) *Client {
+	fnClient := fn.New(fn.WithRepository(templateRepo))
+
 	return &Client{
-		fnClient: *fn.New(),
+		fnClient:      fnClient,
+		imageRegistry: imageRegistry,
 	}
 }
 
 func (c *Client) Build(ctx context.Context, fc core.FunctionComposition) (string, error) {
-	buildDir := createBuildDir(fc)
+	buildDir := createBuildDir(fc.SourcePath)
 
 	f := fn.Function{
 		Name:      fc.Id,
 		Namespace: "application",
-		Runtime:   "python",
-		Registry:  "registry.hub.docker.com/szaboegon",
+		Runtime:   fc.Runtime,
+		Registry:  c.imageRegistry,
 		Invoke:    "http",
 		Build: fn.BuildSpec{
 			Builder: "pack",
 		},
 		Root:     buildDir,
-		Template: "http", //TODO change to own template called "composition"
+		Template: CompositionTemplateName,
 	}
 
-	f, err := c.fnClient.Init(f)
+	_, err := c.fnClient.Init(f)
 	if err != nil {
 		log.Fatalf("Could not initialize function based on config: %v", err)
 	}
 
-	for _, comp := range fc.Components {
-		filesystem.CopyFileToDstFolder(path.Join(fc.SourcePath, comp.Name+".py"), buildDir)
+	bootstrapper, err := bootstrapping.NewBootstrapper(fc, buildDir)
+	if err != nil {
+		return "", err
 	}
 
-	//TODO write a script that extracts handlers from the files and imports them into the main file
-
-	//TODO the script should also discover all dependencies in these components and add them to the main requirements.txt file
+	err = bootstrapper.Setup()
+	if err != nil {
+		return "", err
+	}
 
 	f, err = c.fnClient.Build(ctx, f)
-
 	cleanUpBuildDir(buildDir)
 
-	return f.Image, err
+	return f.Build.Image, err
 }
 
 func (c *Client) Deploy(ctx context.Context, fc core.FunctionComposition) error {
 	return nil
 }
 
-func createBuildDir(fc core.FunctionComposition) string {
-	tempDir := path.Join(fc.SourcePath, "temp", uuid.New().String())
+func createBuildDir(sourcePath string) string {
+	tempDir := path.Join(sourcePath, "temp", uuid.New().String())
 	filesystem.CreateDir(tempDir)
 
 	return tempDir

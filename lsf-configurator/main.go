@@ -17,7 +17,9 @@ import (
 )
 
 const (
-	UploadDir = "uploads/apps"
+	UploadDir     = "uploads/apps"
+	TemplatesPath = "file:\\\\C:\\Users\\szabo\\source\\repos\\szaboegon\\latency-sensitive-faas\\lsf-configurator\\templates"
+	ImageRegistry = "registry.hub.docker.com/szaboegon"
 )
 
 var composer *core.Composer
@@ -72,7 +74,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	knClient := knative.NewClient()
+	knClient := knative.NewClient(TemplatesPath, ImageRegistry)
 	composer = core.NewComposer(knClient)
 	err := filesystem.CreateDir(UploadDir)
 	if err != nil {

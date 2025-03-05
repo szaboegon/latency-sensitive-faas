@@ -29,10 +29,10 @@ func SaveMultiPartFile(fileHeader *multipart.FileHeader, saveLocation string) er
 	return nil
 }
 
-func CopyFileToDstFolder(source string, dstFolder string) error {
+func CopyFileToDstFolder(source string, dstFolder string) (string, error) {
 	srcFile, err := os.Open(source)
 	if err != nil {
-		return fmt.Errorf("failed to open source file: %v", err)
+		return "", fmt.Errorf("failed to open source file: %v", err)
 	}
 	defer srcFile.Close()
 
@@ -41,16 +41,16 @@ func CopyFileToDstFolder(source string, dstFolder string) error {
 
 	dstFile, err := os.Create(destPath)
 	if err != nil {
-		return fmt.Errorf("failed to create destination file: %v", err)
+		return "", fmt.Errorf("failed to create destination file: %v", err)
 	}
 	defer dstFile.Close()
 
 	_, err = io.Copy(dstFile, srcFile)
 	if err != nil {
-		return fmt.Errorf("failed to copy file content: %v", err)
+		return "", fmt.Errorf("failed to copy file content: %v", err)
 	}
 
-	return nil
+	return destPath, nil
 }
 
 func CreateDir(path string) error {
@@ -63,4 +63,43 @@ func DeleteDir(path string) error {
 		return fmt.Errorf("failed to delete folder %s: %w", path, err)
 	}
 	return nil
+}
+
+func FileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || !os.IsNotExist(err)
+}
+
+func CopyFilesByNames(srcDir, destDir string, filenames []string, recursive bool) ([]string, error) {
+	var copiedFiles []string
+
+	filenameMap := make(map[string]bool, len(filenames))
+
+	for _, name := range filenames {
+		filenameMap[name] = true
+	}
+
+	err := filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !recursive && info.IsDir() && path != srcDir {
+			return filepath.SkipDir
+		}
+
+		if !info.IsDir() {
+			if _, ok := filenameMap[info.Name()]; ok {
+				resPath, err := CopyFileToDstFolder(path, destDir)
+				if err != nil {
+					return err
+				}
+				copiedFiles = append(copiedFiles, resPath)
+			}
+		}
+
+		return nil
+	})
+
+	return copiedFiles, err
 }

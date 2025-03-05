@@ -21,6 +21,7 @@ type FunctionComposition struct {
 	NameSpace  string      `json:"namespace"`
 	SourcePath string      `json:"-"`
 	Image      string      `json:"-"`
+	Runtime    string      `json:"runtime"`
 }
 
 type FunctionApp struct {

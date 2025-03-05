@@ -1,6 +1,7 @@
 [
     {
         "node": "node-1",
+        "runtime": "python",
         "components": 
         [
             {
@@ -15,6 +16,7 @@
     },
     {
         "node": "node-2",
+        "runtime": "python",
         "components": 
         [
             {
@@ -29,6 +31,7 @@
     },
     {
         "node": "node-2",
+        "runtime": "python",
         "components": 
         [
             {
@@ -43,6 +46,7 @@
     },
     {
         "node": "node-3",
+        "runtime": "python",
         "components": 
         [
             {

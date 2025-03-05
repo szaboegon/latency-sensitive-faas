@@ -1,4 +1,5 @@
 # Load testing report files
+lsf-configurator/uploads
 test-summary-report.xml
 apikey.json
 
