@@ -14,14 +14,19 @@ type Component struct {
 	Next []string `json:"next"`
 }
 
+type Build struct {
+	Image string `json:"-"`
+	Stamp string `json:"-"`
+}
+
 type FunctionComposition struct {
 	Id         string      `json:"-"`
 	Node       string      `json:"node,omitempty"`
 	Components []Component `json:"components"`
 	NameSpace  string      `json:"namespace"`
 	SourcePath string      `json:"-"`
-	Image      string      `json:"-"`
 	Runtime    string      `json:"runtime"`
+	Build
 }
 
 type FunctionApp struct {
@@ -30,7 +35,7 @@ type FunctionApp struct {
 }
 
 type KnClient interface {
-	Build(ctx context.Context, fc FunctionComposition) (string, error)
+	Build(ctx context.Context, fc FunctionComposition) (FunctionComposition, error)
 	Deploy(ctx context.Context, fc FunctionComposition) error
 }
 
@@ -92,6 +97,8 @@ func (c *Composer) scheduleBuildAndDeploy(fc FunctionComposition) {
 		log.Errorf("Build of function composition with id %v failed: %v", fc.Id, r.Err)
 		return
 	}
+	fc = r.Value.(FunctionComposition)
+	log.Infof("Successfully built function composition with id %v. Image: %v", fc.Id, fc.Build.Image)
 
 	resultChan = c.scheduler.AddTask(c.deployTask(fc))
 	r = <-resultChan
@@ -99,16 +106,16 @@ func (c *Composer) scheduleBuildAndDeploy(fc FunctionComposition) {
 		log.Errorf("Deploying of function composition with id %v failed: %v", fc.Id, r.Err)
 		return
 	}
+	log.Infof("Successfully deployed function composition with id %v", fc.Id)
 }
 
 func (c *Composer) buildTask(fc FunctionComposition) func() (interface{}, error) {
 	return func() (interface{}, error) {
-		builtImage, err := c.knClient.Build(context.TODO(), fc)
+		fc, err := c.knClient.Build(context.TODO(), fc)
 		if err != nil {
 			return nil, err
 		}
-		fc.Image = builtImage
-		return builtImage, err
+		return fc, err
 	}
 }
 

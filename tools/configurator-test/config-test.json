@@ -2,6 +2,7 @@
     {
         "node": "node-1",
         "runtime": "python",
+        "namespace": "application",
         "components": 
         [
             {
@@ -17,6 +18,7 @@
     {
         "node": "node-2",
         "runtime": "python",
+        "namespace": "application",
         "components": 
         [
             {
@@ -32,6 +34,7 @@
     {
         "node": "node-2",
         "runtime": "python",
+        "namespace": "application",
         "components": 
         [
             {
@@ -47,6 +50,7 @@
     {
         "node": "node-3",
         "runtime": "python",
+        "namespace": "application",
         "components": 
         [
             {

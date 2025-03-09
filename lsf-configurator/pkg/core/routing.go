@@ -1,4 +1,4 @@
-package routing
+package core
 
 type RouteConfigurator interface {
 }

@@ -2,6 +2,7 @@ package knative
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"lsf-configurator/pkg/bootstrapping"
 	"lsf-configurator/pkg/core"
@@ -28,12 +29,13 @@ func NewClient(templateRepo, imageRegistry string) *Client {
 	}
 }
 
-func (c *Client) Build(ctx context.Context, fc core.FunctionComposition) (string, error) {
+func (c *Client) Build(ctx context.Context, fc core.FunctionComposition) (core.FunctionComposition, error) {
 	buildDir := createBuildDir(fc.SourcePath)
+	defer cleanUpBuildDir(buildDir)
 
 	f := fn.Function{
 		Name:      fc.Id,
-		Namespace: "application",
+		Namespace: fc.NameSpace,
 		Runtime:   fc.Runtime,
 		Registry:  c.imageRegistry,
 		Invoke:    "http",
@@ -51,22 +53,50 @@ func (c *Client) Build(ctx context.Context, fc core.FunctionComposition) (string
 
 	bootstrapper, err := bootstrapping.NewBootstrapper(fc, buildDir)
 	if err != nil {
-		return "", err
+		return core.FunctionComposition{}, err
 	}
 
 	err = bootstrapper.Setup()
 	if err != nil {
-		return "", err
+		return core.FunctionComposition{}, err
 	}
 
 	f, err = c.fnClient.Build(ctx, f)
-	cleanUpBuildDir(buildDir)
+	if err != nil {
+		return core.FunctionComposition{}, err
+	}
 
-	return f.Build.Image, err
+	_, success, err := c.fnClient.Push(ctx, f) //TODO does not seem to push to my dockerhub :(
+	if err != nil {
+		return core.FunctionComposition{}, err
+	}
+
+	if !success {
+		return core.FunctionComposition{}, fmt.Errorf("failed to push image %v to registry %v", f.Build.Image, f.Registry)
+	}
+
+	fc.Build.Image = f.Build.Image
+	fc.Build.Stamp = f.BuildStamp()
+	return fc, nil
 }
 
 func (c *Client) Deploy(ctx context.Context, fc core.FunctionComposition) error {
-	return nil
+	f := fn.Function{ //TODO fix function is not built error
+		Name:      fc.Id,
+		Namespace: fc.NameSpace,
+		Deploy: fn.DeploySpec{
+			Image:     fc.Image,
+			NodeName:  fc.Node,
+			Namespace: fc.NameSpace,
+		},
+	}
+
+	if fc.Image == "" {
+		return fmt.Errorf("cannot deploy function %v, because it has no corresponding image", fc.Id)
+	}
+
+	_, err := c.fnClient.Deploy(ctx, f, fn.WithDeploySkipBuildCheck(true))
+	return err
 }
 
 func createBuildDir(sourcePath string) string {

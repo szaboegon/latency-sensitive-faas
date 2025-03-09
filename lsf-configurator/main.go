@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"lsf-configurator/pkg/core"
 	"lsf-configurator/pkg/filesystem"
@@ -20,6 +21,7 @@ const (
 	UploadDir     = "uploads/apps"
 	TemplatesPath = "file:\\\\C:\\Users\\szabo\\source\\repos\\szaboegon\\latency-sensitive-faas\\lsf-configurator\\templates"
 	ImageRegistry = "registry.hub.docker.com/szaboegon"
+	LogFile       = "app.log"
 )
 
 var composer *core.Composer
@@ -74,6 +76,9 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	logFile := configureLogging()
+	defer logFile.Close()
+
 	knClient := knative.NewClient(TemplatesPath, ImageRegistry)
 	composer = core.NewComposer(knClient)
 	err := filesystem.CreateDir(UploadDir)
@@ -113,4 +118,14 @@ func registerHandlers() {
 	http.HandleFunc("/upload", UploadHandler)
 	fs := http.FileServer(http.Dir("./public"))
 	http.Handle("/", fs)
+}
+
+func configureLogging() *os.File {
+	f, err := os.OpenFile(LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	wrt := io.MultiWriter(os.Stdout, f)
+	log.SetOutput(wrt)
+	return f
 }
