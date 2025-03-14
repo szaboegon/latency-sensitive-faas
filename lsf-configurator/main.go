@@ -74,7 +74,7 @@ func main() {
 	logFile := configureLogging()
 	defer logFile.Close()
 
-	conf := config.Init()
+	conf = config.Init()
 
 	knClient := knative.NewClient(conf.TemplatesPath, conf.ImageRegistry)
 	composer = core.NewComposer(knClient)

@@ -41,6 +41,14 @@ spec:
               port: 8080
             initialDelaySeconds: 3
             periodSeconds: 2
+          env:
+            - name: UPLOAD_DIR
+              value: "/uploads/apps"
+            - name: IMAGE_REGISTRY
+              value: "registry.hub.docker.com/szaboegon"
+            - name: TEMPLATES_PATH
+              value: "file://templates"
+
 ---
 apiVersion: v1
 kind: Service

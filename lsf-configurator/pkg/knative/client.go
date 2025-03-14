@@ -10,6 +10,8 @@ import (
 	"path"
 
 	"github.com/google/uuid"
+	builders "knative.dev/func/pkg/builders"
+	pack "knative.dev/func/pkg/builders/buildpacks"
 	fn "knative.dev/func/pkg/functions"
 )
 
@@ -21,7 +23,14 @@ type Client struct {
 }
 
 func NewClient(templateRepo, imageRegistry string) *Client {
-	fnClient := fn.New(fn.WithRepository(templateRepo))
+	o := []fn.Option{fn.WithRepository(templateRepo)}
+	o = append(o,
+		fn.WithBuilder(pack.NewBuilder(
+			pack.WithName(builders.Pack),
+			pack.WithTimestamp(true),
+			pack.WithVerbose(true))))
+
+	fnClient := fn.New(o...)
 
 	return &Client{
 		fnClient:      fnClient,
