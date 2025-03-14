@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"lsf-configurator/pkg/config"
 	"lsf-configurator/pkg/core"
 	"lsf-configurator/pkg/filesystem"
 	"lsf-configurator/pkg/knative"
@@ -17,14 +18,8 @@ import (
 	"time"
 )
 
-const (
-	UploadDir     = "uploads/apps"
-	TemplatesPath = "file:\\\\C:\\Users\\szabo\\source\\repos\\szaboegon\\latency-sensitive-faas\\lsf-configurator\\templates"
-	ImageRegistry = "registry.hub.docker.com/szaboegon"
-	LogFile       = "app.log"
-)
-
 var composer *core.Composer
+var conf config.Configuration
 
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
@@ -55,7 +50,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fcApp := composer.CreateFunctionApp()
-	appDir := filepath.Join(UploadDir, fcApp.Id)
+	appDir := filepath.Join(conf.UploadDir, fcApp.Id)
 
 	err := filesystem.CreateDir(appDir)
 	if err != nil {
@@ -79,9 +74,11 @@ func main() {
 	logFile := configureLogging()
 	defer logFile.Close()
 
-	knClient := knative.NewClient(TemplatesPath, ImageRegistry)
+	conf := config.Init()
+
+	knClient := knative.NewClient(conf.TemplatesPath, conf.ImageRegistry)
 	composer = core.NewComposer(knClient)
-	err := filesystem.CreateDir(UploadDir)
+	err := filesystem.CreateDir(conf.UploadDir)
 	if err != nil {
 		log.Fatalf("Could not create uploads directory: %v", err)
 	}
@@ -100,7 +97,7 @@ func main() {
 }
 
 func startHttpServer() *http.Server {
-	s := &http.Server{Addr: ":8080"}
+	s := &http.Server{Addr: "0.0.0.0:8080"}
 	registerHandlers()
 
 	go func() {
@@ -121,7 +118,7 @@ func registerHandlers() {
 }
 
 func configureLogging() *os.File {
-	f, err := os.OpenFile(LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	f, err := os.OpenFile("app.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening file: %v", err)
 	}
