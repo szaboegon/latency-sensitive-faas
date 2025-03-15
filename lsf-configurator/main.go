@@ -76,7 +76,7 @@ func main() {
 
 	conf = config.Init()
 
-	knClient := knative.NewClient(conf.TemplatesPath, conf.ImageRegistry)
+	knClient := knative.NewClient(conf.TemplatesPath, conf.ImageRegistry, conf.RegistryUser, conf.RegistryPassword)
 	composer = core.NewComposer(knClient)
 	err := filesystem.CreateDir(conf.UploadDir)
 	if err != nil {

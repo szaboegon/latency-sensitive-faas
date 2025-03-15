@@ -26,6 +26,8 @@ spec:
       containers:
         - name: lsf-configurator
           image: szaboegon/lsf-configurator:latest
+          securityContext:
+            privileged: true
           ports:
             - containerPort: 8080
           resources:
@@ -48,7 +50,16 @@ spec:
               value: "registry.hub.docker.com/szaboegon"
             - name: TEMPLATES_PATH
               value: "file://templates"
-
+            - name: REGISTRY_USER
+              valueFrom:
+                secretKeyRef:
+                  name: registry-secret
+                  key: REGISTRY_USER
+            - name: REGISTRY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: registry-secret
+                  key: REGISTRY_PASSWORD
 ---
 apiVersion: v1
 kind: Service
