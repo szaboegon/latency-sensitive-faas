@@ -129,5 +129,5 @@ func uniqueId(appId string, compNames []string) string {
 	sort.Strings(compNames)
 	compId := strings.Join(compNames, "-")
 
-	return appId + "-" + compId
+	return compId + "-" + appId
 }

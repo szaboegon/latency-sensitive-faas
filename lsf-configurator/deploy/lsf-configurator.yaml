@@ -1,11 +1,48 @@
-# add this to knative
-# https://stackoverflow.com/questions/56563425/how-to-communicate-with-daemonset-pod-from-another-pod-in-the-same-node
 apiVersion: v1
 kind: Namespace
 metadata:
   name: configurator
   labels:
     name: configurator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: configurator-role
+rules:
+  # Knative Serving API
+  - apiGroups: ["serving.knative.dev"]
+    resources: ["*"]
+    verbs: ["*"]
+
+  # Kubernetes Core API (pods, services, configmaps, secrets, etc.)
+  - apiGroups: [""]
+    resources: ["pods", "services"]
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
+
+  # Kubernetes Apps API (deployments, statefulsets, daemonsets)
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets", "daemonsets"]
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: configurator-sa
+  namespace: configurator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: configurator-rolebinding
+subjects:
+  - kind: ServiceAccount
+    name: configurator-sa  
+    namespace: configurator
+roleRef:
+  kind: ClusterRole
+  name: configurator-role
+  apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -22,6 +59,7 @@ spec:
       labels:
         app: lsf-configurator
     spec:
+      serviceAccountName: configurator-sa
       terminationGracePeriodSeconds: 300
       containers:
         - name: lsf-configurator
