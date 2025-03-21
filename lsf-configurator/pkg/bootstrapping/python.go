@@ -53,7 +53,7 @@ func (b *PythonBootstrapper) Setup() error {
 		return err
 	}
 
-	return modifyMain(b.buildDir, componentNames)
+	return modifyMain(b.buildDir, b.fc.Id, componentNames)
 }
 
 func mergeRequirements(existingFile, newFile string) error {
@@ -129,7 +129,10 @@ func hasHandlerFunction(filePath string) (bool, error) {
 	return handlerRegex.Match(content), nil
 }
 
-func modifyMain(buildDir string, componentNames []string) error {
+func modifyMain(buildDir, funcName string, componentNames []string) error {
+	const functionNameStr = "FUNCTION_NAME ="
+	const handlersStr = "HANDLERS = {"
+
 	mainFilePath := path.Join(buildDir, MainFile+Extension)
 	content, err := os.ReadFile(mainFilePath)
 	if err != nil {
@@ -152,9 +155,14 @@ func modifyMain(buildDir string, componentNames []string) error {
 			}
 		}
 
-		if strings.Contains(line, "HANDLERS = {") {
+		if strings.Contains(line, functionNameStr) {
+			modifiedContent = append(modifiedContent, fmt.Sprintf("%s\"%s\"", functionNameStr, funcName))
+			continue
+		}
+
+		if strings.Contains(line, handlersStr) {
 			handlersSection = true
-			modifiedContent = append(modifiedContent, "HANDLERS = {")
+			modifiedContent = append(modifiedContent, handlersStr)
 			for _, component := range componentNames {
 				modifiedContent = append(modifiedContent, fmt.Sprintf("        \"%s\" : %s,", component, component))
 			}
