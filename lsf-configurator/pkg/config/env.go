@@ -15,6 +15,7 @@ type Configuration struct {
 	ImageRegistry    string `env:"IMAGE_REGISTRY"`
 	RegistryUser     string `env:"REGISTRY_USER"`
 	RegistryPassword string `env:"REGISTRY_PASSWORD"`
+	BuilderImage     string `env:"BUILDER_IMAGE"`
 }
 
 func Init() Configuration {

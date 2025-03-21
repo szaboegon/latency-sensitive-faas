@@ -88,6 +88,8 @@ spec:
               value: "registry.hub.docker.com/szaboegon"
             - name: TEMPLATES_PATH
               value: "file://templates"
+            - name: BUILDER_IMAGE
+              value: "docker.io/paketobuildpacks/builder-jammy-base"
             - name: REGISTRY_USER
               valueFrom:
                 secretKeyRef:

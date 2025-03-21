@@ -8,6 +8,7 @@ import (
 	"log"
 	"lsf-configurator/pkg/config"
 	"lsf-configurator/pkg/core"
+	"lsf-configurator/pkg/docker"
 	"lsf-configurator/pkg/filesystem"
 	"lsf-configurator/pkg/knative"
 	"net/http"
@@ -20,6 +21,7 @@ import (
 
 var composer *core.Composer
 var conf config.Configuration
+var puller docker.ImagePuller
 
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
@@ -76,9 +78,16 @@ func main() {
 
 	conf = config.Init()
 
-	knClient := knative.NewClient(conf.TemplatesPath, conf.ImageRegistry, conf.RegistryUser, conf.RegistryPassword)
+	var err error
+	puller, err = docker.NewImagePuller()
+	if err != nil {
+		log.Fatal("failed to create image puller: ", err)
+	}
+	puller.PullImage(context.Background(), conf.BuilderImage)
+
+	knClient := knative.NewClient(conf)
 	composer = core.NewComposer(knClient)
-	err := filesystem.CreateDir(conf.UploadDir)
+	err = filesystem.CreateDir(conf.UploadDir)
 	if err != nil {
 		log.Fatalf("Could not create uploads directory: %v", err)
 	}

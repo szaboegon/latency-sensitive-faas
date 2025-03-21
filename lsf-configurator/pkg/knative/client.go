@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"lsf-configurator/pkg/bootstrapping"
+	"lsf-configurator/pkg/config"
 	"lsf-configurator/pkg/core"
 	"lsf-configurator/pkg/filesystem"
 	"path"
@@ -24,11 +25,12 @@ const CompositionTemplateName = "composition"
 type Client struct {
 	fnClient      *fn.Client
 	imageRegistry string
+	builderImages map[string]string
 }
 
-func NewClient(templateRepo, imageRegistry, registryUser, registryPassword string) *Client {
-	o := []fn.Option{fn.WithRepository(templateRepo)}
-	c := NewCredentialsProvider(registryUser, registryPassword)
+func NewClient(conf config.Configuration) *Client {
+	o := []fn.Option{fn.WithRepository(conf.TemplatesPath)}
+	c := NewCredentialsProvider(conf.RegistryUser, conf.RegistryPassword)
 
 	o = append(o,
 		fn.WithBuilder(pack.NewBuilder(
@@ -49,7 +51,10 @@ func NewClient(templateRepo, imageRegistry, registryUser, registryPassword strin
 
 	return &Client{
 		fnClient:      fnClient,
-		imageRegistry: imageRegistry,
+		imageRegistry: conf.ImageRegistry,
+		builderImages: map[string]string{
+			"pack": conf.BuilderImage,
+		},
 	}
 }
 
@@ -63,14 +68,17 @@ func (c *Client) Build(ctx context.Context, fc core.FunctionComposition) (core.F
 		Runtime:   fc.Runtime,
 		Registry:  c.imageRegistry,
 		Invoke:    "http",
+		Root:      buildDir,
+		Template:  CompositionTemplateName,
 		Build: fn.BuildSpec{
 			Builder: "pack",
+			BuilderImages: map[string]string{
+				"pack": c.builderImages["pack"],
+			},
 		},
-		Root:     buildDir,
-		Template: CompositionTemplateName,
 	}
 
-	_, err := c.fnClient.Init(f)
+	f, err := c.fnClient.Init(f)
 	if err != nil {
 		log.Fatalf("Could not initialize function based on config: %v", err)
 	}
@@ -90,7 +98,7 @@ func (c *Client) Build(ctx context.Context, fc core.FunctionComposition) (core.F
 		return core.FunctionComposition{}, err
 	}
 
-	_, success, err := c.fnClient.Push(ctx, f) //TODO does not seem to push to my dockerhub :(
+	f, success, err := c.fnClient.Push(ctx, f) //TODO does not seem to push to my dockerhub :(
 	if err != nil {
 		return core.FunctionComposition{}, err
 	}
@@ -108,6 +116,8 @@ func (c *Client) Deploy(ctx context.Context, fc core.FunctionComposition) error 
 	f := fn.Function{ //TODO fix function is not built error
 		Name:      fc.Id,
 		Namespace: fc.NameSpace,
+		Runtime:   fc.Runtime,
+		Image:     fc.Image,
 		Deploy: fn.DeploySpec{
 			Image:     fc.Image,
 			NodeName:  fc.Node,
