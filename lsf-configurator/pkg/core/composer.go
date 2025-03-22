@@ -9,31 +9,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type Component struct {
-	Name string   `json:"name"`
-	Next []string `json:"next"`
-}
-
-type Build struct {
-	Image string `json:"-"`
-	Stamp string `json:"-"`
-}
-
-type FunctionComposition struct {
-	Id         string      `json:"-"`
-	Node       string      `json:"node,omitempty"`
-	Components []Component `json:"components"`
-	NameSpace  string      `json:"namespace"`
-	SourcePath string      `json:"-"`
-	Runtime    string      `json:"runtime"`
-	Build
-}
-
-type FunctionApp struct {
-	Id           string
-	Compositions map[string]*FunctionComposition
-}
-
 type KnClient interface {
 	Build(ctx context.Context, fc FunctionComposition) (FunctionComposition, error)
 	Deploy(ctx context.Context, fc FunctionComposition) error
