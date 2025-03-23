@@ -5,9 +5,7 @@ import (
 	"log"
 	"lsf-configurator/pkg/config"
 	"lsf-configurator/pkg/core"
-	"lsf-configurator/pkg/filesystem"
 	"net/http"
-	"path/filepath"
 )
 
 const (
@@ -27,7 +25,8 @@ func NewHandlerApps(composer core.Composer, conf config.Configuration) *HandlerA
 		mux:      http.NewServeMux(),
 	}
 
-	h.mux.HandleFunc(AppsPath+"create", h.create)
+	h.mux.HandleFunc("POST "+AppsPath+"create", h.create)
+	h.mux.HandleFunc("PUT "+AppsPath+"{id}/routing_rules", h.putRoutingRules)
 
 	return h
 }
@@ -59,23 +58,30 @@ func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fcApp := h.composer.CreateFunctionApp()
-	appDir := filepath.Join(h.conf.UploadDir, fcApp.Id)
-
-	err := filesystem.CreateDir(appDir)
+	_, err := h.composer.CreateFunctionApp(h.conf.UploadDir, files, fcs)
 	if err != nil {
-		http.Error(w, "Could not create directory for app files", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	for _, fileHeader := range files {
-		err := filesystem.SaveMultiPartFile(fileHeader, appDir)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *HandlerApps) putRoutingRules(w http.ResponseWriter, r *http.Request) {
+	appId := r.PathValue("id")
+
+	jsonStr := r.FormValue("json")
+	var rt core.RoutingTable
+	if err := json.Unmarshal([]byte(jsonStr), &rt); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
 	}
 
-	for _, fc := range fcs {
-		fc.SourcePath = appDir
-		h.composer.AddFunctionComposition(fcApp.Id, fc)
+	err := h.composer.SetRoutingTable(appId, rt)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 }

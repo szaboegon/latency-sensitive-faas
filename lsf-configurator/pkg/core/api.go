@@ -3,7 +3,7 @@ package core
 type FunctionApp struct {
 	Id           string
 	Compositions map[string]*FunctionComposition
-	RoutingRules map[*Component]*RoutingRule
+	RoutingTable RoutingTable
 }
 
 type FunctionComposition struct {
@@ -51,3 +51,5 @@ type RoutingRule struct {
 	Single *SingleRoute `json:"single,omitempty"`
 	Multi  *MultiRoute  `json:"multi,omitempty"`
 }
+
+type RoutingTable map[*Component]*RoutingRule

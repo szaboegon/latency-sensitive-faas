@@ -2,6 +2,10 @@ package core
 
 import (
 	"context"
+	"fmt"
+	"lsf-configurator/pkg/filesystem"
+	"mime/multipart"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -15,7 +19,7 @@ type KnClient interface {
 }
 
 type Composer struct {
-	Apps      map[string]*FunctionApp
+	apps      map[string]*FunctionApp
 	knClient  KnClient
 	scheduler Scheduler
 }
@@ -23,25 +27,45 @@ type Composer struct {
 func NewComposer(knClient KnClient) *Composer {
 	scheduler := NewScheduler(100, 200)
 	return &Composer{
-		Apps:      make(map[string]*FunctionApp),
+		apps:      make(map[string]*FunctionApp),
 		knClient:  knClient,
 		scheduler: scheduler,
 	}
 }
 
-func (c *Composer) CreateFunctionApp() *FunctionApp {
+func (c *Composer) CreateFunctionApp(uploadDir string, files []*multipart.FileHeader, fcs []FunctionComposition) (*FunctionApp, error) {
 	id := uuid.New().String()
 	fcApp := FunctionApp{
 		Id:           id,
 		Compositions: make(map[string]*FunctionComposition),
+		RoutingTable: make(RoutingTable),
 	}
 
-	c.Apps[id] = &fcApp
-	return &fcApp
+	c.apps[id] = &fcApp
+	appDir := filepath.Join(uploadDir, fcApp.Id)
+
+	err := filesystem.CreateDir(appDir)
+	if err != nil {
+		return nil, fmt.Errorf("could not create directory for app files: %s", err.Error())
+	}
+
+	for _, fileHeader := range files {
+		err := filesystem.SaveMultiPartFile(fileHeader, appDir)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for _, fc := range fcs {
+		fc.SourcePath = appDir
+		c.AddFunctionComposition(fcApp.Id, fc)
+	}
+
+	return &fcApp, nil
 }
 
 func (c *Composer) AddFunctionComposition(appId string, fc FunctionComposition) {
-	app, ok := c.Apps[appId]
+	app, ok := c.apps[appId]
 	if !ok {
 		log.Error("App with id not found")
 		return
@@ -59,9 +83,19 @@ func (c *Composer) AddFunctionComposition(appId string, fc FunctionComposition) 
 
 	fc.Id = id
 	app.Compositions[id] = &fc
-	c.Apps[appId] = app
+	c.apps[appId] = app
 
 	go c.scheduleBuildAndDeploy(fc)
+}
+
+func (c *Composer) SetRoutingTable(appId string, table RoutingTable) error {
+	app, ok := c.apps[appId]
+	if !ok {
+		return fmt.Errorf("function app with id %s does not exist", appId)
+	}
+
+	app.RoutingTable = table
+	return nil
 }
 
 func (c *Composer) scheduleBuildAndDeploy(fc FunctionComposition) {
