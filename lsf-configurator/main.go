@@ -8,6 +8,7 @@ import (
 	"lsf-configurator/api"
 	"lsf-configurator/pkg/config"
 	"lsf-configurator/pkg/core"
+	"lsf-configurator/pkg/core/db"
 	"lsf-configurator/pkg/docker"
 	"lsf-configurator/pkg/filesystem"
 	"lsf-configurator/pkg/knative"
@@ -35,8 +36,9 @@ func main() {
 	}
 	puller.PullImage(context.Background(), conf.BuilderImage)
 
+	store := db.NewKvFunctionAppStore()
 	knClient := knative.NewClient(conf)
-	composer = core.NewComposer(knClient)
+	composer = core.NewComposer(store, knClient)
 	err = filesystem.CreateDir(conf.UploadDir)
 	if err != nil {
 		log.Fatalf("Could not create uploads directory: %v", err)

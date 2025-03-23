@@ -1,5 +1,7 @@
 package core
 
+import "context"
+
 type FunctionApp struct {
 	Id           string
 	Compositions map[string]*FunctionComposition
@@ -53,3 +55,14 @@ type RoutingRule struct {
 }
 
 type RoutingTable map[*Component]*RoutingRule
+
+type KnClient interface {
+	Build(ctx context.Context, fc FunctionComposition) (FunctionComposition, error)
+	Deploy(ctx context.Context, fc FunctionComposition) error
+}
+
+type FunctionAppStore interface {
+	Set(id string, app FunctionApp)
+	Get(id string) (FunctionApp, error)
+	Delete(id string)
+}

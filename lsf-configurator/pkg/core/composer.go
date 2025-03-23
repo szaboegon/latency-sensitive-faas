@@ -13,21 +13,16 @@ import (
 	"github.com/google/uuid"
 )
 
-type KnClient interface {
-	Build(ctx context.Context, fc FunctionComposition) (FunctionComposition, error)
-	Deploy(ctx context.Context, fc FunctionComposition) error
-}
-
 type Composer struct {
-	apps      map[string]*FunctionApp
+	db        FunctionAppStore
 	knClient  KnClient
 	scheduler Scheduler
 }
 
-func NewComposer(knClient KnClient) *Composer {
+func NewComposer(db FunctionAppStore, knClient KnClient) *Composer {
 	scheduler := NewScheduler(100, 200)
 	return &Composer{
-		apps:      make(map[string]*FunctionApp),
+		db:        db,
 		knClient:  knClient,
 		scheduler: scheduler,
 	}
@@ -41,7 +36,7 @@ func (c *Composer) CreateFunctionApp(uploadDir string, files []*multipart.FileHe
 		RoutingTable: make(RoutingTable),
 	}
 
-	c.apps[id] = &fcApp
+	c.db.Set(id, fcApp)
 	appDir := filepath.Join(uploadDir, fcApp.Id)
 
 	err := filesystem.CreateDir(appDir)
@@ -64,37 +59,39 @@ func (c *Composer) CreateFunctionApp(uploadDir string, files []*multipart.FileHe
 	return &fcApp, nil
 }
 
-func (c *Composer) AddFunctionComposition(appId string, fc FunctionComposition) {
-	app, ok := c.apps[appId]
-	if !ok {
-		log.Error("App with id not found")
-		return
+func (c *Composer) AddFunctionComposition(appId string, fc FunctionComposition) error {
+	app, err := c.db.Get(appId)
+	if err != nil {
+		return fmt.Errorf("app with id %s not found", appId)
 	}
 
 	var compNames []string
 	for _, comp := range fc.Components {
 		compNames = append(compNames, comp.Name)
 	}
-	id := uniqueId(app.Id, compNames)
-	_, ok = app.Compositions[id]
-	if ok {
-		return
+
+	id := uniqueId(app.Id, fc.Node, compNames)
+	// function composition is already part of the application
+	if _, ok := app.Compositions[id]; ok {
+		return nil
 	}
 
 	fc.Id = id
 	app.Compositions[id] = &fc
-	c.apps[appId] = app
+	c.db.Set(appId, app)
 
 	go c.scheduleBuildAndDeploy(fc)
+	return nil
 }
 
 func (c *Composer) SetRoutingTable(appId string, table RoutingTable) error {
-	app, ok := c.apps[appId]
-	if !ok {
+	app, err := c.db.Get(appId)
+	if err != nil {
 		return fmt.Errorf("function app with id %s does not exist", appId)
 	}
 
 	app.RoutingTable = table
+	c.db.Set(appId, app)
 	return nil
 }
 
@@ -134,9 +131,9 @@ func (c *Composer) deployTask(fc FunctionComposition) func() (interface{}, error
 	}
 }
 
-func uniqueId(appId string, compNames []string) string {
+func uniqueId(appId, node string, compNames []string) string {
 	sort.Strings(compNames)
 	compId := strings.Join(compNames, "-")
 
-	return compId + "-" + appId
+	return compId + "-" + appId + "-" + node
 }
