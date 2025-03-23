@@ -3,6 +3,7 @@ package core
 type FunctionApp struct {
 	Id           string
 	Compositions map[string]*FunctionComposition
+	RoutingRules map[*Component]*RoutingRule
 }
 
 type FunctionComposition struct {
@@ -16,9 +17,8 @@ type FunctionComposition struct {
 }
 
 type Component struct {
-	Name        string      `json:"name"`
-	Next        []string    `json:"next"`
-	RoutingRule RoutingRule `json:"-"`
+	Name string   `json:"name"`
+	Next []string `json:"next"`
 }
 
 type Build struct {
@@ -26,5 +26,28 @@ type Build struct {
 	Stamp string `json:"-"`
 }
 
+type RuleType string
+
+const (
+	SingleForward RuleType = "single"
+	MultiForward  RuleType = "multi"
+)
+
+type SingleRoute struct {
+	Target string `json:"target"`
+}
+
+type MultiRoute struct {
+	Targets []WeightedTarget `json:"targets"`
+}
+
+type WeightedTarget struct {
+	Target string  `json:"target"`
+	Weight float64 `json:"weight"` // Percentage (0-100)
+}
+
 type RoutingRule struct {
+	Type   RuleType     `json:"type"`
+	Single *SingleRoute `json:"single,omitempty"`
+	Multi  *MultiRoute  `json:"multi,omitempty"`
 }
