@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 	"lsf-configurator/pkg/filesystem"
+	"lsf-configurator/pkg/uuid"
 	"mime/multipart"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/apex/log"
-	"github.com/google/uuid"
 )
 
 type Composer struct {
@@ -29,7 +29,7 @@ func NewComposer(db FunctionAppStore, knClient KnClient) *Composer {
 }
 
 func (c *Composer) CreateFunctionApp(uploadDir string, files []*multipart.FileHeader, fcs []FunctionComposition) (*FunctionApp, error) {
-	id := uuid.New().String()
+	id := uuid.New()
 	fcApp := FunctionApp{
 		Id:           id,
 		Compositions: make(map[string]*FunctionComposition),

@@ -8,11 +8,11 @@ import (
 	"lsf-configurator/pkg/config"
 	"lsf-configurator/pkg/core"
 	"lsf-configurator/pkg/filesystem"
+	"lsf-configurator/pkg/uuid"
 	"path"
 
 	http "net/http"
 
-	"github.com/google/uuid"
 	builders "knative.dev/func/pkg/builders"
 	pack "knative.dev/func/pkg/builders/buildpacks"
 	docker "knative.dev/func/pkg/docker"
@@ -21,6 +21,8 @@ import (
 )
 
 const CompositionTemplateName = "composition"
+
+//var DefaultScaleMetric string = "concurrency"
 
 type Client struct {
 	fnClient      *fn.Client
@@ -45,7 +47,8 @@ func NewClient(conf config.Configuration) *Client {
 			docker.WithVerbose(true))))
 
 	o = append(o,
-		fn.WithDeployer(knativefunc.NewDeployer()))
+		fn.WithDeployer(knativefunc.NewDeployer(
+			knativefunc.WithDeployerVerbose(true))))
 
 	fnClient := fn.New(o...)
 
@@ -119,8 +122,10 @@ func (c *Client) Deploy(ctx context.Context, fc core.FunctionComposition) error 
 		Runtime:   fc.Runtime,
 		Image:     fc.Image,
 		Deploy: fn.DeploySpec{
-			Image:     fc.Image,
-			NodeName:  fc.Node,
+			Image: fc.Image,
+			NodeAffinity: fn.NodeAffinity{
+				RequiredNodes: []string{fc.Node},
+			},
 			Namespace: fc.NameSpace,
 		},
 	}
@@ -134,7 +139,7 @@ func (c *Client) Deploy(ctx context.Context, fc core.FunctionComposition) error 
 }
 
 func createBuildDir(sourcePath string) string {
-	tempDir := path.Join(sourcePath, "temp", uuid.New().String())
+	tempDir := path.Join(sourcePath, "temp", uuid.New())
 	filesystem.CreateDir(tempDir)
 
 	return tempDir
