@@ -26,7 +26,7 @@ func NewHandlerApps(composer core.Composer, conf config.Configuration) *HandlerA
 	}
 
 	h.mux.HandleFunc("POST "+AppsPath+"create", h.create)
-	h.mux.HandleFunc("PUT "+AppsPath+"{id}/routing_rules", h.putRoutingRules)
+	h.mux.HandleFunc("PUT "+AppsPath+"{id}/routing_table", h.putRoutingTable)
 
 	return h
 }
@@ -67,7 +67,7 @@ func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *HandlerApps) putRoutingRules(w http.ResponseWriter, r *http.Request) {
+func (h *HandlerApps) putRoutingTable(w http.ResponseWriter, r *http.Request) {
 	appId := r.PathValue("id")
 
 	jsonStr := r.FormValue("json")

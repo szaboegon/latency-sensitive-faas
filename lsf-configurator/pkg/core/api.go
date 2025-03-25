@@ -54,7 +54,8 @@ type RoutingRule struct {
 	Multi  *MultiRoute  `json:"multi,omitempty"`
 }
 
-type RoutingTable map[*Component]*RoutingRule
+type ComponentName string
+type RoutingTable map[ComponentName]*RoutingRule
 
 type KnClient interface {
 	Build(ctx context.Context, fc FunctionComposition) (FunctionComposition, error)
@@ -65,4 +66,8 @@ type FunctionAppStore interface {
 	Set(id string, app FunctionApp)
 	Get(id string) (FunctionApp, error)
 	Delete(id string)
+}
+
+type RoutingClient interface {
+	SetRoutingTable(appId string, rt RoutingTable) error
 }
