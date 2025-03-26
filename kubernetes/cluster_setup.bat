@@ -4,10 +4,8 @@ set MEMORY_LIMIT="6g"
 set CPUS=4
 
 set SERVING_YAML_PATH="knative\serving.yaml"
-set EVENTING_YAML_PATH="knative\eventing.yaml"
 set SCALE_CONFIG_PATH="knative\disable_scale_to_zero.yaml"
 set APP_NAMESPACE_PATH="otel\application_namespace.yaml"
-set SERVING_FEATURES_CONFIG_PATH="knative\serving_features.yaml"
 
 echo %cd%
 echo Starting minikube cluster with %NUM_NODES% nodes...
@@ -64,13 +62,6 @@ if errorlevel 1 (
     exit /b 1
 )
 
-@REM echo Installing knative eventing component...
-@REM kubectl apply -f %EVENTING_YAML_PATH%
-@REM if errorlevel 1 (
-@REM     echo Failed to install eventing component.
-@REM     exit /b 1
-@REM )
-
 kubectl apply -f %SCALE_CONFIG_PATH%
 if errorlevel 1 (
     echo Failed to modify knative scale config.
@@ -80,12 +71,6 @@ if errorlevel 1 (
 kubectl apply -f %APP_NAMESPACE_PATH%
 if errorlevel 1 (
     echo Failed to create namespace 'application'.
-    exit /b 1
-)
-
-kubectl apply -f %SERVING_FEATURES_CONFIG_PATH%
-if errorlevel 1 (
-    echo Failed to apply serving features yaml.
     exit /b 1
 )
 

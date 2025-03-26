@@ -1,6 +1,4 @@
 @echo off
-set SERVING_FEATURES_CONFIG_PATH="..\kubernetes\knative\serving_features.yaml"
-kubectl apply -f %SERVING_FEATURES_CONFIG_PATH%
 
 cd .\func-1
 lsfunc deploy -v 

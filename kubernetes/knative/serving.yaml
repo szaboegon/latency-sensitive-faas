@@ -8,3 +8,12 @@ kind: KnativeServing
 metadata:
   name: knative-serving
   namespace: knative-serving
+spec:
+  config:
+    features:
+      kubernetes.podspec-affinity: "enabled"
+      kubernetes.podspec-nodeselector: "enabled"
+      kubernetes.podspec-fieldref: "enabled"
+
+
+
