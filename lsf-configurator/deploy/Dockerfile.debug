@@ -28,4 +28,4 @@ COPY --from=build /app/.env /.env
 EXPOSE 8080 2345
 
 # Run the application with Delve for remote debugging
-CMD ["dlv", "--listen=:2345", "--headless=true", "--api-version=2", "--accept-multiclient", "exec", "/lsf-configurator","--continue"]
+CMD ["dlv", "--listen=:2345", "--headless=true", "--api-version=2", "--accept-multiclient", "--log", "exec", "/lsf-configurator","--continue"]

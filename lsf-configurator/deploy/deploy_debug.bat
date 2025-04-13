@@ -19,5 +19,6 @@ if errorlevel 1 (
 )
 
 kubectl rollout restart -n configurator deployment lsf-configurator-deployment
-timeout /t 30 /nobreak > nul
-kubectl port-forward service/lsf-configurator-service 8081:80 -n configurator 
+
+rem kubectl port-forward service/lsf-configurator-service 8081:80 -n configurator
+rem kubectl port-forward pods/lsf-configurator-deployment-789bb874b8-4vhs8 8081:8080 2345:2345 -n configurator 

@@ -68,6 +68,9 @@ spec:
             privileged: true
           ports:
             - containerPort: 8080
+              name: app
+            - containerPort: 2345
+              name: debug
           resources:
             requests:
               cpu: "100m"
@@ -79,7 +82,7 @@ spec:
             httpGet:
               path: /healthz
               port: 8080
-            initialDelaySeconds: 3
+            initialDelaySeconds: 15
             periodSeconds: 2
           env:
             - name: UPLOAD_DIR
@@ -113,7 +116,6 @@ spec:
   ports:
   - port: 80
     targetPort: 8080
-    nodePort: 30001
 
 
   

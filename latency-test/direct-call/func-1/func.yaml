@@ -1,0 +1,21 @@
+specVersion: 0.36.0
+name: func-1-direct
+runtime: python
+registry: registry.hub.docker.com/szaboegon
+namespace: application
+created: 2024-10-20T09:45:41.7239557+02:00
+invoke: http
+build:
+  builder: pack
+deploy:
+  namespace: application
+  image: registry.hub.docker.com/szaboegon/func-1-direct@sha256:6a100dbb0b233a294cbf5f494a5ca5e61168ab35ec78790504a96530f16f350d
+  options:
+    scale:
+      min: 1
+      max: 10
+      metric: concurrency
+      target: 1
+  nodeAffinity:
+    requiredNodes:
+    - knative
