@@ -1,0 +1,19 @@
+specVersion: 0.36.0
+name: func-1-watcher
+runtime: python
+registry: registry.hub.docker.com/szaboegon
+namespace: application
+created: 2025-04-13T11:44:31.4153419+02:00
+invoke: http
+build:
+  builder: pack
+run:
+  volumes:
+  - configMap: myconfigmap
+    path: /workspace/configmap
+deploy:
+  namespace: application
+  image: registry.hub.docker.com/szaboegon/func-1-watcher@sha256:b7c545ba343aa4d67a38fd94b6c85bab8e7f17a55cbe237d4dd113fd4b74f52f
+  nodeAffinity:
+    requiredNodes:
+    - knative-m02

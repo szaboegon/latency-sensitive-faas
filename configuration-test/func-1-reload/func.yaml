@@ -1,0 +1,25 @@
+specVersion: 0.36.0
+name: func-1-reload
+runtime: python
+registry: registry.hub.docker.com/szaboegon
+namespace: application
+created: 2025-04-13T11:44:21.6181942+02:00
+invoke: http
+build:
+  builder: pack
+run:
+  envs:
+  - name: key-1
+    value: '{{ configMap:myconfigmap:key-1 }}'
+deploy:
+  namespace: application
+  image: registry.hub.docker.com/szaboegon/func-1-reload@sha256:a9ed3014cc0cd298d800958291af752b2ed08265e7ac6e0b46ff7b053f0accec
+  annotations:
+    reloader.stakater.com/auto: "true"
+  options:
+    scale:
+      min: 1
+      max: 10
+  nodeAffinity:
+    requiredNodes:
+    - knative-m02
