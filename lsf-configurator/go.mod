@@ -5,6 +5,7 @@ go 1.23.2
 require (
 	github.com/apex/log v1.9.0
 	github.com/docker/docker v27.5.0+incompatible
+	github.com/go-redis/redis/v7 v7.4.1
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	knative.dev/func v0.44.0

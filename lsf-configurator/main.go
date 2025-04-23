@@ -12,6 +12,7 @@ import (
 	"lsf-configurator/pkg/docker"
 	"lsf-configurator/pkg/filesystem"
 	"lsf-configurator/pkg/knative"
+	"lsf-configurator/pkg/routing"
 	"net/http"
 	"os"
 	"os/signal"
@@ -38,7 +39,9 @@ func main() {
 
 	store := db.NewKvFunctionAppStore()
 	knClient := knative.NewClient(conf)
-	composer = core.NewComposer(store, knClient)
+	routingClient := routing.NewRouteConfigurator(conf.RedisUrl)
+
+	composer = core.NewComposer(store, routingClient, knClient)
 	err = filesystem.CreateDir(conf.UploadDir)
 	if err != nil {
 		log.Fatalf("Could not create uploads directory: %v", err)

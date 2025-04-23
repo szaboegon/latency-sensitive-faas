@@ -12,7 +12,7 @@ import (
 
 const (
 	ReqFileName          = "requirements.txt"
-	MainFile             = "func"
+	ConfigFile           = "config"
 	ComponentHandlerFunc = "handler"
 	Extension            = ".py"
 )
@@ -25,9 +25,9 @@ func (b *PythonBootstrapper) Setup() error {
 	componentNames := []string{}
 	filesToCopy := []string{}
 
-	for _, component := range b.fc.Components {
-		componentNames = append(componentNames, component.Name)
-		filesToCopy = append(filesToCopy, component.Name+Extension)
+	for comp := range b.fc.Components {
+		componentNames = append(componentNames, string(comp))
+		filesToCopy = append(filesToCopy, string(comp)+Extension)
 	}
 
 	componentFiles, err := filesystem.CopyFilesByNames(b.fc.SourcePath, b.buildDir, filesToCopy, false)
@@ -53,7 +53,7 @@ func (b *PythonBootstrapper) Setup() error {
 		return err
 	}
 
-	return modifyMain(b.buildDir, b.fc.Id, componentNames)
+	return modifyConfig(b.buildDir, b.fc.Id, componentNames)
 }
 
 func mergeRequirements(existingFile, newFile string) error {
@@ -129,11 +129,11 @@ func hasHandlerFunction(filePath string) (bool, error) {
 	return handlerRegex.Match(content), nil
 }
 
-func modifyMain(buildDir, funcName string, componentNames []string) error {
+func modifyConfig(buildDir, funcName string, componentNames []string) error {
 	const functionNameStr = "FUNCTION_NAME ="
 	const handlersStr = "HANDLERS = {"
 
-	mainFilePath := path.Join(buildDir, MainFile+Extension)
+	mainFilePath := path.Join(buildDir, ConfigFile+Extension)
 	content, err := os.ReadFile(mainFilePath)
 	if err != nil {
 		return err

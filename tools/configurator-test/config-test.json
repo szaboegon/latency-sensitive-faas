@@ -1,66 +1,57 @@
 [
     {
-        "node": "node-1",
-        "runtime": "python",
-        "namespace": "application",
-        "components": 
-        [
-            {
-                "name": "imagegrab",
-                "next": ["resize"]
-            },
-            {
-                "name": "resize",
-                "next": ["grayscale"]
-            }
+      "name": "func-1",
+      "node": "knative",
+      "runtime": "python",
+      "namespace": "application",
+      "components": {
+        "imagegrab": [
+          { "to": "resize", "function": "func-1" }
+        ],
+        "resize": [
+          { "to": "grayscale", "function": "func-2" }
         ]
+      }
     },
     {
-        "node": "node-2",
-        "runtime": "python",
-        "namespace": "application",
-        "components": 
-        [
-            {
-                "name": "grayscale",
-                "next": ["objectdetect"]
-            },
-            {
-                "name": "cut",
-                "next": ["objectdetect2"]
-            }
+      "name": "func-2",
+      "node": "knative-m02",
+      "runtime": "python",
+      "namespace": "application",
+      "components": {
+        "grayscale": [
+          { "to": "objectdetect", "function": "func-3" }
+        ],
+        "cut": [
+          { "to": "objectdetect2", "function": "func-3" }
         ]
+      }
     },
     {
-        "node": "node-2",
-        "runtime": "python",
-        "namespace": "application",
-        "components": 
-        [
-            {
-                "name": "objectdetect",
-                "next": ["cut"]
-            },
-            {
-                "name": "objectdetect2",
-                "next": ["tag"]
-            }
+      "name": "func-3",
+      "node": "knative-m02",
+      "runtime": "python",
+      "namespace": "application",
+      "components": {
+        "objectdetect": [
+          { "to": "cut", "function": "func-2" }
+        ],
+        "objectdetect2": [
+          { "to": "tag", "function": "func-4" }
         ]
+      }
     },
     {
-        "node": "node-3",
-        "runtime": "python",
-        "namespace": "application",
-        "components": 
-        [
-            {
-                "name": "objectdetect2",
-                "next": ["tag"]
-            },
-            {
-                "name": "tag",
-                "next": []
-            }
-        ]
+      "name": "func-4",
+      "node": "knative-m03",
+      "runtime": "python",
+      "namespace": "application",
+      "components": {
+        "objectdetect2": [
+          { "to": "tag", "function": "func-4" }
+        ],
+        "tag": []
+      }
     }
-]
+  ]
+  

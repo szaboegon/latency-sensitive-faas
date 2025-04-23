@@ -16,7 +16,7 @@ type Configuration struct {
 	RegistryUser     string `env:"REGISTRY_USER"`
 	RegistryPassword string `env:"REGISTRY_PASSWORD"`
 	BuilderImage     string `env:"BUILDER_IMAGE"`
-	LoadBalancerUrls string `env:"LOAD_BALANCER_URLS"`
+	RedisUrl         string `env:"REDIS_URL"`
 }
 
 func Init() Configuration {

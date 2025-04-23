@@ -7,24 +7,24 @@ import (
 	"lsf-configurator/pkg/uuid"
 	"mime/multipart"
 	"path/filepath"
-	"sort"
-	"strings"
 
 	"github.com/apex/log"
 )
 
 type Composer struct {
-	db        FunctionAppStore
-	knClient  KnClient
-	scheduler Scheduler
+	db            FunctionAppStore
+	knClient      KnClient
+	scheduler     Scheduler
+	routingClient RoutingClient
 }
 
-func NewComposer(db FunctionAppStore, knClient KnClient) *Composer {
+func NewComposer(db FunctionAppStore, routingClient RoutingClient, knClient KnClient) *Composer {
 	scheduler := NewScheduler(100, 200)
 	return &Composer{
-		db:        db,
-		knClient:  knClient,
-		scheduler: scheduler,
+		db:            db,
+		knClient:      knClient,
+		scheduler:     scheduler,
+		routingClient: routingClient,
 	}
 }
 
@@ -33,7 +33,6 @@ func (c *Composer) CreateFunctionApp(uploadDir string, files []*multipart.FileHe
 	fcApp := FunctionApp{
 		Id:           id,
 		Compositions: make(map[string]*FunctionComposition),
-		RoutingTable: make(RoutingTable),
 	}
 
 	c.db.Set(id, fcApp)
@@ -53,7 +52,11 @@ func (c *Composer) CreateFunctionApp(uploadDir string, files []*multipart.FileHe
 
 	for _, fc := range fcs {
 		fc.SourcePath = appDir
-		c.AddFunctionComposition(fcApp.Id, fc)
+		err := c.AddFunctionComposition(fcApp.Id, fc)
+
+		if err != nil {
+			return nil, fmt.Errorf("error while adding function compositions to app: %s", err.Error())
+		}
 	}
 
 	return &fcApp, nil
@@ -65,12 +68,7 @@ func (c *Composer) AddFunctionComposition(appId string, fc FunctionComposition) 
 		return fmt.Errorf("app with id %s not found", appId)
 	}
 
-	var compNames []string
-	for _, comp := range fc.Components {
-		compNames = append(compNames, comp.Name)
-	}
-
-	id := uniqueId(app.Id, fc.Node, compNames)
+	id := UniqueFcId(app.Id, fc.Name)
 	// function composition is already part of the application
 	if _, ok := app.Compositions[id]; ok {
 		return nil
@@ -79,6 +77,12 @@ func (c *Composer) AddFunctionComposition(appId string, fc FunctionComposition) 
 	fc.Id = id
 	app.Compositions[id] = &fc
 	c.db.Set(appId, app)
+
+	// set the routing table in the cluster-wide store, so functions can read it on startup
+	err = c.routingClient.SetRoutingTable(appId, fc)
+	if err != nil {
+		return fmt.Errorf("could not set routing table for function: %s, %s", fc.Id, err.Error())
+	}
 
 	go c.scheduleBuildAndDeploy(fc)
 	return nil
@@ -90,7 +94,7 @@ func (c *Composer) SetRoutingTable(appId string, table RoutingTable) error {
 		return fmt.Errorf("function app with id %s does not exist", appId)
 	}
 
-	app.RoutingTable = table
+	//TODO
 	c.db.Set(appId, app)
 	return nil
 }
@@ -131,9 +135,6 @@ func (c *Composer) deployTask(fc FunctionComposition) func() (interface{}, error
 	}
 }
 
-func uniqueId(appId, node string, compNames []string) string {
-	sort.Strings(compNames)
-	compId := strings.Join(compNames, "-")
-
-	return compId + "-" + appId + "-" + node
+func UniqueFcId(appId, funcName string) string {
+	return appId + "-" + funcName
 }

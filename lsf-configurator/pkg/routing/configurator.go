@@ -1,49 +1,53 @@
 package routing
 
 import (
-	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"lsf-configurator/pkg/core"
-	"net/http"
-)
 
-const (
-	SetRouteTableApi = "/routing_table/{appId}"
+	redis "github.com/go-redis/redis/v7"
 )
 
 type RouteConfigurator struct {
-	LoadBalancerUrls []string
-	httpClient       *http.Client
+	RedisUrl string
+	RedisCli redis.Client
 }
 
-func NewRouteConfigurator(loadBalancerUrls []string) core.RoutingClient {
+func NewRouteConfigurator(redisUrl string) core.RoutingClient {
 	return &RouteConfigurator{
-		LoadBalancerUrls: loadBalancerUrls,
-		httpClient:       &http.Client{},
+		RedisUrl: redisUrl,
+		RedisCli: *redis.NewClient(&redis.Options{Addr: redisUrl}),
 	}
 }
 
-// TODO improve on error handling
-func (rc *RouteConfigurator) SetRoutingTable(appId string, rt core.RoutingTable) error {
-	data, err := json.Marshal(rt)
+func (rc *RouteConfigurator) SetRoutingTable(appId string, fc core.FunctionComposition) error {
+	rtDto := make(RoutingTable)
+
+	for component, routes := range fc.Components {
+		for _, r := range routes {
+			routeDto := Route{
+				Component: r.To,
+				Url:       getFunctionUrl(core.UniqueFcId(appId, r.Function), fc.NameSpace),
+			}
+			rtDto[string(component)] = append(rtDto[string(component)], routeDto)
+		}
+	}
+
+	data, err := json.Marshal(rtDto)
 	if err != nil {
 		return err
 	}
-	for _, url := range rc.LoadBalancerUrls {
-		req, err := http.NewRequest(http.MethodPut, url+SetRouteTableApi, bytes.NewBuffer(data))
-		if err != nil {
-			return err
-		}
 
-		resp, err := rc.httpClient.Do(req)
-		if err != nil {
-			return err
-		}
-
-		if resp.StatusCode != 200 {
-			log.Printf("failed to set routing table in load balancer with url %s. status code: %v", url, resp.StatusCode)
-		}
+	err = rc.RedisCli.Set(fc.Id, data, 0).Err()
+	if err != nil {
+		return err
 	}
+
+	log.Printf("Routing table for %s set successfully, rt: %s", fc.Id, data)
 	return nil
+}
+
+func getFunctionUrl(fcId, namespace string) string {
+	return fmt.Sprintf("http://%s.%s.svc.cluster.local", fcId, namespace)
 }
