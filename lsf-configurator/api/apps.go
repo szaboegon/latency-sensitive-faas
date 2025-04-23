@@ -26,6 +26,7 @@ func NewHandlerApps(composer core.Composer, conf config.Configuration) *HandlerA
 	}
 
 	h.mux.HandleFunc("POST "+AppsPath+"create", h.create)
+	h.mux.HandleFunc("DELETE "+AppsPath+"delete", h.create)
 	h.mux.HandleFunc("PUT "+AppsPath+"{id}/routing_table", h.putRoutingTable)
 
 	return h
@@ -67,7 +68,29 @@ func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func (h *HandlerApps) delete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+	log.Printf("[%p] %s %s", r, r.Method, r.URL)
+
+	appId := r.PathValue("id")
+	err := h.composer.DeleteFunctionApp(appId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 func (h *HandlerApps) putRoutingTable(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
 	appId := r.PathValue("id")
 
 	jsonStr := r.FormValue("json")

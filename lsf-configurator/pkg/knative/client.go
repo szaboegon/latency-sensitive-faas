@@ -38,17 +38,17 @@ func NewClient(conf config.Configuration) *Client {
 		fn.WithBuilder(pack.NewBuilder(
 			pack.WithName(builders.Pack),
 			pack.WithTimestamp(true),
-			pack.WithVerbose(true))))
+			pack.WithVerbose(conf.VerboseLogs))))
 
 	o = append(o,
 		fn.WithPusher(docker.NewPusher(
 			docker.WithCredentialsProvider(c),
 			docker.WithTransport(http.DefaultTransport),
-			docker.WithVerbose(true))))
+			docker.WithVerbose(conf.VerboseLogs))))
 
 	o = append(o,
 		fn.WithDeployer(knativefunc.NewDeployer(
-			knativefunc.WithDeployerVerbose(true))))
+			knativefunc.WithDeployerVerbose(conf.VerboseLogs))))
 
 	fnClient := fn.New(o...)
 
@@ -101,7 +101,7 @@ func (c *Client) Build(ctx context.Context, fc core.FunctionComposition) (core.F
 		return core.FunctionComposition{}, err
 	}
 
-	f, success, err := c.fnClient.Push(ctx, f) //TODO does not seem to push to my dockerhub :(
+	f, success, err := c.fnClient.Push(ctx, f)
 	if err != nil {
 		return core.FunctionComposition{}, err
 	}
@@ -116,7 +116,7 @@ func (c *Client) Build(ctx context.Context, fc core.FunctionComposition) (core.F
 }
 
 func (c *Client) Deploy(ctx context.Context, fc core.FunctionComposition) error {
-	f := fn.Function{ //TODO fix function is not built error
+	f := fn.Function{
 		Name:      fc.Id,
 		Namespace: fc.NameSpace,
 		Runtime:   fc.Runtime,
@@ -136,6 +136,28 @@ func (c *Client) Deploy(ctx context.Context, fc core.FunctionComposition) error 
 
 	_, err := c.fnClient.Deploy(ctx, f, fn.WithDeploySkipBuildCheck(true))
 	return err
+}
+
+func (c *Client) Delete(ctx context.Context, fc core.FunctionComposition) error {
+	f := fn.Function{
+		Name:      fc.Id,
+		Namespace: fc.NameSpace,
+		Runtime:   fc.Runtime,
+		Image:     fc.Image,
+		Deploy: fn.DeploySpec{
+			Namespace: fc.NameSpace,
+		},
+	}
+
+	if fc.Image == "" {
+		return fmt.Errorf("cannot delete function %v, because it has no corresponding image", fc.Id)
+	}
+
+	err := c.fnClient.Remove(ctx, fc.Id, fc.NameSpace, f, true)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func createBuildDir(sourcePath string) string {

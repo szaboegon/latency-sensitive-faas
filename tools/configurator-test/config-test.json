@@ -6,7 +6,7 @@
       "namespace": "application",
       "components": {
         "imagegrab": [
-          { "to": "resize", "function": "func-1" }
+          { "to": "resize", "function": "local" }
         ],
         "resize": [
           { "to": "grayscale", "function": "func-2" }
@@ -48,7 +48,7 @@
       "namespace": "application",
       "components": {
         "objectdetect2": [
-          { "to": "tag", "function": "func-4" }
+          { "to": "tag", "function": "local" }
         ],
         "tag": []
       }

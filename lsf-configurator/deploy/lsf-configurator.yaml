@@ -100,6 +100,10 @@ spec:
                 secretKeyRef:
                   name: registry-secret
                   key: REGISTRY_PASSWORD
+            - name: REDIS_URL
+              value: "redis-master.redis.svc.cluster.local:6379"
+            - name: VERBOSE_LOGS
+              value: "false"
 ---
 apiVersion: v1
 kind: Service

@@ -19,7 +19,7 @@ type Composer struct {
 }
 
 func NewComposer(db FunctionAppStore, routingClient RoutingClient, knClient KnClient) *Composer {
-	scheduler := NewScheduler(100, 200)
+	scheduler := NewScheduler(1, 30)
 	return &Composer{
 		db:            db,
 		knClient:      knClient,
@@ -79,12 +79,38 @@ func (c *Composer) AddFunctionComposition(appId string, fc FunctionComposition) 
 	c.db.Set(appId, app)
 
 	// set the routing table in the cluster-wide store, so functions can read it on startup
-	err = c.routingClient.SetRoutingTable(appId, fc)
+	//err = c.routingClient.SetRoutingTable(appId, fc)
 	if err != nil {
 		return fmt.Errorf("could not set routing table for function: %s, %s", fc.Id, err.Error())
 	}
 
 	go c.scheduleBuildAndDeploy(fc)
+	return nil
+}
+
+func (c *Composer) DeleteFunctionApp(appId string) error {
+	app, err := c.db.Get(appId)
+	if err != nil {
+		return fmt.Errorf("function app with id %s does not exist", appId)
+	}
+
+	// delete all function compositions of the app
+	for _, fc := range app.Compositions {
+		resultChan := c.scheduler.AddTask(c.deleteTask(*fc))
+
+		r := <-resultChan
+		if r.Err != nil {
+			log.Errorf("Deleting function composition with id %v failed: %v", fc.Id, r.Err)
+			return r.Err
+		}
+		log.Infof("Successfully deleted function composition with id %v", fc.Id)
+		err = filesystem.DeleteDir(fc.SourcePath)
+		if err != nil {
+			return fmt.Errorf("could not delete app source directory: %s", err.Error())
+		}
+	}
+
+	c.db.Delete(appId)
 	return nil
 }
 
@@ -94,7 +120,8 @@ func (c *Composer) SetRoutingTable(appId string, table RoutingTable) error {
 		return fmt.Errorf("function app with id %s does not exist", appId)
 	}
 
-	//TODO
+	//TODO implement routing table setting in the cluster-wide store
+	//err = c.routingClient.SetRoutingTable(appId, table)
 	c.db.Set(appId, app)
 	return nil
 }
@@ -135,6 +162,12 @@ func (c *Composer) deployTask(fc FunctionComposition) func() (interface{}, error
 	}
 }
 
+func (c *Composer) deleteTask(fc FunctionComposition) func() (interface{}, error) {
+	return func() (interface{}, error) {
+		return nil, c.knClient.Delete(context.TODO(), fc)
+	}
+}
+
 func UniqueFcId(appId, funcName string) string {
-	return appId + "-" + funcName
+	return "app-" + appId + "-" + funcName
 }

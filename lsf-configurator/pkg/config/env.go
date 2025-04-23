@@ -17,6 +17,7 @@ type Configuration struct {
 	RegistryPassword string `env:"REGISTRY_PASSWORD"`
 	BuilderImage     string `env:"BUILDER_IMAGE"`
 	RedisUrl         string `env:"REDIS_URL"`
+	VerboseLogs      bool   `env:"VERBOSE_LOGS"`
 }
 
 func Init() Configuration {

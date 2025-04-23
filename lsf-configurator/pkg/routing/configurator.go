@@ -14,6 +14,8 @@ type RouteConfigurator struct {
 	RedisCli redis.Client
 }
 
+const LocalRoute = "local"
+
 func NewRouteConfigurator(redisUrl string) core.RoutingClient {
 	return &RouteConfigurator{
 		RedisUrl: redisUrl,
@@ -26,9 +28,16 @@ func (rc *RouteConfigurator) SetRoutingTable(appId string, fc core.FunctionCompo
 
 	for component, routes := range fc.Components {
 		for _, r := range routes {
+			var url string
+			if r.Function == LocalRoute {
+				url = LocalRoute
+			} else {
+				url = getFunctionUrl(core.UniqueFcId(appId, r.Function), fc.NameSpace)
+			}
+
 			routeDto := Route{
 				Component: r.To,
-				Url:       getFunctionUrl(core.UniqueFcId(appId, r.Function), fc.NameSpace),
+				Url:       url,
 			}
 			rtDto[string(component)] = append(rtDto[string(component)], routeDto)
 		}

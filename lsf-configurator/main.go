@@ -28,6 +28,7 @@ func main() {
 	logFile := configureLogging()
 	defer logFile.Close()
 
+	disableStdOut()
 	conf = config.Init()
 
 	var err error
@@ -88,5 +89,15 @@ func configureLogging() *os.File {
 	}
 	wrt := io.MultiWriter(os.Stdout, f)
 	log.SetOutput(wrt)
+
 	return f
+}
+
+// needed so knative library does not write stdout into docker logs
+func disableStdOut() {
+	null, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	if err == nil {
+		os.Stdout = null
+		os.Stderr = null
+	}
 }

@@ -2,7 +2,8 @@ from parliament import Context
 import requests
 from opentelemetry.propagate import inject, extract
 import tracing
-from opentelemetry import trace, Context as OtelContext
+from opentelemetry import trace
+from opentelemetry.context import Context as OtelContext
 from config import FUNCTION_NAME, HANDLERS, read_config, Route
 from typing import Any, Dict, List, Tuple, Optional
 

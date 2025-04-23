@@ -35,6 +35,7 @@ type Build struct {
 type KnClient interface {
 	Build(ctx context.Context, fc FunctionComposition) (FunctionComposition, error)
 	Deploy(ctx context.Context, fc FunctionComposition) error
+	Delete(ctx context.Context, fc FunctionComposition) error
 }
 
 type FunctionAppStore interface {
