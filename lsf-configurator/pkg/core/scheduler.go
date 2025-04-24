@@ -3,10 +3,18 @@ package core
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 )
 
 type Task func() (interface{}, error)
+
+type taskInternal struct {
+	execute    Task
+	retries    int
+	maxRetries int
+	resultChan chan Result
+}
 
 type Result struct {
 	Value interface{}
@@ -14,7 +22,7 @@ type Result struct {
 }
 
 type WorkerPool struct {
-	taskQueue chan Task
+	taskQueue chan taskInternal
 	wg        sync.WaitGroup
 	once      sync.Once
 	ctx       context.Context
@@ -22,14 +30,14 @@ type WorkerPool struct {
 }
 
 type Scheduler interface {
-	AddTask(task Task) <-chan Result
+	AddTask(task Task, maxRetries int) <-chan Result
 	Close()
 }
 
 func NewScheduler(numWorkers int, queueSize int) Scheduler {
 	ctx, cancel := context.WithCancel(context.Background())
 	w := WorkerPool{
-		taskQueue: make(chan Task, queueSize),
+		taskQueue: make(chan taskInternal, queueSize),
 		ctx:       ctx,
 		cancel:    cancel,
 	}
@@ -42,18 +50,18 @@ func NewScheduler(numWorkers int, queueSize int) Scheduler {
 	return &w
 }
 
-func (w *WorkerPool) AddTask(task Task) <-chan Result {
+func (w *WorkerPool) AddTask(task Task, maxRetries int) <-chan Result {
 	resultChan := make(chan Result, 1)
 	go func() {
 		select {
 		case <-w.ctx.Done():
 			resultChan <- Result{Err: fmt.Errorf("thread pool shutting down")}
 			close(resultChan)
-		case w.taskQueue <- func() (interface{}, error) {
-			defer close(resultChan)
-			result, err := task()
-			resultChan <- Result{Value: result, Err: err}
-			return result, err
+		case w.taskQueue <- taskInternal{
+			execute:    task,
+			retries:    0,
+			maxRetries: maxRetries,
+			resultChan: resultChan,
 		}:
 		}
 	}()
@@ -73,11 +81,32 @@ func (w *WorkerPool) worker() {
 
 	for {
 		select {
-		case job, ok := <-w.taskQueue:
+		case task, ok := <-w.taskQueue:
 			if !ok {
 				return
 			}
-			job()
+			result, err := task.execute()
+			if err != nil {
+				// Task failed, check if we should retry
+				if task.retries < task.maxRetries {
+					task.retries++
+					log.Printf("Task failed with error,: %s retrying... (attempt %d/%d)", err, task.retries, task.maxRetries)
+
+					select {
+					case w.taskQueue <- task:
+					case <-w.ctx.Done():
+						return
+					}
+				} else {
+					// Max retries reached, send the result
+					task.resultChan <- Result{Value: nil, Err: err}
+					close(task.resultChan)
+				}
+			} else {
+				// Task succeeded, send the result
+				task.resultChan <- Result{Value: result, Err: nil}
+				close(task.resultChan)
+			}
 		case <-w.ctx.Done():
 			return
 		}

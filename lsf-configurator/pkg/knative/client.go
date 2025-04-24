@@ -86,6 +86,7 @@ func (c *Client) Build(ctx context.Context, fc core.FunctionComposition) (core.F
 		log.Fatalf("Could not initialize function based on config: %v", err)
 	}
 
+	copyNonSourceFiles(fc.SourcePath, buildDir, fc.Files)
 	bootstrapper, err := bootstrapping.NewBootstrapper(fc, buildDir)
 	if err != nil {
 		return core.FunctionComposition{}, err
@@ -165,6 +166,11 @@ func createBuildDir(sourcePath string) string {
 	filesystem.CreateDir(tempDir)
 
 	return tempDir
+}
+
+func copyNonSourceFiles(sourcePath, buildDir string, fileNames []string) error {
+	_, err := filesystem.CopyFilesByNames(sourcePath, buildDir, fileNames, false)
+	return err
 }
 
 func cleanUpBuildDir(path string) error {

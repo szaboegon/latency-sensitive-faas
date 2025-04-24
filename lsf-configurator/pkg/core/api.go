@@ -24,6 +24,7 @@ type FunctionComposition struct {
 	NameSpace  string       `json:"namespace"`
 	SourcePath string       `json:"-"`
 	Runtime    string       `json:"runtime"`
+	Files      []string     `json:"files"`
 	Build
 }
 

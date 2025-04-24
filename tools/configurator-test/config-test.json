@@ -11,7 +11,8 @@
         "resize": [
           { "to": "grayscale", "function": "func-2" }
         ]
-      }
+      },
+      "files":[]
     },
     {
       "name": "func-2",
@@ -25,7 +26,8 @@
         "cut": [
           { "to": "objectdetect2", "function": "func-3" }
         ]
-      }
+      },
+      "files":[]
     },
     {
       "name": "func-3",
@@ -39,7 +41,8 @@
         "objectdetect2": [
           { "to": "tag", "function": "func-4" }
         ]
-      }
+      },
+      "files":["MobileNetSSD_deploy.caffemodel", "MobileNetSSD_deploy.prototxt.txt"]
     },
     {
       "name": "func-4",
@@ -51,7 +54,8 @@
           { "to": "tag", "function": "local" }
         ],
         "tag": []
-      }
+      },
+      "files":["MobileNetSSD_deploy.caffemodel", "MobileNetSSD_deploy.prototxt.txt"]
     }
   ]
   

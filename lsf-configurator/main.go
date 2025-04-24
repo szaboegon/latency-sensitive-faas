@@ -36,7 +36,11 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to create image puller: ", err)
 	}
-	puller.PullImage(context.Background(), conf.BuilderImage)
+	err = puller.PullImage(context.Background(), conf.BuilderImage)
+	if err != nil {
+		log.Fatal("failed to pull image: ", err)
+	}
+	log.Printf("builder image %s pulled successfully", conf.BuilderImage)
 
 	store := db.NewKvFunctionAppStore()
 	knClient := knative.NewClient(conf)

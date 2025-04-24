@@ -11,6 +11,12 @@ import (
 	"github.com/apex/log"
 )
 
+const (
+	MaxRetries     = 3
+	WorkerPoolSize = 3
+	QueueSize      = 30
+)
+
 type Composer struct {
 	db            FunctionAppStore
 	knClient      KnClient
@@ -19,7 +25,7 @@ type Composer struct {
 }
 
 func NewComposer(db FunctionAppStore, routingClient RoutingClient, knClient KnClient) *Composer {
-	scheduler := NewScheduler(1, 30)
+	scheduler := NewScheduler(WorkerPoolSize, QueueSize)
 	return &Composer{
 		db:            db,
 		knClient:      knClient,
@@ -79,7 +85,7 @@ func (c *Composer) AddFunctionComposition(appId string, fc FunctionComposition) 
 	c.db.Set(appId, app)
 
 	// set the routing table in the cluster-wide store, so functions can read it on startup
-	//err = c.routingClient.SetRoutingTable(appId, fc)
+	err = c.routingClient.SetRoutingTable(appId, fc)
 	if err != nil {
 		return fmt.Errorf("could not set routing table for function: %s, %s", fc.Id, err.Error())
 	}
@@ -96,7 +102,7 @@ func (c *Composer) DeleteFunctionApp(appId string) error {
 
 	// delete all function compositions of the app
 	for _, fc := range app.Compositions {
-		resultChan := c.scheduler.AddTask(c.deleteTask(*fc))
+		resultChan := c.scheduler.AddTask(c.deleteTask(*fc), MaxRetries)
 
 		r := <-resultChan
 		if r.Err != nil {
@@ -120,6 +126,7 @@ func (c *Composer) SetRoutingTable(appId string, table RoutingTable) error {
 		return fmt.Errorf("function app with id %s does not exist", appId)
 	}
 
+	//rewrite this, because routing table is part of function composition now, not function app
 	//TODO implement routing table setting in the cluster-wide store
 	//err = c.routingClient.SetRoutingTable(appId, table)
 	c.db.Set(appId, app)
@@ -127,7 +134,7 @@ func (c *Composer) SetRoutingTable(appId string, table RoutingTable) error {
 }
 
 func (c *Composer) scheduleBuildAndDeploy(fc FunctionComposition) {
-	resultChan := c.scheduler.AddTask(c.buildTask(fc))
+	resultChan := c.scheduler.AddTask(c.buildTask(fc), MaxRetries)
 
 	r := <-resultChan
 	if r.Err != nil {
@@ -137,7 +144,7 @@ func (c *Composer) scheduleBuildAndDeploy(fc FunctionComposition) {
 	fc = r.Value.(FunctionComposition)
 	log.Infof("Successfully built function composition with id %v. Image: %v", fc.Id, fc.Build.Image)
 
-	resultChan = c.scheduler.AddTask(c.deployTask(fc))
+	resultChan = c.scheduler.AddTask(c.deployTask(fc), MaxRetries)
 	r = <-resultChan
 	if r.Err != nil {
 		log.Errorf("Deploying of function composition with id %v failed: %v", fc.Id, r.Err)

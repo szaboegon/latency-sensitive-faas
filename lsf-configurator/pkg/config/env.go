@@ -1,11 +1,11 @@
 package config
 
 import (
+	"log"
 	"os"
 	"reflect"
 	"strconv"
 
-	"github.com/apex/log"
 	"github.com/joho/godotenv"
 )
 
@@ -22,7 +22,7 @@ type Configuration struct {
 
 func Init() Configuration {
 	if err := godotenv.Load(); err != nil {
-		log.Info("No .env file found. Using system environment variables")
+		log.Printf("No .env file found. Using system environment variables")
 	}
 
 	conf := Configuration{}
