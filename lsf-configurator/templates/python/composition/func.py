@@ -1,82 +1,74 @@
-from parliament import Context
+from parliament import Context #type: ignore
 import requests
 from opentelemetry.propagate import inject, extract
 import tracing
 from opentelemetry import trace
 from opentelemetry.context import Context as OtelContext
 from config import FUNCTION_NAME, HANDLERS, read_config, Route
-from typing import Any, Dict, List, Tuple, Optional
-
+from typing import Any, Dict, Deque, Tuple, Optional, TypedDict
 import threading
-from concurrent.futures import ThreadPoolExecutor
+from collections import deque
+import copy
 
-if 'tracer' not in globals():
+if "tracer" not in globals():
     tracer = tracing.instrument_app(FUNCTION_NAME)
-    
-def get_headers(component: str, span_context: Optional[OtelContext] = None) -> Dict[str, str]:
+
+
+class RouteToProcess(TypedDict):
+    """
+    Represents a route to be processed.
+    """
+    route: Route
+    input: Context
+
+
+def get_headers(
+    component: str, span_context: Optional[OtelContext] = None
+) -> Dict[str, str]:
     """
     Generates headers for the next component, including trace context.
     """
-    headers = {
-        "X-Forward-To": component,
-        "Content-Type": "application/json"
-    }
+    headers = {"X-Forward-To": component, "Content-Type": "application/json"}
     if span_context:
         inject(headers, context=span_context)
     return headers
+
 
 def handle_request(context: Context, component: str) -> Tuple[Any, OtelContext]:
     """
     Handles the request by invoking the appropriate handler and preparing
     the next component's details.
     """
-    with tracer.start_as_current_span(component, context=extract(context.request.headers)) as span:
+    with tracer.start_as_current_span(
+        component, context=extract(context.request.headers)
+    ) as span:
         if component in HANDLERS:
-            event_out = HANDLERS[component](context)
-            return  event_out, trace.set_span_in_context(span)
+            handler = HANDLERS[component]
+            event_out = handler(context)
+            return event_out, trace.set_span_in_context(span)
         return {}, trace.set_span_in_context(span)
 
-def forward_request(route: Route, event_out: Any, span_context: Optional[OtelContext]) -> None:
+
+def forward_request(
+    route: Route, event_out: Any, span_context: Optional[OtelContext]
+) -> None:
     """
     Asynchronously forwards the request to the next component if there is one.
     """
-    if not route.component:
+    if not route["component"]:
         return
 
-    headers = get_headers(route.component, span_context)
+    headers = get_headers(route["component"], span_context)
 
     def send_async_request():
         try:
-            requests.post(url=route.url, json=event_out, headers=headers)
+            requests.post(url=route["url"], json=event_out, headers=headers)
         except Exception as e:
             print(f"Async forwarding failed: {e}")
 
     # Start the async thread
     threading.Thread(target=send_async_request, daemon=True).start()
 
-def process_local_route(
-    route: Route,
-    context: Context,
-    routing_table: Dict[str, List[Route]],
-    processing_queue: List[Route],
-    send_queue: List[Route]
-) -> Tuple[Context, Any, OtelContext]:
-    """
-    Processes a local route and updates the queues for further processing.
-    """
-    next_component = route.component
-    if next_component in HANDLERS:
-        event_out, span_context = handle_request(context, next_component)
-        context = event_out
-
-        for next_route in routing_table[next_component]:
-            if next_route.url == "local":
-                processing_queue.append(next_route)
-            else:
-                send_queue.append(next_route)
-    else:
-        raise ValueError(f"Component {next_component} not found in HANDLERS")
-    return context, event_out, span_context
 
 def main(context: Context) -> Tuple[str, int]:
     """
@@ -86,34 +78,31 @@ def main(context: Context) -> Tuple[str, int]:
     if not component:
         return f"No component found with name {component}", 400
 
-    processing_queue = []
-    send_queue = []
-    
+    processing_queue: Deque[RouteToProcess] = deque(
+        [RouteToProcess(route=Route(component=component, url="local"), input=context)]
+    )
+    output, span_context = None, None
+
     # Read the routing table from Redis
     routing_table = read_config()
-    for next_route in routing_table[component]:
-        if next_route.url == "local":
-            processing_queue.append(next_route)
-        else:
-            send_queue.append(next_route)
 
-    event_out, span_context = None, None
-
-    with ThreadPoolExecutor() as executor:
+    try:
         while processing_queue:
-            futures = []
-            for route in processing_queue:
-                futures.append(executor.submit(process_local_route, route, context, routing_table, processing_queue, send_queue))
-            processing_queue.clear()
+            current = processing_queue.popleft()
+            component = current["route"]["component"]
 
-            for future in futures:
-                context, event_out, span_context = future.result()
+            output, span_context = handle_request(current["input"], component)
 
-        # Process the send queue in parallel
-        futures = [executor.submit(forward_request, route, event_out, span_context) for route in send_queue]
-        for future in futures:
-            future.result()
+            for next_route in routing_table.get(component, []):
+                if next_route["url"] == "local":
+                    # Function raised cannot pickle '_io.TextIOWrapper' object
+                    context_copy = copy.deepcopy(context)
+                    context_copy.request.json = output
+                    route_to_process = RouteToProcess(route=next_route, input=context_copy)
+                    processing_queue.append(route_to_process)
+                else:
+                    forward_request(next_route, output, span_context)
+    except KeyError as e:
+        return f"Invalid routing table entry: {e} is missing", 400
 
     return "ok", 200
-
-

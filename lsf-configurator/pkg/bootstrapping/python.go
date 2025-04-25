@@ -131,7 +131,7 @@ func hasHandlerFunction(filePath string) (bool, error) {
 
 func modifyConfig(buildDir, funcName string, componentNames []string) error {
 	const functionNameStr = "FUNCTION_NAME ="
-	const handlersStr = "HANDLERS = {"
+	const handlersStr = "HANDLERS: Dict["
 
 	mainFilePath := path.Join(buildDir, ConfigFile+Extension)
 	content, err := os.ReadFile(mainFilePath)
@@ -162,7 +162,7 @@ func modifyConfig(buildDir, funcName string, componentNames []string) error {
 
 		if strings.Contains(line, handlersStr) {
 			handlersSection = true
-			modifiedContent = append(modifiedContent, handlersStr)
+			modifiedContent = append(modifiedContent, line)
 			for _, component := range componentNames {
 				modifiedContent = append(modifiedContent, fmt.Sprintf("        \"%s\" : %s,", component, component))
 			}

@@ -13,7 +13,7 @@ import (
 
 const (
 	MaxRetries     = 3
-	WorkerPoolSize = 3
+	WorkerPoolSize = 10
 	QueueSize      = 30
 )
 
