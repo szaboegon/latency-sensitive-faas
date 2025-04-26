@@ -16,21 +16,113 @@
         <br><br>
         <textarea id="jsonInput" name="json" rows="4" cols="50" 
         >
-[
-    {
-        "node": "",
-        "components": 
-        [
-            {
-                "name": "",
-                "next": []
-            }
-        ]
-    }
-]
+      [
+        {
+          "name": "func-1",
+          "node": "knative",
+          "runtime": "python",
+          "namespace": "application",
+          "components": {
+            "imagegrab": [
+              { "to": "resize", "function": "local" }
+            ],
+            "resize": [
+              { "to": "grayscale", "function": "func-2" }
+            ]
+          },
+          "files":[]
+        },
+        {
+          "name": "func-2",
+          "node": "knative-m02",
+          "runtime": "python",
+          "namespace": "application",
+          "components": {
+            "grayscale": [
+              { "to": "objectdetect", "function": "func-3" }
+            ],
+            "cut": [
+              { "to": "objectdetect2", "function": "func-3" }
+            ]
+          },
+          "files":[]
+        },
+        {
+          "name": "func-3",
+          "node": "knative-m02",
+          "runtime": "python",
+          "namespace": "application",
+          "components": {
+            "objectdetect": [
+              { "to": "cut", "function": "func-2" }
+            ],
+            "objectdetect2": [
+              { "to": "tag", "function": "func-4" }
+            ]
+          },
+          "files":["MobileNetSSD_deploy.caffemodel", "MobileNetSSD_deploy.prototxt.txt"]
+        },
+        {
+          "name": "func-4",
+          "node": "knative-m03",
+          "runtime": "python",
+          "namespace": "application",
+          "components": {
+            "objectdetect2": [
+              { "to": "tag", "function": "local" }
+            ],
+            "tag": []
+          },
+          "files":["MobileNetSSD_deploy.caffemodel", "MobileNetSSD_deploy.prototxt.txt"]
+        }
+      ]
+      
 </textarea>
         <br><br>
         <button type="submit">Upload</button>
     </form>
+
+    <h2>Update Routing Table</h2>
+<form action="/apps/{id}/{fc_name}/routing_table" method="POST" onsubmit="updateRoutingTable(event)">
+    <label for="appId">Application ID:</label>
+    <br>
+    <input type="text" id="appId" name="id" required>
+    <br><br>
+    <label for="fcName">Function Composition Name:</label>
+    <br>
+    <input type="text" id="fcName" name="fc_name" required>
+    <br><br>
+    <label for="routingTable">Routing Table (JSON):</label>
+    <br>
+    <textarea id="routingTable" name="json" rows="6" cols="50" required></textarea>
+    <br><br>
+    <button type="submit">Update</button>
+</form>
+
+<script>
+    function updateRoutingTable(event) {
+        event.preventDefault();
+        const form = event.target;
+        const appId = document.getElementById('appId').value;
+        const fcName = document.getElementById('fcName').value;
+        const routingTable = document.getElementById('routingTable').value;
+
+        fetch(`/apps/${appId}/${fcName}/routing_table`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: routingTable,
+        })
+        .then(response => {
+            if (response.ok) {
+                alert('Routing table updated successfully!');
+            } else {
+                response.text().then(text => alert(`Error: ${text}`));
+            }
+        })
+        .catch(error => alert(`Error: ${error}`));
+    }
+</script>
 </body>
 </html>

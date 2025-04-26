@@ -120,15 +120,18 @@ func (c *Composer) DeleteFunctionApp(appId string) error {
 	return nil
 }
 
-func (c *Composer) SetRoutingTable(appId string, table RoutingTable) error {
+func (c *Composer) SetRoutingTable(appId, fcName string, table RoutingTable) error {
 	app, err := c.db.Get(appId)
 	if err != nil {
 		return fmt.Errorf("function app with id %s does not exist", appId)
 	}
+	fc := app.Compositions[UniqueFcId(appId, fcName)]
+	fc.Components = table
 
-	//rewrite this, because routing table is part of function composition now, not function app
-	//TODO implement routing table setting in the cluster-wide store
-	//err = c.routingClient.SetRoutingTable(appId, table)
+	err = c.routingClient.SetRoutingTable(appId, *fc)
+	if err != nil {
+		return fmt.Errorf("could not set routing table for function: %s, %s", fc.Id, err.Error())
+	}
 	c.db.Set(appId, app)
 	return nil
 }

@@ -26,8 +26,8 @@ func NewHandlerApps(composer core.Composer, conf config.Configuration) *HandlerA
 	}
 
 	h.mux.HandleFunc("POST "+AppsPath+"create", h.create)
-	h.mux.HandleFunc("DELETE "+AppsPath+"delete", h.create)
-	h.mux.HandleFunc("PUT "+AppsPath+"{id}/routing_table", h.putRoutingTable)
+	h.mux.HandleFunc("DELETE "+AppsPath+"delete", h.delete)
+	h.mux.HandleFunc("PUT "+AppsPath+"{id}/{fc_name}/routing_table", h.putRoutingTable)
 
 	return h
 }
@@ -92,15 +92,15 @@ func (h *HandlerApps) putRoutingTable(w http.ResponseWriter, r *http.Request) {
 	}
 
 	appId := r.PathValue("id")
+	fcName := r.PathValue("fc_name")
 
-	jsonStr := r.FormValue("json")
 	var rt core.RoutingTable
-	if err := json.Unmarshal([]byte(jsonStr), &rt); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&rt); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
-	err := h.composer.SetRoutingTable(appId, rt)
+	err := h.composer.SetRoutingTable(appId, fcName, rt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
