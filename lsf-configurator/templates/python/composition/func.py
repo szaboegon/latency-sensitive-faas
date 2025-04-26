@@ -9,6 +9,7 @@ from typing import Any, Dict, Deque, Tuple, Optional, TypedDict
 import threading
 from collections import deque
 from event import Event, extract_event, create_event
+from opentelemetry.trace.status import Status, StatusCode  # Add this import
 
 if "tracer" not in globals():
     tracer = tracing.instrument_app(FUNCTION_NAME)
@@ -61,11 +62,12 @@ def forward_request(
     headers = get_headers(route["component"], span_context)
 
     def send_async_request():
-        try:
-            with tracer.start_as_current_span("forward_request", context=span_context):
+        with tracer.start_as_current_span("forward_request", context=span_context) as span:
+            try:
                 requests.post(url=route["url"], json=event_out, headers=headers)
-        except Exception as e:
-            print(f"Async forwarding failed: {e}")
+            except Exception as e:
+                span.set_status(Status(StatusCode.ERROR, str(e)))  # Record the error in the span
+                span.record_exception(e) 
 
     # Start the async thread
     threading.Thread(target=send_async_request, daemon=True).start()
