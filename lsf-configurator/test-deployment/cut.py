@@ -3,8 +3,8 @@ import numpy as np
 import cv2
 import base64
 
-def handler(context: Context):
-    json_data = context.request.json
+def handler(event):
+    json_data = event.json
     if 'original_image' in json_data and 'cropped_coords' in json_data:
         # Log object count
         print("Object count:", len(json_data.get('cropped_coords')))

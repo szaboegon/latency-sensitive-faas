@@ -12,8 +12,8 @@ def base64_to_image(text):
     image = np.frombuffer(image, dtype=np.uint8)
     return cv2.imdecode(image, flags=1)
 
-def handler(context: Context):
-    json_data = context.request.json
+def handler(event):
+    json_data = event.json
      # Convert image from base64
     image = base64_to_image(json_data.get("image"))
 

@@ -3,8 +3,8 @@ import cv2
 import numpy as np
 import base64
     
-def handler(context: Context):
-    json_data = context.request.json
+def handler(event):
+    json_data = event.json
     # Read original image and perform the crop on that
     image = base64_to_image(json_data.get("original_image"))
 

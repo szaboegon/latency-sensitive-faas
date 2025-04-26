@@ -12,9 +12,9 @@ def base64_to_image(text):
     image = np.frombuffer(image, dtype=np.uint8)
     return cv2.imdecode(image, flags=1)
 
-def handler(context: Context):
+def handler(event):
     # Convert image from base64
-    json_data = context.request.json
+    json_data = event.json
     image = base64_to_image(json_data.get("image"))
 
     # Resize image

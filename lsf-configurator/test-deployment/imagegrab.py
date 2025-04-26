@@ -2,8 +2,8 @@ from parliament import Context
 import cv2
 import base64
 
-def handler(context: Context):
-    image_bytes = context.request.data
+def handler(event):
+    image_bytes = event.data
     base64_image = image_bytes.decode('utf-8')
     event_out = {
         "image": base64_image,

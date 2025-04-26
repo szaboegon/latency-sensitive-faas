@@ -9,7 +9,9 @@ def mock_context():
     """Fixture to create a mock context."""
     context = MagicMock()
     context.request.headers = {"X-Forward-To": "component1"}
-    context.request.json = {}
+    context.request.json = {
+        "value": "test",
+    }
     return context
 
 

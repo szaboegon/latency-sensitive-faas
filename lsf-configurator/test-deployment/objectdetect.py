@@ -6,8 +6,8 @@ import numpy as np
 #TODO move this to env
 CONFIDENCE_MIN=0.4
     
-def handler(context: Context):
-    json_data = context.request.json
+def handler(event):
+    json_data = event.json
      # Convert image from string
     image = base64_to_image(json_data.get("image"))
 

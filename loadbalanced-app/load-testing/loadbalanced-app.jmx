@@ -39,7 +39,7 @@
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP Request">
           <intProp name="HTTPSampler.connect_timeout">600000</intProp>
           <intProp name="HTTPSampler.response_timeout">600000</intProp>
-          <stringProp name="HTTPSampler.domain">app-8rn60wo5qxsgpviu7msm6kt42-func-1.application.127.0.0.1.sslip.io</stringProp>
+          <stringProp name="HTTPSampler.domain">app-2oebxj0tvjghrmwm40j2zsui2-func-2.application.127.0.0.1.sslip.io</stringProp>
           <stringProp name="HTTPSampler.port">80</stringProp>
           <stringProp name="HTTPSampler.protocol">http</stringProp>
           <stringProp name="HTTPSampler.path">/</stringProp>
@@ -75,7 +75,7 @@
             </collectionProp>
           </HeaderManager>
           <hashTree/>
-          <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor" enabled="true">
+          <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor">
             <stringProp name="cacheKey">true</stringProp>
             <stringProp name="filename"></stringProp>
             <stringProp name="parameters"></stringProp>
@@ -100,7 +100,7 @@ vars.put(&apos;encodedFileData&apos;, base64File)</stringProp>
             <stringProp name="scriptLanguage">groovy</stringProp>
           </JSR223PreProcessor>
           <hashTree/>
-          <DebugPostProcessor guiclass="TestBeanGUI" testclass="DebugPostProcessor" testname="Debug PostProcessor" enabled="true">
+          <DebugPostProcessor guiclass="TestBeanGUI" testclass="DebugPostProcessor" testname="Debug PostProcessor">
             <boolProp name="displayJMeterProperties">false</boolProp>
             <boolProp name="displayJMeterVariables">true</boolProp>
             <boolProp name="displaySamplerProperties">true</boolProp>

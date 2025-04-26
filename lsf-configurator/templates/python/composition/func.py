@@ -8,19 +8,19 @@ from config import FUNCTION_NAME, HANDLERS, read_config, Route
 from typing import Any, Dict, Deque, Tuple, Optional, TypedDict
 import threading
 from collections import deque
-import copy
+from event import Event, extract_event, create_event
 
 if "tracer" not in globals():
     tracer = tracing.instrument_app(FUNCTION_NAME)
 
-
+    
 class RouteToProcess(TypedDict):
     """
     Represents a route to be processed.
     """
     route: Route
-    input: Context
-
+    input: Event
+    
 
 def get_headers(
     component: str, span_context: Optional[OtelContext] = None
@@ -79,7 +79,7 @@ def main(context: Context) -> Tuple[str, int]:
         return f"No component found with name {component}", 400
 
     processing_queue: Deque[RouteToProcess] = deque(
-        [RouteToProcess(route=Route(component=component, url="local"), input=context)]
+        [RouteToProcess(route=Route(component=component, url="local"), input=extract_event(context))] 
     )
     output, span_context = None, None
 
@@ -95,10 +95,8 @@ def main(context: Context) -> Tuple[str, int]:
 
             for next_route in routing_table.get(component, []):
                 if next_route["url"] == "local":
-                    # Function raised cannot pickle '_io.TextIOWrapper' object
-                    context_copy = copy.deepcopy(context)
-                    context_copy.request.json = output
-                    route_to_process = RouteToProcess(route=next_route, input=context_copy)
+                    event_in = create_event(output)
+                    route_to_process = RouteToProcess(route=next_route, input=event_in)
                     processing_queue.append(route_to_process)
                 else:
                     forward_request(next_route, output, span_context)
