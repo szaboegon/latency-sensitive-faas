@@ -12,8 +12,13 @@ def extract_event(context: Context) -> Event:
     """
     Extracts the event from the context.
     """
-    json_data = context.request.json if context.request.json else None
-    byte_data = context.request.data if context.request.data else None
+    json_data = None
+    byte_data = None
+    
+    if context.request.is_json:
+        json_data = context.request.json
+    else:
+        byte_data = context.request.data
 
     return Event(json=json_data, data=byte_data)
 

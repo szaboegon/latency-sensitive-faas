@@ -8,6 +8,7 @@ def test_extract_event_with_json():
     mock_context = MagicMock()
     mock_context.request.json = {"key": "value"}
     mock_context.request.data = None
+    mock_context.request.is_json = True
 
     event = extract_event(mock_context)
     assert event.json == {"key": "value"}
@@ -19,6 +20,7 @@ def test_extract_event_with_data():
     mock_context = MagicMock()
     mock_context.request.json = None
     mock_context.request.data = b"binary data"
+    mock_context.request.is_json = False
 
     event = extract_event(mock_context)
     assert event.json is None

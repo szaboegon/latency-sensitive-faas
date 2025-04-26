@@ -39,7 +39,7 @@
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP Request">
           <intProp name="HTTPSampler.connect_timeout">600000</intProp>
           <intProp name="HTTPSampler.response_timeout">600000</intProp>
-          <stringProp name="HTTPSampler.domain">app-2oebxj0tvjghrmwm40j2zsui2-func-2.application.127.0.0.1.sslip.io</stringProp>
+          <stringProp name="HTTPSampler.domain">app-c3p8t59k7i94x9vrxmqyoncke-func-1.application.127.0.0.1.sslip.io</stringProp>
           <stringProp name="HTTPSampler.port">80</stringProp>
           <stringProp name="HTTPSampler.protocol">http</stringProp>
           <stringProp name="HTTPSampler.path">/</stringProp>

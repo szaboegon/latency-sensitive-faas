@@ -71,10 +71,10 @@ spec:
           resources:
             requests:
               cpu: "1000m"
-              memory: "512Mi"
+              memory: "1024Mi"
             limits:
               cpu: "2000m"
-              memory: "1024Mi"
+              memory: "2048Mi"
           livenessProbe:
             httpGet:
               path: /healthz

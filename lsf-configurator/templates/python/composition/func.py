@@ -34,17 +34,17 @@ def get_headers(
     return headers
 
 
-def handle_request(context: Context, component: str) -> Tuple[Any, OtelContext]:
+def handle_request(event: Event, component: str, parent_context: Optional[OtelContext]) -> Tuple[Any, OtelContext]:
     """
     Handles the request by invoking the appropriate handler and preparing
     the next component's details.
     """
     with tracer.start_as_current_span(
-        component, context=extract(context.request.headers)
+        component, context=parent_context
     ) as span:
         if component in HANDLERS:
             handler = HANDLERS[component]
-            event_out = handler(context)
+            event_out = handler(event)
             return event_out, trace.set_span_in_context(span)
         return {}, trace.set_span_in_context(span)
 
@@ -62,7 +62,8 @@ def forward_request(
 
     def send_async_request():
         try:
-            requests.post(url=route["url"], json=event_out, headers=headers)
+            with tracer.start_as_current_span("forward_request", context=span_context):
+                requests.post(url=route["url"], json=event_out, headers=headers)
         except Exception as e:
             print(f"Async forwarding failed: {e}")
 
@@ -79,9 +80,9 @@ def main(context: Context) -> Tuple[str, int]:
         return f"No component found with name {component}", 400
 
     processing_queue: Deque[RouteToProcess] = deque(
-        [RouteToProcess(route=Route(component=component, url="local"), input=extract_event(context))] 
+        [RouteToProcess(route=Route(component=component, url="local"), input=extract_event(context))]
     )
-    output, span_context = None, None
+    output, span_context = None, extract(context.request.headers)
 
     # Read the routing table from Redis
     routing_table = read_config()
@@ -91,7 +92,7 @@ def main(context: Context) -> Tuple[str, int]:
             current = processing_queue.popleft()
             component = current["route"]["component"]
 
-            output, span_context = handle_request(current["input"], component)
+            output, span_context = handle_request(current["input"], component, span_context)
 
             for next_route in routing_table.get(component, []):
                 if next_route["url"] == "local":
