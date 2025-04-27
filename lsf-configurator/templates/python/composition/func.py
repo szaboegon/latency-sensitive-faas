@@ -43,11 +43,16 @@ def handle_request(event: Event, component: str, parent_context: Optional[OtelCo
     with tracer.start_as_current_span(
         component, context=parent_context
     ) as span:
-        if component in HANDLERS:
-            handler = HANDLERS[component]
-            event_out = handler(event)
-            return event_out, trace.set_span_in_context(span)
-        return {}, trace.set_span_in_context(span)
+        try:
+            if component in HANDLERS:
+                handler = HANDLERS[component]
+                event_out = handler(event)
+                return event_out, trace.set_span_in_context(span)
+            return {}, trace.set_span_in_context(span)
+        except Exception as e:
+            span.set_status(Status(StatusCode.ERROR, str(e))) 
+            span.record_exception(e) 
+            # Do not rethrow exception to allow function to continue processing other components 
 
 
 def forward_request(
@@ -66,8 +71,9 @@ def forward_request(
             try:
                 requests.post(url=route["url"], json=event_out, headers=headers)
             except Exception as e:
-                span.set_status(Status(StatusCode.ERROR, str(e)))  # Record the error in the span
-                span.record_exception(e) 
+                span.set_status(Status(StatusCode.ERROR, str(e))) 
+                span.record_exception(e)
+                # Do not rethrow exception to allow function to continue processing other routes 
 
     # Start the async thread
     threading.Thread(target=send_async_request, daemon=True).start()
@@ -86,8 +92,15 @@ def main(context: Context) -> Tuple[str, int]:
     )
     output, span_context = None, extract(context.request.headers)
 
-    # Read the routing table from Redis
-    routing_table = read_config()
+    # Read routing table from redis
+    with tracer.start_as_current_span("read_config", context=span_context) as span:
+        try:
+            routing_table = read_config()
+            span_context = trace.set_span_in_context(span)
+        except Exception as e:
+            span.set_status(Status(StatusCode.ERROR, str(e))) 
+            span.record_exception(e)
+            return "Error: Routing table could not be read from Redis", 500  
 
     try:
         while processing_queue:
