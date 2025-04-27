@@ -32,6 +32,8 @@ def mock_env_vars(monkeypatch):
     with mock.patch.dict(os.environ, clear=True):
             envvars = {
                 "NODE_IP": "192.168.100.1",
+                "FUNCTION_NAME": "test_func",
+                "APP_NAME": "ar13jaksdh21",
             }
             for k, v in envvars.items():
                 monkeypatch.setenv(k, v)
