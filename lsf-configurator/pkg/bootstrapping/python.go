@@ -53,7 +53,7 @@ func (b *PythonBootstrapper) Setup() error {
 		return err
 	}
 
-	return modifyConfig(b.buildDir, b.fc.Id, componentNames)
+	return modifyConfig(b.buildDir, componentNames)
 }
 
 func mergeRequirements(existingFile, newFile string) error {
@@ -129,8 +129,7 @@ func hasHandlerFunction(filePath string) (bool, error) {
 	return handlerRegex.Match(content), nil
 }
 
-func modifyConfig(buildDir, funcName string, componentNames []string) error {
-	const functionNameStr = "FUNCTION_NAME ="
+func modifyConfig(buildDir string, componentNames []string) error {
 	const handlersStr = "HANDLERS: Dict["
 
 	mainFilePath := path.Join(buildDir, ConfigFile+Extension)
@@ -153,11 +152,6 @@ func modifyConfig(buildDir, funcName string, componentNames []string) error {
 					modifiedContent = append(modifiedContent, importStatement)
 				}
 			}
-		}
-
-		if strings.Contains(line, functionNameStr) {
-			modifiedContent = append(modifiedContent, fmt.Sprintf("%s\"%s\"", functionNameStr, funcName))
-			continue
 		}
 
 		if strings.Contains(line, handlersStr) {

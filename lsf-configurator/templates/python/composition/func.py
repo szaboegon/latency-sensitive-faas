@@ -4,7 +4,7 @@ from opentelemetry.propagate import inject, extract
 import tracing
 from opentelemetry import trace
 from opentelemetry.context import Context as OtelContext
-from config import FUNCTION_NAME, HANDLERS, read_config, Route
+from config import APP_NAME, FUNCTION_NAME, HANDLERS, read_config, Route
 from typing import Any, Dict, Deque, Tuple, Optional, TypedDict
 import threading
 from collections import deque
@@ -12,7 +12,7 @@ from event import Event, extract_event, create_event
 from opentelemetry.trace.status import Status, StatusCode  # Add this import
 
 if "tracer" not in globals():
-    tracer = tracing.instrument_app(FUNCTION_NAME)
+    tracer = tracing.instrument_app(app_name=APP_NAME, service_name=FUNCTION_NAME)
 
     
 class RouteToProcess(TypedDict):

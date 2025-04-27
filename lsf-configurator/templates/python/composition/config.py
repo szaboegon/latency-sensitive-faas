@@ -5,9 +5,10 @@ from typing import Dict, List, TypedDict, cast, Any, Callable
 from parliament import Context #type: ignore
 
 REDIS_URL = os.environ["NODE_IP"]
+APP_NAME = os.environ["APP_NAME"]
+FUNCTION_NAME = os.environ["FUNCTION_NAME"]
 redis_client = Redis(host=REDIS_URL, port=6379)
 
-FUNCTION_NAME = ""
 HANDLERS: Dict[str, Callable[[Context], Any]] = {
     # REGISTER COMPONENT HANDLERS HERE
 }

@@ -116,7 +116,7 @@ func (c *Client) Build(ctx context.Context, fc core.FunctionComposition) (core.F
 	return fc, nil
 }
 
-func (c *Client) Deploy(ctx context.Context, fc core.FunctionComposition) error {
+func (c *Client) Deploy(ctx context.Context, appId string, fc core.FunctionComposition) error {
 	f := fn.Function{
 		Name:      fc.Id,
 		Namespace: fc.NameSpace,
@@ -128,6 +128,9 @@ func (c *Client) Deploy(ctx context.Context, fc core.FunctionComposition) error 
 				RequiredNodes: []string{fc.Node},
 			},
 			Namespace: fc.NameSpace,
+		},
+		Run: fn.RunSpec{
+			Envs: getDeployEnvs(appId, fc.Id),
 		},
 	}
 
@@ -175,4 +178,18 @@ func copyNonSourceFiles(sourcePath, buildDir string, fileNames []string) error {
 
 func cleanUpBuildDir(path string) error {
 	return filesystem.DeleteDir(path)
+}
+
+func getDeployEnvs(appId, fcId string) []fn.Env {
+	envFuncName := "FUNCTION_NAME"
+	envFuncNameValue := fcId
+
+	envAppName := "APP_NAME"
+	envAppNameValue := appId
+
+	envs := make([]fn.Env, 0)
+	envs = append(envs, fn.Env{Name: &envFuncName, Value: &envFuncNameValue})
+	envs = append(envs, fn.Env{Name: &envAppName, Value: &envAppNameValue})
+
+	return envs
 }

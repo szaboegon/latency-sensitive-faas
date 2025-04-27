@@ -90,7 +90,7 @@ func (c *Composer) AddFunctionComposition(appId string, fc FunctionComposition) 
 		return fmt.Errorf("could not set routing table for function: %s, %s", fc.Id, err.Error())
 	}
 
-	go c.scheduleBuildAndDeploy(fc)
+	go c.scheduleBuildAndDeploy(appId, fc)
 	return nil
 }
 
@@ -136,7 +136,7 @@ func (c *Composer) SetRoutingTable(appId, fcName string, table RoutingTable) err
 	return nil
 }
 
-func (c *Composer) scheduleBuildAndDeploy(fc FunctionComposition) {
+func (c *Composer) scheduleBuildAndDeploy(appId string, fc FunctionComposition) {
 	resultChan := c.scheduler.AddTask(c.buildTask(fc), MaxRetries)
 
 	r := <-resultChan
@@ -147,7 +147,7 @@ func (c *Composer) scheduleBuildAndDeploy(fc FunctionComposition) {
 	fc = r.Value.(FunctionComposition)
 	log.Infof("Successfully built function composition with id %v. Image: %v", fc.Id, fc.Build.Image)
 
-	resultChan = c.scheduler.AddTask(c.deployTask(fc), MaxRetries)
+	resultChan = c.scheduler.AddTask(c.deployTask(appId, fc), MaxRetries)
 	r = <-resultChan
 	if r.Err != nil {
 		log.Errorf("Deploying of function composition with id %v failed: %v", fc.Id, r.Err)
@@ -166,9 +166,9 @@ func (c *Composer) buildTask(fc FunctionComposition) func() (interface{}, error)
 	}
 }
 
-func (c *Composer) deployTask(fc FunctionComposition) func() (interface{}, error) {
+func (c *Composer) deployTask(appId string, fc FunctionComposition) func() (interface{}, error) {
 	return func() (interface{}, error) {
-		return nil, c.knClient.Deploy(context.TODO(), fc)
+		return nil, c.knClient.Deploy(context.TODO(), appId, fc)
 	}
 }
 
