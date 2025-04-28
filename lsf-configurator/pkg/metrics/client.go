@@ -131,18 +131,30 @@ func (c metricsClient) QueryNodeMetrics() ([]NodeMetrics, error) {
 
 // TODO needs to be tested, to ensure query and calculation is correct
 func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
-	size := 1
+	size := 100
 	appNameField := "labels.app_name"
 	traceIdField := "trace.id"
 	timestampField := "@timestamp"
+	spanDurationField := "span.duration.us"
 
 	res, err := c.client.Search().
 		Index(tracesIndex).
 		Request(&search.Request{
 			Query: &types.Query{
-				Term: map[string]types.TermQuery{
-					appNameField: {
-						Value: appId,
+				Bool: &types.BoolQuery{ // Combine Term and Exists queries
+					Must: []types.Query{
+						{
+							Term: map[string]types.TermQuery{
+								appNameField: types.TermQuery{
+									Value: appId,
+								},
+							},
+						},
+						{
+							Exists: &types.ExistsQuery{
+								Field: spanDurationField,
+							},
+						},
 					},
 				},
 			},
@@ -166,7 +178,7 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 								Size: &size,
 							},
 						},
-						"last_span": {
+						"all_spans": {
 							TopHits: &types.TopHitsAggregation{
 								Sort: []types.SortCombinations{
 									types.SortOptions{
@@ -200,17 +212,14 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 
 	for _, bucket := range tracesAgg.Buckets.([]types.StringTermsBucket) {
 		firstSpanAgg := bucket.Aggregations["first_span"].(*types.TopHitsAggregate)
-		lastSpanAgg := bucket.Aggregations["last_span"].(*types.TopHitsAggregate)
+		allSpansAgg := bucket.Aggregations["all_spans"].(*types.TopHitsAggregate)
 
-		if len(firstSpanAgg.Hits.Hits) == 0 || len(lastSpanAgg.Hits.Hits) == 0 {
+		if len(firstSpanAgg.Hits.Hits) == 0 || len(allSpansAgg.Hits.Hits) == 0 {
 			continue
 		}
 
-		var firstSpan, lastSpan map[string]interface{}
+		var firstSpan map[string]interface{}
 		if err := json.Unmarshal(firstSpanAgg.Hits.Hits[0].Source_, &firstSpan); err != nil {
-			return 0, err
-		}
-		if err := json.Unmarshal(lastSpanAgg.Hits.Hits[0].Source_, &lastSpan); err != nil {
 			return 0, err
 		}
 
@@ -218,37 +227,54 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 		if !ok {
 			return 0, errors.New("missing or invalid first span timestamp")
 		}
-		lastTimestamp, ok := lastSpan[timestampField].(string)
-		if !ok {
-			return 0, errors.New("missing or invalid last span timestamp")
-		}
-
-		lastSpanSpanField, ok := lastSpan["span"].(map[string]interface{})
-		if !ok {
-			return 0, errors.New("missing or invalid span object in last span")
-		}
-
-		lastSpanDurationField, ok := lastSpanSpanField["duration"].(map[string]interface{})
-		if !ok {
-			return 0, errors.New("missing or invalid last span duration")
-		}
-
-		lastSpanDuration, ok := lastSpanDurationField["us"].(float64)
-		if !ok {
-			return 0, errors.New("missing or invalid last span duration")
-		}
 
 		firstTime, err := time.Parse(time.RFC3339, firstTimestamp)
 		if err != nil {
 			return 0, errors.New("invalid first span timestamp format")
 		}
-		lastTime, err := time.Parse(time.RFC3339, lastTimestamp)
-		if err != nil {
-			return 0, errors.New("invalid last span timestamp format")
+
+		// Find the span that ends the latest
+		var latestEndTime time.Time
+		for _, hit := range allSpansAgg.Hits.Hits {
+			var span map[string]interface{}
+			if err := json.Unmarshal(hit.Source_, &span); err != nil {
+				return 0, err
+			}
+
+			spanTimestamp, ok := span[timestampField].(string)
+			if !ok {
+				return 0, errors.New("missing or invalid span timestamp")
+			}
+
+			spanTime, err := time.Parse(time.RFC3339, spanTimestamp)
+			if err != nil {
+				return 0, errors.New("invalid span timestamp format")
+			}
+
+			spanField, ok := span["span"].(map[string]interface{})
+			if !ok {
+				return 0, errors.New("missing or invalid span object")
+			}
+
+			durationField, ok := spanField["duration"].(map[string]interface{})
+			if !ok {
+				return 0, errors.New("missing or invalid duration object")
+			}
+
+			spanDuration, ok := durationField["us"].(float64)
+			if !ok {
+				return 0, errors.New("missing or invalid span duration")
+			}
+
+			// Calculate the end time of the span
+			endTime := spanTime.Add(time.Duration(spanDuration) * time.Microsecond)
+			if endTime.After(latestEndTime) {
+				latestEndTime = endTime
+			}
 		}
 
-		// Calculate trace duration including the last span's duration
-		duration := lastTime.Sub(firstTime).Seconds() + (lastSpanDuration / 1e6) // Convert microseconds to seconds
+		// Calculate trace duration
+		duration := latestEndTime.Sub(firstTime).Seconds()
 		totalDuration += duration
 		traceCount++
 	}
