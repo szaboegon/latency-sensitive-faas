@@ -12,6 +12,7 @@ import (
 	"lsf-configurator/pkg/docker"
 	"lsf-configurator/pkg/filesystem"
 	"lsf-configurator/pkg/knative"
+	"lsf-configurator/pkg/metrics"
 	"lsf-configurator/pkg/routing"
 	"net/http"
 	"os"
@@ -23,6 +24,7 @@ import (
 var composer *core.Composer
 var conf config.Configuration
 var puller docker.ImagePuller
+var metricsReader metrics.MetricsReader
 
 func main() {
 	logFile := configureLogging()
@@ -47,6 +49,7 @@ func main() {
 	routingClient := routing.NewRouteConfigurator(conf.RedisUrl)
 
 	composer = core.NewComposer(store, routingClient, knClient)
+	metricsReader, err = metrics.NewMetricsReader(conf.MetricsBackendAddress)
 	err = filesystem.CreateDir(conf.UploadDir)
 	if err != nil {
 		log.Fatalf("Could not create uploads directory: %v", err)
@@ -82,6 +85,8 @@ func startHttpServer() *http.Server {
 func registerHandlers() {
 	http.HandleFunc(api.HealthzPath, api.HealthCheckHandler)
 	http.Handle(api.AppsPath, api.NewHandlerApps(*composer, conf))
+	http.Handle(api.MetricsPath, api.NewHandlerMetrics(metricsReader, conf))
+
 	fs := http.FileServer(http.Dir("./public"))
 	http.Handle("/", fs)
 }

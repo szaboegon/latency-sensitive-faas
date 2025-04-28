@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
@@ -11,7 +12,10 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/sortorder"
 )
 
-var metricsIndex string = ".ds-metrics-apm.*"
+const (
+	metricsIndex = ".ds-metrics-apm.*"
+	tracesIndex  = ".ds-traces-apm*"
+)
 
 type ApiKeyConfig struct {
 	Id                  string `json:"id"`
@@ -125,8 +129,136 @@ func (c metricsClient) QueryNodeMetrics() ([]NodeMetrics, error) {
 	return ret, nil
 }
 
+// TODO needs to be tested, to ensure query and calculation is correct
 func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
-	return 0, nil
+	size := 1
+	appNameField := "labels.app_name"
+	traceIdField := "trace.id"
+	timestampField := "@timestamp"
+
+	res, err := c.client.Search().
+		Index(tracesIndex).
+		Request(&search.Request{
+			Query: &types.Query{
+				Term: map[string]types.TermQuery{
+					appNameField: {
+						Value: appId,
+					},
+				},
+			},
+			Aggregations: map[string]types.Aggregations{
+				"traces": {
+					Terms: &types.TermsAggregation{
+						Field: &traceIdField,
+					},
+					Aggregations: map[string]types.Aggregations{
+						"first_span": {
+							TopHits: &types.TopHitsAggregation{
+								Sort: []types.SortCombinations{
+									types.SortOptions{
+										SortOptions: map[string]types.FieldSort{
+											timestampField: {
+												Order: &sortorder.Asc,
+											},
+										},
+									},
+								},
+								Size: &size,
+							},
+						},
+						"last_span": {
+							TopHits: &types.TopHitsAggregation{
+								Sort: []types.SortCombinations{
+									types.SortOptions{
+										SortOptions: map[string]types.FieldSort{
+											timestampField: {
+												Order: &sortorder.Desc,
+											},
+										},
+									},
+								},
+								Size: &size,
+							},
+						},
+					},
+				},
+			},
+		}).
+		Do(context.Background())
+
+	if err != nil {
+		return 0, err
+	}
+
+	tracesAgg, ok := res.Aggregations["traces"].(*types.StringTermsAggregate)
+	if !ok {
+		return 0, errors.New("incorrect aggregation type for traces")
+	}
+
+	var totalDuration float64
+	var traceCount int
+
+	for _, bucket := range tracesAgg.Buckets.([]types.StringTermsBucket) {
+		firstSpanAgg := bucket.Aggregations["first_span"].(*types.TopHitsAggregate)
+		lastSpanAgg := bucket.Aggregations["last_span"].(*types.TopHitsAggregate)
+
+		if len(firstSpanAgg.Hits.Hits) == 0 || len(lastSpanAgg.Hits.Hits) == 0 {
+			continue
+		}
+
+		var firstSpan, lastSpan map[string]interface{}
+		if err := json.Unmarshal(firstSpanAgg.Hits.Hits[0].Source_, &firstSpan); err != nil {
+			return 0, err
+		}
+		if err := json.Unmarshal(lastSpanAgg.Hits.Hits[0].Source_, &lastSpan); err != nil {
+			return 0, err
+		}
+
+		firstTimestamp, ok := firstSpan[timestampField].(string)
+		if !ok {
+			return 0, errors.New("missing or invalid first span timestamp")
+		}
+		lastTimestamp, ok := lastSpan[timestampField].(string)
+		if !ok {
+			return 0, errors.New("missing or invalid last span timestamp")
+		}
+
+		lastSpanSpanField, ok := lastSpan["span"].(map[string]interface{})
+		if !ok {
+			return 0, errors.New("missing or invalid span object in last span")
+		}
+
+		lastSpanDurationField, ok := lastSpanSpanField["duration"].(map[string]interface{})
+		if !ok {
+			return 0, errors.New("missing or invalid last span duration")
+		}
+
+		lastSpanDuration, ok := lastSpanDurationField["us"].(float64)
+		if !ok {
+			return 0, errors.New("missing or invalid last span duration")
+		}
+
+		firstTime, err := time.Parse(time.RFC3339, firstTimestamp)
+		if err != nil {
+			return 0, errors.New("invalid first span timestamp format")
+		}
+		lastTime, err := time.Parse(time.RFC3339, lastTimestamp)
+		if err != nil {
+			return 0, errors.New("invalid last span timestamp format")
+		}
+
+		// Calculate trace duration including the last span's duration
+		duration := lastTime.Sub(firstTime).Seconds() + (lastSpanDuration / 1e6) // Convert microseconds to seconds
+		totalDuration += duration
+		traceCount++
+	}
+
+	if traceCount == 0 {
+		return 0, errors.New("no traces found")
+	}
+
+	averageRuntime := totalDuration / float64(traceCount)
+	return averageRuntime, nil
 }
 
 func unmarshalSource(source json.RawMessage) (NodeMetrics, error) {

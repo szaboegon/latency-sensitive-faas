@@ -30,6 +30,10 @@ func NewHandlerMetrics(metricsClient metrics.MetricsReader, conf config.Configur
 	return h
 }
 
+func (h *HandlerMetrics) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.mux.ServeHTTP(w, r)
+}
+
 func (h *HandlerMetrics) getAppMetrics(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -41,6 +45,7 @@ func (h *HandlerMetrics) getAppMetrics(w http.ResponseWriter, r *http.Request) {
 
 	metrics, err := h.metricsClient.QueryAverageAppRuntime(appId)
 	if err != nil {
+		log.Printf("Error querying metrics: %v", err)
 		http.Error(w, "Failed to query metrics", http.StatusInternalServerError)
 		return
 	}
