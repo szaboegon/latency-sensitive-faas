@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"time"
+	"log"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
@@ -134,8 +134,7 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 	size := 100
 	appNameField := "labels.app_name"
 	traceIdField := "trace.id"
-	timestampField := "@timestamp"
-	spanDurationField := "span.duration.us"
+	timestampField := "timestamp.us"
 
 	res, err := c.client.Search().
 		Index(tracesIndex).
@@ -148,11 +147,6 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 								appNameField: types.TermQuery{
 									Value: appId,
 								},
-							},
-						},
-						{
-							Exists: &types.ExistsQuery{
-								Field: spanDurationField,
 							},
 						},
 					},
@@ -169,7 +163,7 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 								Sort: []types.SortCombinations{
 									types.SortOptions{
 										SortOptions: map[string]types.FieldSort{
-											timestampField: {
+											timestampField: { // Updated field
 												Order: &sortorder.Asc,
 											},
 										},
@@ -183,7 +177,7 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 								Sort: []types.SortCombinations{
 									types.SortOptions{
 										SortOptions: map[string]types.FieldSort{
-											timestampField: {
+											timestampField: { // Updated field
 												Order: &sortorder.Desc,
 											},
 										},
@@ -207,8 +201,8 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 		return 0, errors.New("incorrect aggregation type for traces")
 	}
 
-	var totalDuration float64
-	var traceCount int
+	var totalDuration float64 = 0
+	var traceCount int = 0
 
 	for _, bucket := range tracesAgg.Buckets.([]types.StringTermsBucket) {
 		firstSpanAgg := bucket.Aggregations["first_span"].(*types.TopHitsAggregate)
@@ -218,63 +212,34 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 			continue
 		}
 
-		var firstSpan map[string]interface{}
-		if err := json.Unmarshal(firstSpanAgg.Hits.Hits[0].Source_, &firstSpan); err != nil {
+		firstTimestampUs, err := unmarshalSpanTimestamp(firstSpanAgg.Hits.Hits[0].Source_)
+		if err != nil {
 			return 0, err
 		}
 
-		firstTimestamp, ok := firstSpan[timestampField].(string)
-		if !ok {
-			return 0, errors.New("missing or invalid first span timestamp")
-		}
-
-		firstTime, err := time.Parse(time.RFC3339, firstTimestamp)
-		if err != nil {
-			return 0, errors.New("invalid first span timestamp format")
-		}
-
 		// Find the span that ends the latest
-		var latestEndTime time.Time
+		var latestEndTimeUs float64 = 0
 		for _, hit := range allSpansAgg.Hits.Hits {
-			var span map[string]interface{}
-			if err := json.Unmarshal(hit.Source_, &span); err != nil {
-				return 0, err
-			}
 
-			spanTimestamp, ok := span[timestampField].(string)
-			if !ok {
-				return 0, errors.New("missing or invalid span timestamp")
-			}
-
-			spanTime, err := time.Parse(time.RFC3339, spanTimestamp)
+			spanTimestampUs, err := unmarshalSpanTimestamp(hit.Source_)
 			if err != nil {
-				return 0, errors.New("invalid span timestamp format")
+				log.Print("Error unmarshalling span timestamp:", err)
+				continue
 			}
 
-			spanField, ok := span["span"].(map[string]interface{})
-			if !ok {
-				return 0, errors.New("missing or invalid span object")
+			spanDurationUs, err := unmarshalSpanDuration(hit.Source_)
+			if err != nil {
+				log.Print("Error unmarshalling span duration:", err)
+				continue
 			}
 
-			durationField, ok := spanField["duration"].(map[string]interface{})
-			if !ok {
-				return 0, errors.New("missing or invalid duration object")
-			}
-
-			spanDuration, ok := durationField["us"].(float64)
-			if !ok {
-				return 0, errors.New("missing or invalid span duration")
-			}
-
-			// Calculate the end time of the span
-			endTime := spanTime.Add(time.Duration(spanDuration) * time.Microsecond)
-			if endTime.After(latestEndTime) {
-				latestEndTime = endTime
+			endTimeUs := spanTimestampUs + spanDurationUs
+			if endTimeUs > latestEndTimeUs {
+				latestEndTimeUs = endTimeUs
 			}
 		}
 
-		// Calculate trace duration
-		duration := latestEndTime.Sub(firstTime).Seconds()
+		duration := (latestEndTimeUs - firstTimestampUs) / 1e6
 		totalDuration += duration
 		traceCount++
 	}
@@ -285,6 +250,64 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 
 	averageRuntime := totalDuration / float64(traceCount)
 	return averageRuntime, nil
+}
+
+func unmarshalSpanTimestamp(jsonMessage json.RawMessage) (float64, error) {
+	var span map[string]interface{}
+	if err := json.Unmarshal(jsonMessage, &span); err != nil {
+		return 0, err
+	}
+
+	spanTimestamp, ok := span["timestamp"].(map[string]interface{})
+	if !ok {
+		return 0, errors.New("missing or invalid span timestamp")
+	}
+
+	spanTimestampUs, ok := spanTimestamp["us"].(float64)
+	if !ok {
+		return 0, errors.New("missing or invalid first span timestamp in microseconds")
+	}
+
+	// For debugging purposes, you can log the span ID and timestamp
+	// spanField, ok := span["span"].(map[string]interface{})
+	// if !ok {
+	// 	return 0, errors.New("missing or invalid span object")
+	// }
+
+	// if spanId, ok := spanField["id"].(string); ok {
+	// 	log.Printf("Span ID: %s, Timestamp (us): %f", spanId, spanTimestampUs)
+	// }
+
+	return spanTimestampUs, nil
+}
+
+func unmarshalSpanDuration(jsonMessage json.RawMessage) (float64, error) {
+	var span map[string]interface{}
+	if err := json.Unmarshal(jsonMessage, &span); err != nil {
+		return 0, err
+	}
+
+	spanField, ok := span["span"].(map[string]interface{})
+	if !ok {
+		return 0, errors.New("missing or invalid span object")
+	}
+
+	durationField, ok := spanField["duration"].(map[string]interface{})
+	if !ok {
+		return 0, errors.New("missing or invalid duration object")
+	}
+
+	spanDuration, ok := durationField["us"].(float64)
+	if !ok {
+		return 0, errors.New("missing or invalid span duration")
+	}
+
+	// For debugging purposes, you can log the span ID and timestamp
+	// if spanId, ok := spanField["id"].(string); ok {
+	// 	log.Printf("Span ID: %s, Duration (us): %f", spanId, spanDuration)
+	// }
+
+	return spanDuration, nil
 }
 
 func unmarshalSource(source json.RawMessage) (NodeMetrics, error) {
