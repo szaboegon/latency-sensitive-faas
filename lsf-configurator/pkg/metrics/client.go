@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"math/big"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
@@ -156,6 +157,7 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 				"traces": {
 					Terms: &types.TermsAggregation{
 						Field: &traceIdField,
+						Size:  &size,
 					},
 					Aggregations: map[string]types.Aggregations{
 						"first_span": {
@@ -169,7 +171,6 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 										},
 									},
 								},
-								Size: &size,
 							},
 						},
 						"all_spans": {
@@ -183,7 +184,6 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 										},
 									},
 								},
-								Size: &size,
 							},
 						},
 					},
@@ -201,8 +201,8 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 		return 0, errors.New("incorrect aggregation type for traces")
 	}
 
-	var totalDuration float64 = 0
-	var traceCount int = 0
+	totalDuration := big.NewFloat(0)
+	traceCount := 0
 
 	for _, bucket := range tracesAgg.Buckets.([]types.StringTermsBucket) {
 		firstSpanAgg := bucket.Aggregations["first_span"].(*types.TopHitsAggregate)
@@ -239,8 +239,13 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 			}
 		}
 
+		if latestEndTimeUs == 0 || latestEndTimeUs < firstTimestampUs {
+			log.Print("No valid end time found for trace")
+			continue
+		}
+
 		duration := (latestEndTimeUs - firstTimestampUs) / 1e6
-		totalDuration += duration
+		totalDuration.Add(totalDuration, big.NewFloat(duration))
 		traceCount++
 	}
 
@@ -248,7 +253,7 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 		return 0, errors.New("no traces found")
 	}
 
-	averageRuntime := totalDuration / float64(traceCount)
+	averageRuntime, _ := new(big.Float).Quo(totalDuration, big.NewFloat(float64(traceCount))).Float64()
 	return averageRuntime, nil
 }
 
@@ -269,14 +274,14 @@ func unmarshalSpanTimestamp(jsonMessage json.RawMessage) (float64, error) {
 	}
 
 	// For debugging purposes, you can log the span ID and timestamp
-	// spanField, ok := span["span"].(map[string]interface{})
-	// if !ok {
-	// 	return 0, errors.New("missing or invalid span object")
-	// }
+	spanField, ok := span["span"].(map[string]interface{})
+	if !ok {
+		return 0, errors.New("missing or invalid span object")
+	}
 
-	// if spanId, ok := spanField["id"].(string); ok {
-	// 	log.Printf("Span ID: %s, Timestamp (us): %f", spanId, spanTimestampUs)
-	// }
+	if spanId, ok := spanField["id"].(string); ok {
+		log.Printf("Span ID: %s, Timestamp (us): %f", spanId, spanTimestampUs)
+	}
 
 	return spanTimestampUs, nil
 }
@@ -303,9 +308,9 @@ func unmarshalSpanDuration(jsonMessage json.RawMessage) (float64, error) {
 	}
 
 	// For debugging purposes, you can log the span ID and timestamp
-	// if spanId, ok := spanField["id"].(string); ok {
-	// 	log.Printf("Span ID: %s, Duration (us): %f", spanId, spanDuration)
-	// }
+	if spanId, ok := spanField["id"].(string); ok {
+		log.Printf("Span ID: %s, Duration (us): %f", spanId, spanDuration)
+	}
 
 	return spanDuration, nil
 }
