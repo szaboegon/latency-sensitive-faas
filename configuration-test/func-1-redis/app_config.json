@@ -1,0 +1,12 @@
+[
+    {
+      "name": "func-1",
+      "node": "knative",
+      "runtime": "python",
+      "namespace": "application",
+      "components": {
+        "handler": []
+      },
+      "files":[]
+    }
+]
