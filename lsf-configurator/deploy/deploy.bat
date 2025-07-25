@@ -12,6 +12,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
+kubectl apply -f configurator-namespace.yaml
+
 kubectl apply -f lsf-configurator.yaml
 if errorlevel 1 (
     echo Failed to apply kubernetes manifest

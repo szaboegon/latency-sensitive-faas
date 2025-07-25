@@ -7,9 +7,11 @@ spec:
   version: 8.15.0
   nodeSets:
   - name: default
-    count: 3
+    count: 1
     podTemplate:
       spec:
+        nodeSelector:
+          kubernetes.io/hostname: knative
         initContainers:
         - name: sysctl
           securityContext:

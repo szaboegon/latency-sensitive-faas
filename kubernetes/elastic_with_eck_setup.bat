@@ -5,7 +5,15 @@ set ES_CONFIG="elastic\elasticsearch.yaml"
 set KIBANA_CONFIG="elastic\kibana.yaml"
 set APM_SERVER_CONFIG="elastic\apmserver.yaml"
 set PYTHON_INSTRUMENTATION="otel\python_instrumentation.yaml"
-set LOADBALANCER_YAML_PATH="..\faas-loadbalancer\deploy\faas-loadbalancer.yaml"
+set LSF_CONFIGURATOR_NAMESPACE_YAML_PATH="..\lsf-configurator\deploy\configurator-namespace.yaml"
+set LSF_CONFIGURATOR_CREATE_SECRET_PATH="..\lsf-configurator\deploy\create_secret.bat"
+set LSF_CONFIGURATOR_YAML_PATH="..\lsf-configurator\deploy\lsf-configurator.yaml"
+set REDIS_NAMESPACE_YAML_PATH="redis\redis-namespace.yaml"
+set REDIS_MASTER_YAML_PATH="redis\redis-master.yaml"
+set REDIS_REPLICA_YAML_PATH="redis\redis-replica.yaml"
+
+echo Updating hellm repositories...
+helm repo update
 
 echo Creating observability namespace...
 kubectl create namespace observability
@@ -60,12 +68,7 @@ if errorlevel 1 (
     )
 )
 
-@REM kubectl apply -f %PYTHON_INSTRUMENTATION%
-@REM if errorlevel 1 (
-@REM     echo Error creating python instrumentation resource
-@REM     exit /b 1
-@REM )
-
+echo Installing Elastic Operator, ES and Kibana...
 helm install elastic-operator elastic/eck-operator -n observability
 if errorlevel 1 (
     echo Error creating elastic operator
@@ -79,10 +82,40 @@ kubectl apply -f %ES_CONFIG%
 kubectl apply -f %KIBANA_CONFIG%
 kubectl apply -f %APM_SERVER_CONFIG%
 
-echo Installing load balancer component
-kubectl apply -f %LOADBALANCER_YAML_PATH%
+echo Installing Configurator component...
+
+kubectl apply -f %LSF_CONFIGURATOR_NAMESPACE_YAML_PATH%
 if errorlevel 1 (
-    echo Failed to install loadbalancer component
+    echo Error creating configurator namespace
+    exit /b 1
+)
+
+call %LSF_CONFIGURATOR_CREATE_SECRET_PATH%
+if errorlevel 1 (
+    echo Error creating registry secret for lsf-configurator
+    exit /b 1
+)
+
+kubectl apply -f %LSF_CONFIGURATOR_YAML_PATH%
+if errorlevel 1 (
+    echo Error installing lsf-configurator
+    exit /b 1
+)
+
+echo Installing Redis...
+kubectl apply -f %REDIS_NAMESPACE_YAML_PATH%
+if errorlevel 1 (
+    echo Error creating Redis namespace
+    exit /b 1
+)
+kubectl apply -f %REDIS_MASTER_YAML_PATH%
+if errorlevel 1 (
+    echo Error creating Redis master
+    exit /b 1
+)
+kubectl apply -f %REDIS_REPLICA_YAML_PATH%
+if errorlevel 1 (
+    echo Error creating Redis replica
     exit /b 1
 )
 
