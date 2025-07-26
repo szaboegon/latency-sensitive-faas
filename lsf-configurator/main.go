@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"lsf-configurator/api"
+	"lsf-configurator/pkg/builder"
 	"lsf-configurator/pkg/config"
 	"lsf-configurator/pkg/core"
 	"lsf-configurator/pkg/core/db"
@@ -47,8 +48,9 @@ func main() {
 	store := db.NewKvFunctionAppStore()
 	knClient := knative.NewClient(conf)
 	routingClient := routing.NewRouteConfigurator(conf.RedisUrl)
+	tektonBuilder := builder.NewTektonBuilder()
 
-	composer = core.NewComposer(store, routingClient, knClient)
+	composer = core.NewComposer(store, routingClient, knClient, tektonBuilder)
 	metricsReader, err = metrics.NewMetricsReader(conf.MetricsBackendAddress)
 	err = filesystem.CreateDir(conf.UploadDir)
 	if err != nil {
@@ -84,7 +86,7 @@ func startHttpServer() *http.Server {
 
 func registerHandlers() {
 	http.HandleFunc(api.HealthzPath, api.HealthCheckHandler)
-	http.Handle(api.AppsPath, api.NewHandlerApps(*composer, conf))
+	http.Handle(api.AppsPath, api.NewHandlerApps(composer, conf))
 	http.Handle(api.MetricsPath, api.NewHandlerMetrics(metricsReader, conf))
 
 	fs := http.FileServer(http.Dir("./public"))

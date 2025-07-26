@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tekton
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tekton-pvc
+  namespace: tekton
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: build-and-notify
+  namespace: tekton
+spec:
+  params:
+    - name: IMAGE
+      type: string
+    - name: CONTEXT_DIR
+      type: string
+    - name: NOTIFY_URL
+      type: string
+    - name: FC_ID
+      type: string
+  workspaces:
+    - name: source
+  steps:
+    - name: build-and-push
+      image: buildpacksio/pack:latest
+      env:
+        - name: "DOCKER_CONFIG"
+          value: "/tekton/home/.docker/"
+      script: |
+        #!/bin/sh
+        pack build $(params.IMAGE) \
+          --path $(workspaces.source.path)/$(params.CONTEXT_DIR) \
+          --builder paketobuildpacks/builder:base \
+          --publish
+    - name: notify
+      image: curlimages/curl:latest
+      script: |
+        #!/bin/sh
+        curl -X POST -H "Content-Type: application/json" \
+          -d "{\"fc_id\":\"$(params.FC_ID)\",\"image_url\":\"$(params.IMAGE)\"}" \
+          "$(params.NOTIFY_URL)"
+
+---
+apiVersion: tekton.dev/v1bet1
+kind: Pipeline
+metadata:
+  name: function-build-pipeline
+  namespace: tekton
+spec:
+  params:
+    - name: IMAGE
+      type: string
+    - name: CONTEXT_DIR
+      type: string
+    - name: NOTIFY_URL
+      type: string
+    - name: FC_ID
+      type: string
+  workspaces:
+    - name: source
+  tasks:
+    - name: build-and-notify
+      taskRef:
+        name: build-and-notify
+      params:
+        - name: IMAGE
+          value: $(params.IMAGE)
+        - name: CONTEXT_DIR
+          value: $(params.CONTEXT_DIR)
+        - name: NOTIFY_URL
+          value: $(params.NOTIFY_URL)
+        - name: FC_ID
+          value: $(params.FC_ID)
+      workspaces:
+        - name: source
+          workspace: source

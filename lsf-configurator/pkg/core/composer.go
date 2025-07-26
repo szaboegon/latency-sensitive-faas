@@ -7,6 +7,7 @@ import (
 	"lsf-configurator/pkg/uuid"
 	"mime/multipart"
 	"path/filepath"
+	"sync"
 
 	"github.com/apex/log"
 )
@@ -17,20 +18,30 @@ const (
 	QueueSize      = 30
 )
 
+type Builder interface {
+	Build(ctx context.Context, fc *FunctionComposition) error
+}
+
 type Composer struct {
 	db            FunctionAppStore
 	knClient      KnClient
 	scheduler     Scheduler
 	routingClient RoutingClient
+	builder       Builder
+
+	buildNotifyChans map[string]chan string // fc.Id -> imageURL
+	mu               sync.Mutex
 }
 
-func NewComposer(db FunctionAppStore, routingClient RoutingClient, knClient KnClient) *Composer {
+func NewComposer(db FunctionAppStore, routingClient RoutingClient, knClient KnClient, builder Builder) *Composer {
 	scheduler := NewScheduler(WorkerPoolSize, QueueSize)
 	return &Composer{
-		db:            db,
-		knClient:      knClient,
-		scheduler:     scheduler,
-		routingClient: routingClient,
+		db:               db,
+		knClient:         knClient,
+		scheduler:        scheduler,
+		routingClient:    routingClient,
+		builder:          builder,
+		buildNotifyChans: make(map[string]chan string),
 	}
 }
 
@@ -137,18 +148,31 @@ func (c *Composer) SetRoutingTable(appId, fcName string, table RoutingTable) err
 }
 
 func (c *Composer) scheduleBuildAndDeploy(appId string, fc FunctionComposition) {
-	resultChan := c.scheduler.AddTask(c.buildTask(fc), MaxRetries)
+	// Create a channel to receive build notification
+	c.mu.Lock()
+	buildChan := make(chan string, 1)
+	c.buildNotifyChans[fc.Id] = buildChan
+	c.mu.Unlock()
 
-	r := <-resultChan
-	if r.Err != nil {
-		log.Errorf("Build of function composition with id %v failed: %v", fc.Id, r.Err)
-		return
-	}
-	fc = r.Value.(FunctionComposition)
+	// Start build task (asynchronously, but don't wait for result)
+	c.scheduler.AddTask(c.buildTask(fc), MaxRetries)
+
+	// Wait for build notification (imageURL)
+	imageURL := <-buildChan
+
+	// Set built image on FunctionComposition
+	fc.Build.Image = imageURL
+
+	// Clean up channel
+	c.mu.Lock()
+	delete(c.buildNotifyChans, fc.Id)
+	c.mu.Unlock()
+
 	log.Infof("Successfully built function composition with id %v. Image: %v", fc.Id, fc.Build.Image)
 
-	resultChan = c.scheduler.AddTask(c.deployTask(appId, fc), MaxRetries)
-	r = <-resultChan
+	// Proceed to deploy
+	resultChan := c.scheduler.AddTask(c.deployTask(appId, fc), MaxRetries)
+	r := <-resultChan
 	if r.Err != nil {
 		log.Errorf("Deploying of function composition with id %v failed: %v", fc.Id, r.Err)
 		return
@@ -158,11 +182,21 @@ func (c *Composer) scheduleBuildAndDeploy(appId string, fc FunctionComposition) 
 
 func (c *Composer) buildTask(fc FunctionComposition) func() (interface{}, error) {
 	return func() (interface{}, error) {
-		fc, err := c.knClient.Build(context.TODO(), fc)
+		err := c.builder.Build(context.TODO(), &fc)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to build image: %v", err)
 		}
-		return fc, err
+		return fc, nil
+	}
+}
+
+// Called by HTTP handler when CI/CD pipeline notifies build is ready
+func (c *Composer) NotifyBuildReady(fcId, imageURL string) {
+	c.mu.Lock()
+	ch, ok := c.buildNotifyChans[fcId]
+	c.mu.Unlock()
+	if ok {
+		ch <- imageURL
 	}
 }
 

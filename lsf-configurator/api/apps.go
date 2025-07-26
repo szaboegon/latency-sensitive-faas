@@ -13,12 +13,12 @@ const (
 )
 
 type HandlerApps struct {
-	composer core.Composer
+	composer *core.Composer
 	conf     config.Configuration
 	mux      *http.ServeMux
 }
 
-func NewHandlerApps(composer core.Composer, conf config.Configuration) *HandlerApps {
+func NewHandlerApps(composer *core.Composer, conf config.Configuration) *HandlerApps {
 	h := &HandlerApps{
 		composer: composer,
 		conf:     conf,
@@ -28,6 +28,7 @@ func NewHandlerApps(composer core.Composer, conf config.Configuration) *HandlerA
 	h.mux.HandleFunc("POST "+AppsPath+"create", h.create)
 	h.mux.HandleFunc("DELETE "+AppsPath+"delete", h.delete)
 	h.mux.HandleFunc("PUT "+AppsPath+"{id}/{fc_name}/routing_table", h.putRoutingTable)
+	h.mux.HandleFunc("POST "+AppsPath+"build_notify", h.buildNotify)
 
 	return h
 }
@@ -106,5 +107,22 @@ func (h *HandlerApps) putRoutingTable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *HandlerApps) buildNotify(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		FcId     string `json:"fc_id"`
+		ImageURL string `json:"image_url"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+	h.composer.NotifyBuildReady(req.FcId, req.ImageURL)
 	w.WriteHeader(http.StatusOK)
 }

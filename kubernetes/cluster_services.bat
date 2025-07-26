@@ -11,6 +11,7 @@ set LSF_CONFIGURATOR_YAML_PATH="..\lsf-configurator\deploy\lsf-configurator.yaml
 set REDIS_NAMESPACE_YAML_PATH="redis\redis-namespace.yaml"
 set REDIS_MASTER_YAML_PATH="redis\redis-master.yaml"
 set REDIS_REPLICA_YAML_PATH="redis\redis-replica.yaml"
+set TEKTON_YAML_PATH="tekton\function-build-pipeline.yaml"
 
 echo Updating hellm repositories...
 helm repo update
@@ -118,6 +119,19 @@ if errorlevel 1 (
     echo Error creating Redis replica
     exit /b 1
 )
+
+echo Installing Tekton Pipelines...
+kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml
+if errorlevel 1 (
+    echo Error installing Tekton Pipelines
+    exit /b 1
+)
+kubectl apply -f %TEKTON_YAML_PATH%
+if errorlevel 1 (
+    echo Error applying Tekton function build pipeline
+    exit /b 1
+)
+
 
 echo Port forwarding Kibana to local port 5601
 set MAX_RETRIES=50
