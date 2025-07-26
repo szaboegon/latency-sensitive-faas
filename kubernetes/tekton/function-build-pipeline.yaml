@@ -1,43 +1,17 @@
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: build-and-notify
+  name: notify
   namespace: configurator
 spec:
   params:
     - name: IMAGE
       type: string
-    - name: CONTEXT_DIR
-      type: string
     - name: NOTIFY_URL
       type: string
     - name: FC_ID
       type: string
-  workspaces:
-    - name: source
   steps:
-    # - name: debug-list-files
-    #   image: busybox
-    #   command: ["sh", "-c"]
-    #   args:
-    #     - |
-    #       echo "Listing contents of workspace:"
-    #       ls -lR "$(workspaces.source.path)"
-    - name: build-and-push
-      image: buildpacksio/pack:latest
-      env:
-        - name: DOCKER_CONFIG
-          value: "/tekton/home/.docker/"
-      command: ["pack"]
-      args:
-        - build
-        - "$(params.IMAGE)"
-        - "--path"
-        - "$(workspaces.source.path)/$(params.CONTEXT_DIR)"
-        - "--builder"
-        - "paketobuildpacks/builder:base"
-        - "--publish"
-
     - name: notify
       image: curlimages/curl:latest
       command: ["curl"]
@@ -69,18 +43,31 @@ spec:
   workspaces:
     - name: source
   tasks:
-    - name: build-and-notify
+  #TODO: https://buildpacks.io/docs/for-platform-operators/how-to/integrate-ci/tekton/
+  # hellyeah, its working, only dockerhub push remains
+    - name: build-function
       taskRef:
-        name: build-and-notify
+        name: buildpacks
+      params:
+        - name: APP_IMAGE
+          value: $(params.IMAGE)
+        - name: BUILDER_IMAGE
+          value: paketobuildpacks/builder:full
+        - name: SOURCE_SUBPATH
+          value: $(params.CONTEXT_DIR)
+      workspaces:
+        - name: source
+          workspace: source
+
+    - name: notify
+      runAfter:
+        - build-function
+      taskRef:
+        name: notify
       params:
         - name: IMAGE
           value: $(params.IMAGE)
-        - name: CONTEXT_DIR
-          value: $(params.CONTEXT_DIR)
         - name: NOTIFY_URL
           value: $(params.NOTIFY_URL)
         - name: FC_ID
           value: $(params.FC_ID)
-      workspaces:
-        - name: source
-          workspace: source
