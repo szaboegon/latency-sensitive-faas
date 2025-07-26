@@ -28,15 +28,15 @@ type TektonBuilder struct {
 func NewTektonBuilder() *TektonBuilder {
 	// These values could be loaded from env/config as needed
 	return &TektonBuilder{
-		Namespace:    getEnv("TEKTON_NAMESPACE", "tekton"),
+		Namespace:    getEnv("TEKTON_NAMESPACE", "configurator"),
 		Pipeline:     getEnv("TEKTON_PIPELINE", "function-build-pipeline"),
 		NotifyURL:    getEnv("TEKTON_NOTIFY_URL", "http://lsf-configurator.lsf-configurator.svc.cluster.local:8080/apps/build_notify"),
-		WorkspacePVC: getEnv("TEKTON_WORKSPACE_PVC", "tekton-pvc"),
+		WorkspacePVC: getEnv("TEKTON_WORKSPACE_PVC", "uploads-pvc"),
 		ImageRepo:    getEnv("TEKTON_IMAGE_REPO", "registry.hub.docker.com/szaboegon"),
 	}
 }
 
-func (b *TektonBuilder) Build(ctx context.Context, fc *core.FunctionComposition) error {
+func (b *TektonBuilder) Build(ctx context.Context, fc core.FunctionComposition, buildDir string) error {
 	var config *rest.Config
 	var err error
 
@@ -61,6 +61,13 @@ func (b *TektonBuilder) Build(ctx context.Context, fc *core.FunctionComposition)
 	image := fmt.Sprintf("%s/%s:latest", b.ImageRepo, fc.Id)
 	prName := fmt.Sprintf("build-%s", fc.Id)
 
+	uploadsFolder := getEnv("UPLOAD_DIR", "/uploads")
+	relContextDir, err := filepath.Rel(uploadsFolder, buildDir)
+	if err != nil {
+		log.Printf("Error computing relative path for CONTEXT_DIR: %v", err)
+		return fmt.Errorf("failed to compute relative CONTEXT_DIR: %w", err)
+	}
+
 	pr := &tektonv1.PipelineRun{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      prName,
@@ -72,7 +79,7 @@ func (b *TektonBuilder) Build(ctx context.Context, fc *core.FunctionComposition)
 			},
 			Params: []tektonv1.Param{
 				{Name: "IMAGE", Value: tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: image}},
-				{Name: "CONTEXT_DIR", Value: tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: fc.SourcePath}},
+				{Name: "CONTEXT_DIR", Value: tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: relContextDir}},
 				{Name: "NOTIFY_URL", Value: tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: b.NotifyURL}},
 				{Name: "FC_ID", Value: tektonv1.ParamValue{Type: tektonv1.ParamTypeString, StringVal: fc.Id}},
 			},

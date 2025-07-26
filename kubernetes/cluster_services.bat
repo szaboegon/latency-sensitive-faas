@@ -6,6 +6,7 @@ set KIBANA_CONFIG="elastic\kibana.yaml"
 set APM_SERVER_CONFIG="elastic\apmserver.yaml"
 set PYTHON_INSTRUMENTATION="otel\python_instrumentation.yaml"
 set LSF_CONFIGURATOR_NAMESPACE_YAML_PATH="..\lsf-configurator\deploy\configurator-namespace.yaml"
+set UPLOADS_PVC_YAML_PATH="..\lsf-configurator\deploy\uploads-pvc.yaml"
 set LSF_CONFIGURATOR_CREATE_SECRET_PATH="..\lsf-configurator\deploy\create_secret.bat"
 set LSF_CONFIGURATOR_YAML_PATH="..\lsf-configurator\deploy\lsf-configurator.yaml"
 set REDIS_NAMESPACE_YAML_PATH="redis\redis-namespace.yaml"
@@ -88,6 +89,12 @@ echo Installing Configurator component...
 kubectl apply -f %LSF_CONFIGURATOR_NAMESPACE_YAML_PATH%
 if errorlevel 1 (
     echo Error creating configurator namespace
+    exit /b 1
+)
+
+kubectl apply -f %UPLOADS_PVC_YAML_PATH%
+if errorlevel 1 (
+    echo Error creating uploads PVC
     exit /b 1
 )
 

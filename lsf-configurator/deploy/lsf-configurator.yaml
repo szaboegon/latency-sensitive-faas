@@ -17,6 +17,11 @@ rules:
   - apiGroups: ["apps"]
     resources: ["deployments", "statefulsets", "daemonsets"]
     verbs: ["get", "list", "watch", "create", "update", "delete"]
+
+  # Tekton Pipelines API (allow managing PipelineRuns and related resources)
+  - apiGroups: ["tekton.dev"]
+    resources: ["pipelineruns", "pipelineruns/finalizers", "pipelineruns/status", "taskruns", "taskruns/finalizers", "taskruns/status"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -76,7 +81,7 @@ spec:
             periodSeconds: 2
           env:
             - name: UPLOAD_DIR
-              value: "/uploads/apps"
+              value: "/uploads"
             - name: IMAGE_REGISTRY
               value: "registry.hub.docker.com/szaboegon"
             - name: TEMPLATES_PATH
@@ -99,6 +104,13 @@ spec:
               value: "false"
             - name: METRICS_BACKEND_ADDRESS
               value: http://elasticsearch-es-http.observability.svc.cluster.local:9200
+          volumeMounts:
+            - name: uploads-pvc
+              mountPath: /uploads
+      volumes:
+        - name: uploads-pvc
+          persistentVolumeClaim:
+            claimName: uploads-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -115,4 +127,3 @@ spec:
     nodePort: 30001
 
 
-  

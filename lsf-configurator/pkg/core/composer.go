@@ -18,10 +18,6 @@ const (
 	QueueSize      = 30
 )
 
-type Builder interface {
-	Build(ctx context.Context, fc *FunctionComposition) error
-}
-
 type Composer struct {
 	db            FunctionAppStore
 	knClient      KnClient
@@ -182,7 +178,8 @@ func (c *Composer) scheduleBuildAndDeploy(appId string, fc FunctionComposition) 
 
 func (c *Composer) buildTask(fc FunctionComposition) func() (interface{}, error) {
 	return func() (interface{}, error) {
-		err := c.builder.Build(context.TODO(), &fc)
+		buildDir, err := c.knClient.Init(context.TODO(), fc)
+		c.builder.Build(context.TODO(), fc, buildDir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build image: %v", err)
 		}
