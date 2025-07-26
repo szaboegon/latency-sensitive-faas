@@ -15,7 +15,7 @@ spec:
     requests:
       storage: 5Gi
 ---
-apiVersion: tekton.dev/v1beta1
+apiVersion: tekton.dev/v1
 kind: Task
 metadata:
   name: build-and-notify
@@ -53,7 +53,7 @@ spec:
           "$(params.NOTIFY_URL)"
 
 ---
-apiVersion: tekton.dev/v1bet1
+apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
   name: function-build-pipeline
