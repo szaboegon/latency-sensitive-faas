@@ -17,6 +17,11 @@ rules:
   - apiGroups: ["apps"]
     resources: ["deployments", "statefulsets", "daemonsets"]
     verbs: ["get", "list", "watch", "create", "update", "delete"]
+
+  # Tekton Pipelines API (allow managing PipelineRuns and related resources)
+  - apiGroups: ["tekton.dev"]
+    resources: ["pipelineruns", "pipelineruns/finalizers", "pipelineruns/status", "taskruns", "taskruns/finalizers", "taskruns/status"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -76,34 +81,41 @@ spec:
             periodSeconds: 2
           env:
             - name: UPLOAD_DIR
-              value: "/uploads/apps"
+              value: "/uploads"
             - name: IMAGE_REGISTRY
               value: "registry.hub.docker.com/szaboegon"
+            - name: IMAGE_REPOSITORY
+              value: "szaboegon"
             - name: TEMPLATES_PATH
               value: "file://templates"
-            - name: BUILDER_IMAGE
-              value: "docker.io/paketobuildpacks/builder-jammy-base"
-            - name: REGISTRY_USER
-              valueFrom:
-                secretKeyRef:
-                  name: registry-secret
-                  key: REGISTRY_USER
-            - name: REGISTRY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: registry-secret
-                  key: REGISTRY_PASSWORD
             - name: REDIS_URL
               value: "redis-master.redis.svc.cluster.local:6379"
             - name: VERBOSE_LOGS
               value: "false"
             - name: METRICS_BACKEND_ADDRESS
               value: http://elasticsearch-es-http.observability.svc.cluster.local:9200
+            - name: TEKTON_NAMESPACE
+              value: "configurator"
+            - name: TEKTON_PIPELINE
+              value: "function-build-pipeline"
+            - name: TEKTON_NOTIFY_URL
+              value: http://lsf-configurator.configurator.svc.cluster.local:80/apps/build_notify
+            - name: TEKTON_WORKSPACE_PVC
+              value: "uploads-pvc"
+            - name: TEKTON_SERVICE_ACCOUNT
+              value: "buildpacks-service-account"
+          volumeMounts:
+            - name: uploads-pvc
+              mountPath: /uploads
+      volumes:
+        - name: uploads-pvc
+          persistentVolumeClaim:
+            claimName: uploads-pvc
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: lsf-configurator-service
+  name: lsf-configurator
   namespace: configurator
 spec:
   type: NodePort
@@ -115,4 +127,3 @@ spec:
     nodePort: 30001
 
 
-  

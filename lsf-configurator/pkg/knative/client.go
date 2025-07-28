@@ -11,11 +11,6 @@ import (
 	"lsf-configurator/pkg/uuid"
 	"path"
 
-	http "net/http"
-
-	builders "knative.dev/func/pkg/builders"
-	pack "knative.dev/func/pkg/builders/buildpacks"
-	docker "knative.dev/func/pkg/docker"
 	fn "knative.dev/func/pkg/functions"
 	knativefunc "knative.dev/func/pkg/knative"
 )
@@ -27,24 +22,10 @@ const CompositionTemplateName = "composition"
 type Client struct {
 	fnClient      *fn.Client
 	imageRegistry string
-	builderImages map[string]string
 }
 
 func NewClient(conf config.Configuration) *Client {
 	o := []fn.Option{fn.WithRepository(conf.TemplatesPath)}
-	c := NewCredentialsProvider(conf.RegistryUser, conf.RegistryPassword)
-
-	o = append(o,
-		fn.WithBuilder(pack.NewBuilder(
-			pack.WithName(builders.Pack),
-			pack.WithTimestamp(true),
-			pack.WithVerbose(conf.VerboseLogs))))
-
-	o = append(o,
-		fn.WithPusher(docker.NewPusher(
-			docker.WithCredentialsProvider(c),
-			docker.WithTransport(http.DefaultTransport),
-			docker.WithVerbose(conf.VerboseLogs))))
 
 	o = append(o,
 		fn.WithDeployer(knativefunc.NewDeployer(
@@ -54,16 +35,12 @@ func NewClient(conf config.Configuration) *Client {
 
 	return &Client{
 		fnClient:      fnClient,
-		imageRegistry: conf.ImageRegistry,
-		builderImages: map[string]string{
-			"pack": conf.BuilderImage,
-		},
+		imageRegistry: conf.ImageRegistry + "/" + conf.ImageRepository,
 	}
 }
 
-func (c *Client) Build(ctx context.Context, fc core.FunctionComposition) (core.FunctionComposition, error) {
+func (c *Client) Init(ctx context.Context, fc core.FunctionComposition) (string, error) {
 	buildDir := createBuildDir(fc.SourcePath)
-	defer cleanUpBuildDir(buildDir)
 
 	f := fn.Function{
 		Name:      fc.Id,
@@ -73,15 +50,9 @@ func (c *Client) Build(ctx context.Context, fc core.FunctionComposition) (core.F
 		Invoke:    "http",
 		Root:      buildDir,
 		Template:  CompositionTemplateName,
-		Build: fn.BuildSpec{
-			Builder: "pack",
-			BuilderImages: map[string]string{
-				"pack": c.builderImages["pack"],
-			},
-		},
 	}
 
-	f, err := c.fnClient.Init(f)
+	_, err := c.fnClient.Init(f)
 	if err != nil {
 		log.Fatalf("Could not initialize function based on config: %v", err)
 	}
@@ -89,31 +60,15 @@ func (c *Client) Build(ctx context.Context, fc core.FunctionComposition) (core.F
 	copyNonSourceFiles(fc.SourcePath, buildDir, fc.Files)
 	bootstrapper, err := bootstrapping.NewBootstrapper(fc, buildDir)
 	if err != nil {
-		return core.FunctionComposition{}, err
+		return "", err
 	}
 
 	err = bootstrapper.Setup()
 	if err != nil {
-		return core.FunctionComposition{}, err
+		return "", err
 	}
 
-	f, err = c.fnClient.Build(ctx, f)
-	if err != nil {
-		return core.FunctionComposition{}, err
-	}
-
-	f, success, err := c.fnClient.Push(ctx, f)
-	if err != nil {
-		return core.FunctionComposition{}, err
-	}
-
-	if !success {
-		return core.FunctionComposition{}, fmt.Errorf("failed to push image %v to registry %v", f.Build.Image, f.Registry)
-	}
-
-	fc.Build.Image = f.Build.Image
-	fc.Build.Stamp = f.BuildStamp()
-	return fc, nil
+	return buildDir, nil
 }
 
 func (c *Client) Deploy(ctx context.Context, appId string, fc core.FunctionComposition) error {

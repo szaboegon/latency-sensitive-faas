@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: buildpacks-service-account
+  namespace: configurator
+secrets:
+  - name: registry-user-pass
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: notify
+  namespace: configurator
+spec:
+  params:
+    - name: IMAGE
+      type: string
+    - name: NOTIFY_URL
+      type: string
+    - name: FC_ID
+      type: string
+  steps:
+    - name: notify
+      image: curlimages/curl:latest
+      command: ["curl"]
+      args:
+        - -X
+        - POST
+        - -H
+        - "Content-Type: application/json"
+        - -d
+        - '{"fc_id":"$(params.FC_ID)","image_url":"$(params.IMAGE)"}'
+        - "$(params.NOTIFY_URL)"
+
+---
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: function-build-pipeline
+  namespace: configurator
+spec:
+  params:
+    - name: IMAGE
+      type: string
+    - name: CONTEXT_DIR
+      type: string
+    - name: NOTIFY_URL
+      type: string
+    - name: FC_ID
+      type: string
+  workspaces:
+    - name: source
+  tasks:
+  #TODO: https://buildpacks.io/docs/for-platform-operators/how-to/integrate-ci/tekton/
+  # hellyeah, its working, only dockerhub push remains
+    - name: build-function
+      taskRef:
+        name: buildpacks
+      params:
+        - name: APP_IMAGE
+          value: $(params.IMAGE)
+        - name: BUILDER_IMAGE
+          value: paketobuildpacks/builder:full
+        - name: SOURCE_SUBPATH
+          value: $(params.CONTEXT_DIR)
+      workspaces:
+        - name: source
+          workspace: source
+
+    - name: notify
+      runAfter:
+        - build-function
+      taskRef:
+        name: notify
+      params:
+        - name: IMAGE
+          value: $(params.IMAGE)
+        - name: NOTIFY_URL
+          value: $(params.NOTIFY_URL)
+        - name: FC_ID
+          value: $(params.FC_ID)

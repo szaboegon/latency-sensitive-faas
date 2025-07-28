@@ -1,6 +1,8 @@
 package core
 
-import "context"
+import (
+	"context"
+)
 
 type FunctionApp struct {
 	Id           string
@@ -34,7 +36,8 @@ type Build struct {
 }
 
 type KnClient interface {
-	Build(ctx context.Context, fc FunctionComposition) (FunctionComposition, error)
+	Init(ctx context.Context, fc FunctionComposition) (string, error)
+	//Build(ctx context.Context, fc FunctionComposition) (FunctionComposition, error)
 	Deploy(ctx context.Context, appId string, fc FunctionComposition) error
 	Delete(ctx context.Context, fc FunctionComposition) error
 }
@@ -47,4 +50,8 @@ type FunctionAppStore interface {
 
 type RoutingClient interface {
 	SetRoutingTable(appId string, fc FunctionComposition) error
+}
+
+type Builder interface {
+	Build(ctx context.Context, fc FunctionComposition, buildDir string) error
 }

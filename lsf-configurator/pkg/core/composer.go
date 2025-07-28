@@ -7,6 +7,7 @@ import (
 	"lsf-configurator/pkg/uuid"
 	"mime/multipart"
 	"path/filepath"
+	"strings"
 
 	"github.com/apex/log"
 )
@@ -22,15 +23,17 @@ type Composer struct {
 	knClient      KnClient
 	scheduler     Scheduler
 	routingClient RoutingClient
+	builder       Builder
 }
 
-func NewComposer(db FunctionAppStore, routingClient RoutingClient, knClient KnClient) *Composer {
+func NewComposer(db FunctionAppStore, routingClient RoutingClient, knClient KnClient, builder Builder) *Composer {
 	scheduler := NewScheduler(WorkerPoolSize, QueueSize)
 	return &Composer{
 		db:            db,
 		knClient:      knClient,
 		scheduler:     scheduler,
 		routingClient: routingClient,
+		builder:       builder,
 	}
 }
 
@@ -90,7 +93,7 @@ func (c *Composer) AddFunctionComposition(appId string, fc FunctionComposition) 
 		return fmt.Errorf("could not set routing table for function: %s, %s", fc.Id, err.Error())
 	}
 
-	go c.scheduleBuildAndDeploy(appId, fc)
+	c.scheduler.AddTask(c.buildTask(fc), MaxRetries)
 	return nil
 }
 
@@ -136,19 +139,29 @@ func (c *Composer) SetRoutingTable(appId, fcName string, table RoutingTable) err
 	return nil
 }
 
-func (c *Composer) scheduleBuildAndDeploy(appId string, fc FunctionComposition) {
-	resultChan := c.scheduler.AddTask(c.buildTask(fc), MaxRetries)
-
-	r := <-resultChan
-	if r.Err != nil {
-		log.Errorf("Build of function composition with id %v failed: %v", fc.Id, r.Err)
+// Called by HTTP handler when CI/CD pipeline notifies build is ready
+func (c *Composer) NotifyBuildReady(fcId, imageURL string) {
+	appId, err := getAppIdFromFcId(fcId)
+	if err != nil {
+		log.Errorf("build notify failed, invalid function composition ID format: %s", fcId)
 		return
 	}
-	fc = r.Value.(FunctionComposition)
+	app, err := c.db.Get(appId)
+	if err != nil {
+		log.Errorf("build notify failed, failed to get app with id %s: %v", appId, err)
+		return
+	}
+	fc, ok := app.Compositions[fcId]
+	if !ok {
+		log.Errorf("build notify failed, function composition with id %s not found", fcId)
+		return
+	}
+	fc.Build.Image = imageURL
+	c.db.Set(appId, app)
 	log.Infof("Successfully built function composition with id %v. Image: %v", fc.Id, fc.Build.Image)
 
-	resultChan = c.scheduler.AddTask(c.deployTask(appId, fc), MaxRetries)
-	r = <-resultChan
+	resultChan := c.scheduler.AddTask(c.deployTask(appId, *fc), MaxRetries)
+	r := <-resultChan
 	if r.Err != nil {
 		log.Errorf("Deploying of function composition with id %v failed: %v", fc.Id, r.Err)
 		return
@@ -158,11 +171,12 @@ func (c *Composer) scheduleBuildAndDeploy(appId string, fc FunctionComposition) 
 
 func (c *Composer) buildTask(fc FunctionComposition) func() (interface{}, error) {
 	return func() (interface{}, error) {
-		fc, err := c.knClient.Build(context.TODO(), fc)
+		buildDir, err := c.knClient.Init(context.TODO(), fc)
+		c.builder.Build(context.TODO(), fc, buildDir)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to build image: %v", err)
 		}
-		return fc, err
+		return fc, nil
 	}
 }
 
@@ -180,4 +194,12 @@ func (c *Composer) deleteTask(fc FunctionComposition) func() (interface{}, error
 
 func UniqueFcId(appId, funcName string) string {
 	return "app-" + appId + "-" + funcName
+}
+
+func getAppIdFromFcId(fcId string) (string, error) {
+	parts := strings.Split(fcId, "-")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid function composition ID format: %s", fcId)
+	}
+	return parts[1], nil
 }
