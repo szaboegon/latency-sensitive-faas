@@ -123,6 +123,6 @@ func (h *HandlerApps) buildNotify(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-	h.composer.NotifyBuildReady(req.FcId, req.ImageURL)
+	go h.composer.NotifyBuildReady(req.FcId, req.ImageURL)
 	w.WriteHeader(http.StatusOK)
 }

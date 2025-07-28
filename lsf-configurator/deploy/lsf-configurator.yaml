@@ -84,26 +84,26 @@ spec:
               value: "/uploads"
             - name: IMAGE_REGISTRY
               value: "registry.hub.docker.com/szaboegon"
+            - name: IMAGE_REPOSITORY
+              value: "szaboegon"
             - name: TEMPLATES_PATH
               value: "file://templates"
-            - name: BUILDER_IMAGE
-              value: "docker.io/paketobuildpacks/builder-jammy-base"
-            - name: REGISTRY_USER
-              valueFrom:
-                secretKeyRef:
-                  name: registry-secret
-                  key: REGISTRY_USER
-            - name: REGISTRY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: registry-secret
-                  key: REGISTRY_PASSWORD
             - name: REDIS_URL
               value: "redis-master.redis.svc.cluster.local:6379"
             - name: VERBOSE_LOGS
               value: "false"
             - name: METRICS_BACKEND_ADDRESS
               value: http://elasticsearch-es-http.observability.svc.cluster.local:9200
+            - name: TEKTON_NAMESPACE
+              value: "configurator"
+            - name: TEKTON_PIPELINE
+              value: "function-build-pipeline"
+            - name: TEKTON_NOTIFY_URL
+              value: http://lsf-configurator.configurator.svc.cluster.local:80/apps/build_notify
+            - name: TEKTON_WORKSPACE_PVC
+              value: "uploads-pvc"
+            - name: TEKTON_SERVICE_ACCOUNT
+              value: "buildpacks-service-account"
           volumeMounts:
             - name: uploads-pvc
               mountPath: /uploads

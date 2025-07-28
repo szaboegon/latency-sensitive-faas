@@ -39,19 +39,25 @@ func main() {
 	if err != nil {
 		log.Fatal("failed to create image puller: ", err)
 	}
-	err = puller.PullImage(context.Background(), conf.BuilderImage)
-	if err != nil {
-		log.Fatal("failed to pull image: ", err)
-	}
-	log.Printf("builder image %s pulled successfully", conf.BuilderImage)
 
 	store := db.NewKvFunctionAppStore()
 	knClient := knative.NewClient(conf)
 	routingClient := routing.NewRouteConfigurator(conf.RedisUrl)
-	tektonBuilder := builder.NewTektonBuilder()
+	tektonConf := builder.TektonConfig{
+		Namespace:      conf.TektonNamespace,
+		Pipeline:       conf.TektonPipeline,
+		NotifyURL:      conf.TektonNotifyURL,
+		WorkspacePVC:   conf.TektonWorkspacePVC,
+		ImageRepo:      conf.ImageRepository,
+		ServiceAccount: conf.TektonServiceAccount,
+	}
+	tektonBuilder := builder.NewTektonBuilder(tektonConf)
 
 	composer = core.NewComposer(store, routingClient, knClient, tektonBuilder)
 	metricsReader, err = metrics.NewMetricsReader(conf.MetricsBackendAddress)
+	if err != nil {
+		log.Fatalf("failed to create metrics reader: %v", err)
+	}
 	err = filesystem.CreateDir(conf.UploadDir)
 	if err != nil {
 		log.Fatalf("Could not create uploads directory: %v", err)

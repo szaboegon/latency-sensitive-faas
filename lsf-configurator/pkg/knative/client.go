@@ -35,7 +35,7 @@ func NewClient(conf config.Configuration) *Client {
 
 	return &Client{
 		fnClient:      fnClient,
-		imageRegistry: conf.ImageRegistry,
+		imageRegistry: conf.ImageRegistry + "/" + conf.ImageRepository,
 	}
 }
 

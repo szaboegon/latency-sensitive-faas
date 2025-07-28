@@ -17,22 +17,29 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-type TektonBuilder struct {
-	Namespace    string
-	Pipeline     string
-	NotifyURL    string
-	WorkspacePVC string
-	ImageRepo    string
+type TektonConfig struct {
+	Namespace      string
+	Pipeline       string
+	NotifyURL      string
+	WorkspacePVC   string
+	ImageRepo      string
+	ServiceAccount string
 }
 
-func NewTektonBuilder() *TektonBuilder {
-	// These values could be loaded from env/config as needed
+type TektonBuilder struct {
+	TektonConfig
+}
+
+func NewTektonBuilder(cfg TektonConfig) *TektonBuilder {
 	return &TektonBuilder{
-		Namespace:    getEnv("TEKTON_NAMESPACE", "configurator"),
-		Pipeline:     getEnv("TEKTON_PIPELINE", "function-build-pipeline"),
-		NotifyURL:    getEnv("TEKTON_NOTIFY_URL", "http://lsf-configurator.configurator.svc.cluster.local:80/apps/build_notify"),
-		WorkspacePVC: getEnv("TEKTON_WORKSPACE_PVC", "uploads-pvc"),
-		ImageRepo:    getEnv("TEKTON_IMAGE_REPO", "szaboegon"),
+		TektonConfig: TektonConfig{
+			Namespace:      cfg.Namespace,
+			Pipeline:       cfg.Pipeline,
+			NotifyURL:      cfg.NotifyURL,
+			WorkspacePVC:   cfg.WorkspacePVC,
+			ImageRepo:      cfg.ImageRepo,
+			ServiceAccount: cfg.ServiceAccount,
+		},
 	}
 }
 
@@ -92,7 +99,7 @@ func (b *TektonBuilder) Build(ctx context.Context, fc core.FunctionComposition, 
 				},
 			},
 			TaskRunTemplate: tektonv1.PipelineTaskRunTemplate{
-				ServiceAccountName: "buildpacks-service-account",
+				ServiceAccountName: b.ServiceAccount,
 			},
 		},
 	}
