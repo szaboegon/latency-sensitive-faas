@@ -1,3 +1,11 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: buildpacks-service-account
+  namespace: configurator
+secrets:
+  - name: registry-user-pass
+---
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:

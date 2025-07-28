@@ -30,9 +30,9 @@ func NewTektonBuilder() *TektonBuilder {
 	return &TektonBuilder{
 		Namespace:    getEnv("TEKTON_NAMESPACE", "configurator"),
 		Pipeline:     getEnv("TEKTON_PIPELINE", "function-build-pipeline"),
-		NotifyURL:    getEnv("TEKTON_NOTIFY_URL", "http://lsf-configurator.lsf-configurator.svc.cluster.local:8080/apps/build_notify"),
+		NotifyURL:    getEnv("TEKTON_NOTIFY_URL", "http://lsf-configurator.configurator.svc.cluster.local:80/apps/build_notify"),
 		WorkspacePVC: getEnv("TEKTON_WORKSPACE_PVC", "uploads-pvc"),
-		ImageRepo:    getEnv("TEKTON_IMAGE_REPO", "registry.hub.docker.com/szaboegon"),
+		ImageRepo:    getEnv("TEKTON_IMAGE_REPO", "szaboegon"),
 	}
 }
 
@@ -90,6 +90,9 @@ func (b *TektonBuilder) Build(ctx context.Context, fc core.FunctionComposition, 
 						ClaimName: b.WorkspacePVC,
 					},
 				},
+			},
+			TaskRunTemplate: tektonv1.PipelineTaskRunTemplate{
+				ServiceAccountName: "buildpacks-service-account",
 			},
 		},
 	}

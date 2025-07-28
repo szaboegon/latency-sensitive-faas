@@ -13,8 +13,6 @@ type Configuration struct {
 	UploadDir             string `env:"UPLOAD_DIR"`
 	TemplatesPath         string `env:"TEMPLATES_PATH"`
 	ImageRegistry         string `env:"IMAGE_REGISTRY"`
-	RegistryUser          string `env:"REGISTRY_USER"`
-	RegistryPassword      string `env:"REGISTRY_PASSWORD"`
 	BuilderImage          string `env:"BUILDER_IMAGE"`
 	RedisUrl              string `env:"REDIS_URL"`
 	VerboseLogs           bool   `env:"VERBOSE_LOGS"`

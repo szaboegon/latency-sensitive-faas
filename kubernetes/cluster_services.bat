@@ -7,7 +7,7 @@ set APM_SERVER_CONFIG="elastic\apmserver.yaml"
 set PYTHON_INSTRUMENTATION="otel\python_instrumentation.yaml"
 set LSF_CONFIGURATOR_NAMESPACE_YAML_PATH="..\lsf-configurator\deploy\configurator-namespace.yaml"
 set UPLOADS_PVC_YAML_PATH="..\lsf-configurator\deploy\uploads-pvc.yaml"
-set LSF_CONFIGURATOR_CREATE_SECRET_PATH="..\lsf-configurator\deploy\create_secret.bat"
+set CREATE_REGISTRY_SECRET_PATH=".\create_registry_secret.bat"
 set LSF_CONFIGURATOR_YAML_PATH="..\lsf-configurator\deploy\lsf-configurator.yaml"
 set REDIS_NAMESPACE_YAML_PATH="redis\redis-namespace.yaml"
 set REDIS_MASTER_YAML_PATH="redis\redis-master.yaml"
@@ -98,7 +98,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-call %LSF_CONFIGURATOR_CREATE_SECRET_PATH%
+call %CREATE_REGISTRY_SECRET_PATH%
 if errorlevel 1 (
     echo Error creating registry secret for lsf-configurator
     exit /b 1

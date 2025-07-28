@@ -11,9 +11,6 @@ import (
 	"lsf-configurator/pkg/uuid"
 	"path"
 
-	http "net/http"
-
-	docker "knative.dev/func/pkg/docker"
 	fn "knative.dev/func/pkg/functions"
 	knativefunc "knative.dev/func/pkg/knative"
 )
@@ -25,18 +22,10 @@ const CompositionTemplateName = "composition"
 type Client struct {
 	fnClient      *fn.Client
 	imageRegistry string
-	builderImages map[string]string
 }
 
 func NewClient(conf config.Configuration) *Client {
 	o := []fn.Option{fn.WithRepository(conf.TemplatesPath)}
-	c := NewCredentialsProvider(conf.RegistryUser, conf.RegistryPassword)
-
-	o = append(o,
-		fn.WithPusher(docker.NewPusher(
-			docker.WithCredentialsProvider(c),
-			docker.WithTransport(http.DefaultTransport),
-			docker.WithVerbose(conf.VerboseLogs))))
 
 	o = append(o,
 		fn.WithDeployer(knativefunc.NewDeployer(
@@ -47,9 +36,6 @@ func NewClient(conf config.Configuration) *Client {
 	return &Client{
 		fnClient:      fnClient,
 		imageRegistry: conf.ImageRegistry,
-		builderImages: map[string]string{
-			"pack": conf.BuilderImage,
-		},
 	}
 }
 
