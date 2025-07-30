@@ -31,8 +31,8 @@ type FunctionComposition struct {
 }
 
 type Build struct {
-	Image string `json:"-"`
-	Stamp string `json:"-"`
+	Image     string `json:"-"`
+	Timestamp string `json:"-"`
 }
 
 type KnClient interface {

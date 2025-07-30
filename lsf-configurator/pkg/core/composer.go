@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/apex/log"
 )
@@ -157,6 +158,7 @@ func (c *Composer) NotifyBuildReady(fcId, imageURL string) {
 		return
 	}
 	fc.Build.Image = imageURL
+	fc.Build.Timestamp = createBuildTimestamp()
 	c.db.Set(appId, app)
 	log.Infof("Successfully built function composition with id %v. Image: %v", fc.Id, fc.Build.Image)
 
@@ -202,4 +204,8 @@ func getAppIdFromFcId(fcId string) (string, error) {
 		return "", fmt.Errorf("invalid function composition ID format: %s", fcId)
 	}
 	return parts[1], nil
+}
+
+func createBuildTimestamp() string {
+	return time.Now().UTC().Format(time.RFC3339)
 }
