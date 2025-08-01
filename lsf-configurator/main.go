@@ -46,6 +46,8 @@ func main() {
 	tektonBuilder := builder.NewTektonBuilder(tektonConf)
 
 	db, err := db.InitDB(conf.DatabasePath)
+	log.Printf("Database initialized successfully at path: %s", conf.DatabasePath)
+
 	functionAppRepo := repos.NewFunctionAppRepository(db)
 	fcRepo := repos.NewFunctionCompositionRepository(db)
 	if err != nil {
