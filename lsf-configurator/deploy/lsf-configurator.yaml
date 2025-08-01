@@ -117,7 +117,7 @@ spec:
             claimName: uploads-pvc
         - name: db-sqlite
           hostPath:
-            path: C:\\Users\\szabo\\source\\repos\\szaboegon\\latency-sensitive-faas\\lsf-configurator\\db
+            path: /data/sqlite
             type: DirectoryOrCreate
 ---
 apiVersion: v1
