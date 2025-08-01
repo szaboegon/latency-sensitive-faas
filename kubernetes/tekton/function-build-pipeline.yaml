@@ -51,8 +51,7 @@ spec:
   workspaces:
     - name: source
   tasks:
-  #TODO: https://buildpacks.io/docs/for-platform-operators/how-to/integrate-ci/tekton/
-  # hellyeah, its working, only dockerhub push remains
+  #https://buildpacks.io/docs/for-platform-operators/how-to/integrate-ci/tekton/
     - name: build-function
       taskRef:
         name: buildpacks

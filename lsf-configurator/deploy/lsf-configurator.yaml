@@ -115,10 +115,12 @@ spec:
         - name: uploads-pvc
           persistentVolumeClaim:
             claimName: uploads-pvc
+        # - name: db-sqlite
+        #   hostPath:
+        #     path: /data/sqlite
+        #     type: DirectoryOrCreate
         - name: db-sqlite
-          hostPath:
-            path: /data/sqlite
-            type: DirectoryOrCreate
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
