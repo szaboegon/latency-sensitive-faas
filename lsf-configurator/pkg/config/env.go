@@ -22,6 +22,7 @@ type Configuration struct {
 	TektonNotifyURL       string `env:"TEKTON_NOTIFY_URL"`
 	TektonWorkspacePVC    string `env:"TEKTON_WORKSPACE_PVC"`
 	TektonServiceAccount  string `env:"TEKTON_SERVICE_ACCOUNT"`
+	DatabasePath          string `env:"DATABASE_PATH"`
 }
 
 func Init() Configuration {

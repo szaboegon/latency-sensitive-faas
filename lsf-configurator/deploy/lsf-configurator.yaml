@@ -99,18 +99,26 @@ spec:
             - name: TEKTON_PIPELINE
               value: "function-build-pipeline"
             - name: TEKTON_NOTIFY_URL
-              value: http://lsf-configurator.configurator.svc.cluster.local:80/apps/build_notify
+              value: http://lsf-configurator.configurator.svc.cluster.local:80/function_compositions/build_notify
             - name: TEKTON_WORKSPACE_PVC
               value: "uploads-pvc"
             - name: TEKTON_SERVICE_ACCOUNT
               value: "buildpacks-service-account"
+            - name: DATABASE_PATH
+              value: "/db/db.sqlite3"
           volumeMounts:
             - name: uploads-pvc
               mountPath: /uploads
+            - name: db-sqlite
+              mountPath: /db
       volumes:
         - name: uploads-pvc
           persistentVolumeClaim:
             claimName: uploads-pvc
+        - name: db-sqlite
+          hostPath:
+            path: C:\\Users\\szabo\\source\\repos\\szaboegon\\latency-sensitive-faas\\lsf-configurator\\db
+            type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service

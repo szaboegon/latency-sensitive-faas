@@ -1,39 +1,15 @@
+//TODO introduce sqlite
+// https://chatgpt.com/share/688a4a14-4744-8009-aaad-be0ba6e82700
+// add method which allows updating the fc configurations in a function app
+// in this case, newly added function compositions should be added to the existing ones
+// if more function compositions use the same components, they should be merged/or the image should be reused
+// the deployment state should always be tracked, to know which ones are currently in use
+
 package core
 
 import (
 	"context"
 )
-
-type FunctionApp struct {
-	Id           string
-	Compositions map[string]*FunctionComposition
-}
-
-type Component string
-
-type Route struct {
-	To       string `json:"to"`
-	Function string `json:"function"`
-}
-
-type RoutingTable map[Component][]Route
-
-type FunctionComposition struct {
-	Id         string       `json:"-"`
-	Name       string       `json:"name"`
-	Node       string       `json:"node,omitempty"`
-	Components RoutingTable `json:"components"`
-	NameSpace  string       `json:"namespace"`
-	SourcePath string       `json:"-"`
-	Runtime    string       `json:"runtime"`
-	Files      []string     `json:"files"`
-	Build
-}
-
-type Build struct {
-	Image     string `json:"-"`
-	Timestamp string `json:"-"`
-}
 
 type KnClient interface {
 	Init(ctx context.Context, fc FunctionComposition) (string, error)
@@ -49,7 +25,7 @@ type FunctionAppStore interface {
 }
 
 type RoutingClient interface {
-	SetRoutingTable(appId string, fc FunctionComposition) error
+	SetRoutingTable(fc FunctionComposition) error
 }
 
 type Builder interface {

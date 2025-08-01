@@ -12,89 +12,92 @@
         <br><br>
         <input type="file" id="files" name="files" multiple required>
         <br><br>
-        <label for="jsonInput">Function composition schema:</label>
+        <label for="jsonInput">Function App & Composition schema (JSON):</label>
         <br><br>
         <textarea id="jsonInput" name="json" rows="4" cols="50" 
         >
-      [
-        {
-          "name": "func-1",
-          "node": "knative",
-          "runtime": "python",
-          "namespace": "application",
-          "components": {
-            "imagegrab": [
-              { "to": "resize", "function": "local" }
-            ],
-            "resize": [
-              { "to": "grayscale", "function": "func-2" }
-            ]
-          },
-          "files":[]
-        },
-        {
-          "name": "func-2",
-          "node": "knative-m02",
-          "runtime": "python",
-          "namespace": "application",
-          "components": {
-            "grayscale": [
-              { "to": "objectdetect", "function": "func-3" }
-            ],
-            "cut": [
-              { "to": "objectdetect2", "function": "func-3" }
-            ]
-          },
-          "files":[]
-        },
-        {
-          "name": "func-3",
-          "node": "knative-m02",
-          "runtime": "python",
-          "namespace": "application",
-          "components": {
-            "objectdetect": [
-              { "to": "cut", "function": "func-2" }
-            ],
-            "objectdetect2": [
-              { "to": "tag", "function": "func-4" }
-            ]
-          },
-          "files":["MobileNetSSD_deploy.caffemodel", "MobileNetSSD_deploy.prototxt.txt"]
-        },
-        {
-          "name": "func-4",
-          "node": "knative-m03",
-          "runtime": "python",
-          "namespace": "application",
-          "components": {
-            "objectdetect2": [
-              { "to": "tag", "function": "local" }
-            ],
-            "tag": []
-          },
-          "files":["MobileNetSSD_deploy.caffemodel", "MobileNetSSD_deploy.prototxt.txt"]
-        }
-      ]
-      
+{
+  "function_app_name": "my-app",
+  "compositions": [
+    {
+      "node": "knative",
+      "runtime": "python",
+      "namespace": "application",
+      "components": {
+        "imagegrab": [
+          { "to": "resize", "function": "local" }
+        ],
+        "resize": [
+          { "to": "grayscale", "function": "func-2" }
+        ]
+      },
+      "files":[]
+    },
+    {
+      "node": "knative-m02",
+      "runtime": "python",
+      "namespace": "application",
+      "components": {
+        "grayscale": [
+          { "to": "objectdetect", "function": "func-3" }
+        ],
+        "cut": [
+          { "to": "objectdetect2", "function": "func-3" }
+        ]
+      },
+      "files":[]
+    },
+    {
+      "node": "knative-m02",
+      "runtime": "python",
+      "namespace": "application",
+      "components": {
+        "objectdetect": [
+          { "to": "cut", "function": "func-2" }
+        ],
+        "objectdetect2": [
+          { "to": "tag", "function": "func-4" }
+        ]
+      },
+      "files":["MobileNetSSD_deploy.caffemodel", "MobileNetSSD_deploy.prototxt.txt"]
+    },
+    {
+      "node": "knative-m03",
+      "runtime": "python",
+      "namespace": "application",
+      "components": {
+        "objectdetect2": [
+          { "to": "tag", "function": "local" }
+        ],
+        "tag": []
+      },
+      "files":["MobileNetSSD_deploy.caffemodel", "MobileNetSSD_deploy.prototxt.txt"]
+    }
+  ]
+}
 </textarea>
         <br><br>
         <button type="submit">Upload</button>
     </form>
 
     <h2>Update Routing Table</h2>
-<form action="/apps/{id}/{fc_name}/routing_table" method="POST" onsubmit="updateRoutingTable(event)">
-    <label for="appId">Application ID:</label>
+<form action="/function_compositions/{fc_id}/routing_table" method="PUT"  onsubmit="updateRoutingTable(event)">
+    <label for="fcId">Function Composition Id:</label>
     <br>
-    <input type="text" id="appId" name="id" required>
-    <br><br>
-    <label for="fcName">Function Composition Name:</label>
-    <br>
-    <input type="text" id="fcName" name="fc_name" required>
+    <input type="text" id="fcId" name="fc_id" required>
     <br><br>
     <label for="routingTable">Routing Table (JSON):</label>
     <br>
-    <textarea id="routingTable" name="json" rows="6" cols="50" required></textarea>
+    <textarea id="routingTable" name="json" rows="6" cols="50" required>
+{
+  "imagegrab": [
+    { "to": "resize", "function": "local" }
+  ],
+  "resize": [
+    { "to": "grayscale", "function": "func-2" }
+  ]
+}
+    </textarea>
     <br><br>
     <button type="submit">Update</button>
 </form>
@@ -103,11 +106,10 @@
     function updateRoutingTable(event) {
         event.preventDefault();
         const form = event.target;
-        const appId = document.getElementById('appId').value;
-        const fcName = document.getElementById('fcName').value;
+        const fcId = document.getElementById('fcId').value;
         const routingTable = document.getElementById('routingTable').value;
 
-        fetch(`/apps/${appId}/${fcName}/routing_table`, {
+        fetch(`/function_compositions/${fcId}/routing_table`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
