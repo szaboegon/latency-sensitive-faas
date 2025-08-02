@@ -89,7 +89,7 @@ func (c *Composer) CreateFunctionApp(
 
 func (c *Composer) AddFunctionComposition(appId string, fc *FunctionComposition) error {
 	id := uuid.New()
-	fc.Id = id
+	fc.Id = "fc-" + id
 	fc.FunctionAppId = appId
 
 	if err := c.fcRepo.Save(fc); err != nil {
