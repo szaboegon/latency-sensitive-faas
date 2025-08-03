@@ -30,4 +30,5 @@ type RoutingClient interface {
 
 type Builder interface {
 	Build(ctx context.Context, fc FunctionComposition, buildDir string) error
+	NotifyBuildFinished()
 }

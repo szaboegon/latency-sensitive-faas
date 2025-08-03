@@ -116,6 +116,8 @@ spec:
               value: "uploads-pvc"
             - name: TEKTON_SERVICE_ACCOUNT
               value: "buildpacks-service-account"
+            - name: TEKTON_CONCURRENCY_LIMIT
+              value: "1"  
             - name: DATABASE_PATH
               value: "/db/db.sqlite3"
           volumeMounts:

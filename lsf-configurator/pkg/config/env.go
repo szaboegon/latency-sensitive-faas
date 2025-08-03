@@ -10,19 +10,20 @@ import (
 )
 
 type Configuration struct {
-	UploadDir             string `env:"UPLOAD_DIR"`
-	TemplatesPath         string `env:"TEMPLATES_PATH"`
-	ImageRegistry         string `env:"IMAGE_REGISTRY"`
-	ImageRepository       string `env:"IMAGE_REPOSITORY"`
-	RedisUrl              string `env:"REDIS_URL"`
-	VerboseLogs           bool   `env:"VERBOSE_LOGS"`
-	MetricsBackendAddress string `env:"METRICS_BACKEND_ADDRESS"`
-	TektonNamespace       string `env:"TEKTON_NAMESPACE"`
-	TektonPipeline        string `env:"TEKTON_PIPELINE"`
-	TektonNotifyURL       string `env:"TEKTON_NOTIFY_URL"`
-	TektonWorkspacePVC    string `env:"TEKTON_WORKSPACE_PVC"`
-	TektonServiceAccount  string `env:"TEKTON_SERVICE_ACCOUNT"`
-	DatabasePath          string `env:"DATABASE_PATH"`
+	UploadDir              string `env:"UPLOAD_DIR"`
+	TemplatesPath          string `env:"TEMPLATES_PATH"`
+	ImageRegistry          string `env:"IMAGE_REGISTRY"`
+	ImageRepository        string `env:"IMAGE_REPOSITORY"`
+	RedisUrl               string `env:"REDIS_URL"`
+	VerboseLogs            bool   `env:"VERBOSE_LOGS"`
+	MetricsBackendAddress  string `env:"METRICS_BACKEND_ADDRESS"`
+	TektonNamespace        string `env:"TEKTON_NAMESPACE"`
+	TektonPipeline         string `env:"TEKTON_PIPELINE"`
+	TektonNotifyURL        string `env:"TEKTON_NOTIFY_URL"`
+	TektonWorkspacePVC     string `env:"TEKTON_WORKSPACE_PVC"`
+	TektonServiceAccount   string `env:"TEKTON_SERVICE_ACCOUNT"`
+	TektonConcurrencyLimit int    `env:"TEKTON_CONCURRENCY_LIMIT"`
+	DatabasePath           string `env:"DATABASE_PATH"`
 }
 
 func Init() Configuration {

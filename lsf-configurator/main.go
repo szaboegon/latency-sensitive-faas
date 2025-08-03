@@ -43,7 +43,7 @@ func main() {
 		ImageRepo:      conf.ImageRepository,
 		ServiceAccount: conf.TektonServiceAccount,
 	}
-	tektonBuilder := builder.NewTektonBuilder(tektonConf)
+	tektonBuilder := builder.NewTektonBuilder(tektonConf, conf.TektonConcurrencyLimit)
 
 	db, err := db.InitDB(conf.DatabasePath)
 	log.Printf("Database initialized successfully at path: %s", conf.DatabasePath)

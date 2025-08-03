@@ -28,22 +28,20 @@ type TektonConfig struct {
 
 type TektonBuilder struct {
 	TektonConfig
+	concurrencyLimiter chan struct{}
 }
 
-func NewTektonBuilder(cfg TektonConfig) *TektonBuilder {
+func NewTektonBuilder(cfg TektonConfig, concurrencyLimit int) *TektonBuilder {
 	return &TektonBuilder{
-		TektonConfig: TektonConfig{
-			Namespace:      cfg.Namespace,
-			Pipeline:       cfg.Pipeline,
-			NotifyURL:      cfg.NotifyURL,
-			WorkspacePVC:   cfg.WorkspacePVC,
-			ImageRepo:      cfg.ImageRepo,
-			ServiceAccount: cfg.ServiceAccount,
-		},
+		TektonConfig:       cfg,
+		concurrencyLimiter: make(chan struct{}, concurrencyLimit),
 	}
 }
 
 func (b *TektonBuilder) Build(ctx context.Context, fc core.FunctionComposition, buildDir string) error {
+	// Acquire semaphore
+	b.concurrencyLimiter <- struct{}{}
+
 	var config *rest.Config
 	var err error
 
@@ -111,6 +109,11 @@ func (b *TektonBuilder) Build(ctx context.Context, fc core.FunctionComposition, 
 	}
 	log.Printf("PipelineRun %s created successfully in namespace %s", prName, b.Namespace)
 	return nil
+}
+
+func (b *TektonBuilder) NotifyBuildFinished() {
+	// Release the concurrency limiter
+	<-b.concurrencyLimiter
 }
 
 func getEnv(key, def string) string {

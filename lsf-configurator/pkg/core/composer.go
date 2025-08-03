@@ -145,6 +145,7 @@ func (c *Composer) SetRoutingTable(fcId string, table RoutingTable) error {
 
 // Called by HTTP handler when CI/CD pipeline notifies build is ready
 func (c *Composer) NotifyBuildReady(fcId, imageURL string) {
+	c.builder.NotifyBuildFinished()
 	fc, err := c.fcRepo.GetByID(fcId)
 	if err != nil || fc == nil {
 		log.Errorf("build notify failed, fc with id %s does not exist", fcId)
