@@ -19,6 +19,8 @@ spec:
       type: string
     - name: FC_ID
       type: string
+    - name: STATUS
+      type: string 
   steps:
     - name: notify
       image: curlimages/curl:latest
@@ -29,7 +31,7 @@ spec:
         - -H
         - "Content-Type: application/json"
         - -d
-        - '{"fc_id":"$(params.FC_ID)","image_url":"$(params.IMAGE)"}'
+        - '{"fc_id":"$(params.FC_ID)","image_url":"$(params.IMAGE)","status":"$(params.STATUS)"}'
         - "$(params.NOTIFY_URL)"
 
 ---
@@ -51,7 +53,6 @@ spec:
   workspaces:
     - name: source
   tasks:
-  #https://buildpacks.io/docs/for-platform-operators/how-to/integrate-ci/tekton/
     - name: build-function
       taskRef:
         name: buildpacks
@@ -65,10 +66,8 @@ spec:
       workspaces:
         - name: source
           workspace: source
-
+  finally:
     - name: notify
-      runAfter:
-        - build-function
       taskRef:
         name: notify
       params:
@@ -78,3 +77,5 @@ spec:
           value: $(params.NOTIFY_URL)
         - name: FC_ID
           value: $(params.FC_ID)
+        - name: STATUS
+          value: $(tasks.build-function.status) 

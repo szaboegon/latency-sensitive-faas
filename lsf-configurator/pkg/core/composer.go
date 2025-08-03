@@ -7,6 +7,7 @@ import (
 	"lsf-configurator/pkg/uuid"
 	"mime/multipart"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/apex/log"
@@ -144,17 +145,26 @@ func (c *Composer) SetRoutingTable(fcId string, table RoutingTable) error {
 }
 
 // Called by HTTP handler when CI/CD pipeline notifies build is ready
-func (c *Composer) NotifyBuildReady(fcId, imageURL string) {
+func (c *Composer) NotifyBuildReady(fcId, imageURL string, status string) {
 	c.builder.NotifyBuildFinished()
 	fc, err := c.fcRepo.GetByID(fcId)
 	if err != nil || fc == nil {
 		log.Errorf("build notify failed, fc with id %s does not exist", fcId)
 		return
 	}
+	// If the build failed, requeue the build task, do not deploy
+	if strings.ToLower(status) == "failed" {
+		log.Errorf("Build for function composition %s failed, requeuing...", fcId)
+		c.scheduler.AddTask(c.buildTask(*fc), MaxRetries)
+		return
+	}
 
 	fc.Build.Image = imageURL
 	fc.Build.Timestamp = createBuildTimestamp()
-	c.fcRepo.Save(fc)
+	if err := c.fcRepo.Save(fc); err != nil {
+		log.Errorf("Failed to save function composition with id %s: %v", fc.Id, err)
+		return
+	}
 	log.Infof("Successfully built function composition with id %v. Image: %v", fc.Id, fc.Build.Image)
 
 	resultChan := c.scheduler.AddTask(c.deployTask(fc.FunctionAppId, *fc), MaxRetries)

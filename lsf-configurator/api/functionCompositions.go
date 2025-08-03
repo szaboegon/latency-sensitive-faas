@@ -64,11 +64,12 @@ func (h *HandlerFunctionCompositions) buildNotify(w http.ResponseWriter, r *http
 	var req struct {
 		FcId     string `json:"fc_id"`
 		ImageURL string `json:"image_url"`
+		Status   string `json:"status"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-	go h.composer.NotifyBuildReady(req.FcId, req.ImageURL)
+	go h.composer.NotifyBuildReady(req.FcId, req.ImageURL, req.Status)
 	w.WriteHeader(http.StatusOK)
 }
