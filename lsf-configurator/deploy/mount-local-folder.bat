@@ -1,1 +1,0 @@
-minikube mount C:\\Users\\szabo\\source\\repos\\szaboegon\\latency-sensitive-faas\\lsf-configurator\\mnt:/data/sqlite -p knative

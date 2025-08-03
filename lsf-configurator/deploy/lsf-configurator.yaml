@@ -145,26 +145,48 @@ spec:
     targetPort: 8080
     nodePort: 30001
 ---
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: sqlite-web
   namespace: configurator
 spec:
-  restartPolicy: Never
-  containers:
-    - name: sqlite-web
-      image: coleifer/sqlite-web:latest
-      command: ["sqlite_web"]
-      args: ["--host", "0.0.0.0", "--port", "8080", "/db/db.sqlite3"]
-      ports:
-        - containerPort: 8080
-      volumeMounts:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sqlite-web
+  template:
+    metadata:
+      labels:
+        app: sqlite-web
+    spec:
+      containers:
+        - name: sqlite-web
+          image: coleifer/sqlite-web:latest
+          command: ["sqlite_web"]
+          args: ["--host", "0.0.0.0", "--port", "8080", "/db/db.sqlite3"]
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: db-sqlite
+              mountPath: /db
+      volumes:
         - name: db-sqlite
-          mountPath: /db
-  volumes:
-    - name: db-sqlite
-      persistentVolumeClaim:
-        claimName: sqlite-pvc
+          persistentVolumeClaim:
+            claimName: sqlite-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sqlite-web
+  namespace: configurator
+spec:
+  selector:
+    app: sqlite-web
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+  type: NodePort
 
 
