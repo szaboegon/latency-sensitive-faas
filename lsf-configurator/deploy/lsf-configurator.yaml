@@ -42,6 +42,18 @@ roleRef:
   name: configurator-role
   apiGroup: rbac.authorization.k8s.io
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sqlite-pvc
+  namespace: configurator
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -99,18 +111,27 @@ spec:
             - name: TEKTON_PIPELINE
               value: "function-build-pipeline"
             - name: TEKTON_NOTIFY_URL
-              value: http://lsf-configurator.configurator.svc.cluster.local:80/apps/build_notify
+              value: http://lsf-configurator.configurator.svc.cluster.local:80/function_compositions/build_notify
             - name: TEKTON_WORKSPACE_PVC
               value: "uploads-pvc"
             - name: TEKTON_SERVICE_ACCOUNT
               value: "buildpacks-service-account"
+            - name: TEKTON_CONCURRENCY_LIMIT
+              value: "1"  
+            - name: DATABASE_PATH
+              value: "/db/db.sqlite3"
           volumeMounts:
             - name: uploads-pvc
               mountPath: /uploads
+            - name: db-sqlite
+              mountPath: /db
       volumes:
         - name: uploads-pvc
           persistentVolumeClaim:
             claimName: uploads-pvc
+        - name: db-sqlite
+          persistentVolumeClaim:
+            claimName: sqlite-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -125,5 +146,49 @@ spec:
   - port: 80
     targetPort: 8080
     nodePort: 30001
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sqlite-web
+  namespace: configurator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sqlite-web
+  template:
+    metadata:
+      labels:
+        app: sqlite-web
+    spec:
+      containers:
+        - name: sqlite-web
+          image: coleifer/sqlite-web:latest
+          command: ["sqlite_web"]
+          args: ["--host", "0.0.0.0", "--port", "8080", "/db/db.sqlite3"]
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: db-sqlite
+              mountPath: /db
+      volumes:
+        - name: db-sqlite
+          persistentVolumeClaim:
+            claimName: sqlite-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sqlite-web
+  namespace: configurator
+spec:
+  selector:
+    app: sqlite-web
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+  type: NodePort
 
 

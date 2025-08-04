@@ -9,8 +9,8 @@ import (
 	"lsf-configurator/pkg/builder"
 	"lsf-configurator/pkg/config"
 	"lsf-configurator/pkg/core"
-	"lsf-configurator/pkg/core/db"
-	"lsf-configurator/pkg/docker"
+	"lsf-configurator/pkg/data/db"
+	"lsf-configurator/pkg/data/repos"
 	"lsf-configurator/pkg/filesystem"
 	"lsf-configurator/pkg/knative"
 	"lsf-configurator/pkg/metrics"
@@ -24,7 +24,6 @@ import (
 
 var composer *core.Composer
 var conf config.Configuration
-var puller docker.ImagePuller
 var metricsReader metrics.MetricsReader
 
 func main() {
@@ -34,13 +33,6 @@ func main() {
 	disableStdOut()
 	conf = config.Init()
 
-	var err error
-	puller, err = docker.NewImagePuller()
-	if err != nil {
-		log.Fatal("failed to create image puller: ", err)
-	}
-
-	store := db.NewKvFunctionAppStore()
 	knClient := knative.NewClient(conf)
 	routingClient := routing.NewRouteConfigurator(conf.RedisUrl)
 	tektonConf := builder.TektonConfig{
@@ -51,9 +43,18 @@ func main() {
 		ImageRepo:      conf.ImageRepository,
 		ServiceAccount: conf.TektonServiceAccount,
 	}
-	tektonBuilder := builder.NewTektonBuilder(tektonConf)
+	tektonBuilder := builder.NewTektonBuilder(tektonConf, conf.TektonConcurrencyLimit)
 
-	composer = core.NewComposer(store, routingClient, knClient, tektonBuilder)
+	db, err := db.InitDB(conf.DatabasePath)
+	log.Printf("Database initialized successfully at path: %s", conf.DatabasePath)
+
+	functionAppRepo := repos.NewFunctionAppRepository(db)
+	fcRepo := repos.NewFunctionCompositionRepository(db)
+	if err != nil {
+		log.Fatalf("failed to initialize database: %v", err)
+	}
+	composer = core.NewComposer(functionAppRepo, fcRepo, routingClient, knClient, tektonBuilder)
+
 	metricsReader, err = metrics.NewMetricsReader(conf.MetricsBackendAddress)
 	if err != nil {
 		log.Fatalf("failed to create metrics reader: %v", err)
@@ -93,6 +94,7 @@ func startHttpServer() *http.Server {
 func registerHandlers() {
 	http.HandleFunc(api.HealthzPath, api.HealthCheckHandler)
 	http.Handle(api.AppsPath, api.NewHandlerApps(composer, conf))
+	http.Handle(api.FunctionCompositionsPath, api.NewHandlerFunctionCompositions(composer, conf))
 	http.Handle(api.MetricsPath, api.NewHandlerMetrics(metricsReader, conf))
 
 	fs := http.FileServer(http.Dir("./public"))

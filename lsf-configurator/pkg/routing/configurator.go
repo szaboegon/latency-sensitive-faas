@@ -23,7 +23,7 @@ func NewRouteConfigurator(redisUrl string) core.RoutingClient {
 	}
 }
 
-func (rc *RouteConfigurator) SetRoutingTable(appId string, fc core.FunctionComposition) error {
+func (rc *RouteConfigurator) SetRoutingTable(fc core.FunctionComposition) error {
 	rtDto := make(RoutingTable)
 
 	for component, routes := range fc.Components {
@@ -32,7 +32,7 @@ func (rc *RouteConfigurator) SetRoutingTable(appId string, fc core.FunctionCompo
 			if r.Function == LocalRoute {
 				url = LocalRoute
 			} else {
-				url = getFunctionUrl(core.UniqueFcId(appId, r.Function), fc.NameSpace)
+				url = getFunctionUrl(fc.Id, fc.NameSpace)
 			}
 
 			routeDto := Route{

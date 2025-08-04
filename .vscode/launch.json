@@ -17,7 +17,10 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "lsf-configurator"
+            "program": "lsf-configurator",
+            "env": {
+                "CGO_ENABLED": "1"
+            }
         },
         {
             "name": "Configurator Remote",
