@@ -12,7 +12,10 @@ set LSF_CONFIGURATOR_YAML_PATH="..\lsf-configurator\deploy\lsf-configurator.yaml
 set REDIS_NAMESPACE_YAML_PATH="redis\redis-namespace.yaml"
 set REDIS_MASTER_YAML_PATH="redis\redis-master.yaml"
 set REDIS_REPLICA_YAML_PATH="redis\redis-replica.yaml"
-set TEKTON_YAML_PATH="tekton\function-build-pipeline.yaml"
+set TEKTON_PIPELINES_YAML_PATH="tekton\pipelines.yaml"
+set TEKTON_DASHBOARD_YAML_PATH="tekton\dashboard.yaml"
+set TEKTON_BUILD_PIPELINE_YAML_PATH="tekton\function-build-pipeline.yaml"
+set TEKTON_BUILDPACKS_YAML_PATH="tekton\buildpacks-phases.yaml"
 
 echo Updating hellm repositories...
 helm repo update
@@ -128,12 +131,22 @@ if errorlevel 1 (
 )
 
 echo Installing Tekton Pipelines...
-kubectl apply --filename https://storage.googleapis.com/tekton-releases/pipeline/latest/release.yaml
+kubectl apply -f %TEKTON_PIPELINES_YAML_PATH%
 if errorlevel 1 (
     echo Error installing Tekton Pipelines
     exit /b 1
 )
-kubectl apply -f %TEKTON_YAML_PATH%
+kubectl apply -f %TEKTON_DASHBOARD_YAML_PATH%
+if errorlevel 1 (
+    echo Error installing Tekton Dashboard
+    exit /b 1
+)
+kubectl apply -f %TEKTON_BUILDPACKS_YAML_PATH% -n configurator
+if errorlevel 1 (
+    echo Error applying buildpacks phases task
+    exit /b 1
+)
+kubectl apply -f %TEKTON_BUILD_PIPELINE_YAML_PATH%
 if errorlevel 1 (
     echo Error applying Tekton function build pipeline
     exit /b 1

@@ -55,12 +55,12 @@ spec:
   tasks:
     - name: build-function
       taskRef:
-        name: buildpacks
+        name: buildpacks-phases
       params:
         - name: APP_IMAGE
           value: $(params.IMAGE)
-        - name: BUILDER_IMAGE
-          value: paketobuildpacks/builder:full
+        - name: CNB_BUILDER_IMAGE
+          value: paketobuildpacks/builder-jammy-base:latest
         - name: SOURCE_SUBPATH
           value: $(params.CONTEXT_DIR)
       workspaces:

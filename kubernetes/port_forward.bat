@@ -1,1 +1,0 @@
-kubectl port-forward -n observability  deployments/jaeger 16686
