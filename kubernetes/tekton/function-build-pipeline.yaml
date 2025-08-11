@@ -53,6 +53,19 @@ spec:
   workspaces:
     - name: source
   tasks:
+    # ONLY FOR DEBUGGING
+    # - name: list-files
+    #   taskSpec:
+    #     steps:
+    #       - name: list-files
+    #         image: busybox:latest
+    #         script: |
+    #           #!/bin/sh
+    #           echo "Recursively listing all files in workspace:"
+    #           find /workspace/source -type f
+    #   workspaces:
+    #     - name: source
+    #       workspace: source
     - name: build-function
       taskRef:
         name: buildpacks-phases
@@ -78,4 +91,4 @@ spec:
         - name: FC_ID
           value: $(params.FC_ID)
         - name: STATUS
-          value: $(tasks.build-function.status) 
+          value: $(tasks.build-function.status)
