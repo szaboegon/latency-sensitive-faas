@@ -199,6 +199,51 @@ export const functionAppsMock: FunctionApp[] = [
                     timestamp: '2023-05-04T00:00:00Z',
                 },
             },
+                  {
+                id: 'composition5c',
+                functionAppId: '5',
+                node: 'Node 5',
+                namespace: 'Namespace 5',
+                runtime: 'Java',
+                files: ['file19.java', 'file20.java'],
+                components: {
+                    'Component T': [{ to: 'Component U', function: 'func5c' }],
+                },
+                build: {
+                    image: 'image5c',
+                    timestamp: '2023-05-03T00:00:00Z',
+                },
+            },
+            {
+                id: 'composition5d',
+                functionAppId: '5',
+                node: 'Node 5',
+                namespace: 'Namespace 5',
+                runtime: 'Java',
+                files: ['file21.java', 'file22.java'],
+                components: {
+                    'Component U': [{ to: 'Component R', function: 'func5d' }],
+                },
+                build: {
+                    image: 'image5d',
+                    timestamp: '2023-05-04T00:00:00Z',
+                },
+            },
+                    {
+                id: 'composition5d',
+                functionAppId: '5',
+                node: 'Node 5',
+                namespace: 'Namespace 5',
+                runtime: 'Java',
+                files: ['file21.java', 'file22.java'],
+                components: {
+                    'Component U': [{ to: 'Component R', function: 'func5d' }],
+                },
+                build: {
+                    image: 'image5d',
+                    timestamp: '2023-05-04T00:00:00Z',
+                },
+            },
         ],
     },
 ];
