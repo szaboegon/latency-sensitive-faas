@@ -5,8 +5,9 @@ type Component string
 type FunctionApp struct {
 	Id           string                 `json:"id,omitempty"`
 	Name         string                 `json:"name"`
-	Compositions []*FunctionComposition `json:"compositions,omitempty"`
 	Components   []Component            `json:"components,omitempty"`
+	Files        []string               `json:"files,omitempty"`
+	Compositions []*FunctionComposition `json:"compositions,omitempty"`
 }
 
 type FunctionComposition struct {

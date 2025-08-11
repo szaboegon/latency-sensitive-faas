@@ -25,6 +25,8 @@ func NewHandlerApps(composer *core.Composer, conf config.Configuration) *Handler
 		mux:      http.NewServeMux(),
 	}
 
+	h.mux.HandleFunc("GET "+AppsPath, h.list)
+	h.mux.HandleFunc("GET "+AppsPath+"{id}", h.get)
 	h.mux.HandleFunc("POST "+AppsPath+"create", h.create)
 	h.mux.HandleFunc("DELETE "+AppsPath+"delete", h.delete)
 
@@ -33,6 +35,39 @@ func NewHandlerApps(composer *core.Composer, conf config.Configuration) *Handler
 
 func (h *HandlerApps) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.mux.ServeHTTP(w, r)
+}
+
+func (h *HandlerApps) list(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+	log.Printf("[%p] %s %s", r, r.Method, r.URL)
+
+	apps, err := h.composer.ListFunctionApps()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(apps)
+}
+
+func (h *HandlerApps) get(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+	log.Printf("[%p] %s %s", r, r.Method, r.URL)
+
+	appId := r.PathValue("id")
+	app, err := h.composer.GetFunctionApp(appId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(app)
 }
 
 func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {

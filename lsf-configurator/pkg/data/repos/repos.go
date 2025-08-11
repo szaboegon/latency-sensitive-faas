@@ -27,7 +27,18 @@ func (r *functionAppRepo) Save(app *core.FunctionApp) error {
 	}
 	defer tx.Rollback()
 
-	_, err = tx.Exec(`INSERT OR REPLACE INTO function_apps (id, name) VALUES (?, ?)`, app.Id, app.Name)
+	componentsJSON, err := json.Marshal(app.Components)
+	if err != nil {
+		return fmt.Errorf("failed to marshal components: %w", err)
+	}
+	filesJSON, err := json.Marshal(app.Files)
+	if err != nil {
+		return fmt.Errorf("failed to marshal files: %w", err)
+	}
+
+	_, err = tx.Exec(`
+		INSERT OR REPLACE INTO function_apps (id, name, components, files) 
+		VALUES (?, ?, ?, ?)`, app.Id, app.Name, string(componentsJSON), string(filesJSON))
 	if err != nil {
 		return err
 	}
@@ -46,10 +57,10 @@ func (r *functionAppRepo) Save(app *core.FunctionApp) error {
 }
 
 func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
-	row := r.db.QueryRow(`SELECT id, name FROM function_apps WHERE id = ?`, id)
+	row := r.db.QueryRow(`SELECT id, name, components, files FROM function_apps WHERE id = ?`, id)
 
 	var app core.FunctionApp
-	if err := row.Scan(&app.Id, &app.Name); err != nil {
+	if err := row.Scan(&app.Id, &app.Name, &app.Components, &app.Files); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -79,6 +90,34 @@ func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
 	}
 
 	return &app, nil
+}
+
+func (r *functionAppRepo) GetAll() ([]*core.FunctionApp, error) {
+	rows, err := r.db.Query(`SELECT id, name, components, files FROM function_apps`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var apps []*core.FunctionApp
+	for rows.Next() {
+		var app core.FunctionApp
+		var componentsJSON, filesJSON string
+		if err := rows.Scan(&app.Id, &app.Name, &componentsJSON, &filesJSON); err != nil {
+			return nil, err
+		}
+
+		if err := json.Unmarshal([]byte(componentsJSON), &app.Components); err != nil {
+			return nil, fmt.Errorf("failed to parse components: %w", err)
+		}
+		if err := json.Unmarshal([]byte(filesJSON), &app.Files); err != nil {
+			return nil, fmt.Errorf("failed to parse files: %w", err)
+		}
+
+		apps = append(apps, &app)
+	}
+
+	return apps, nil
 }
 
 func (r *functionAppRepo) Delete(id string) error {

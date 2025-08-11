@@ -1,5 +1,6 @@
 latency-test/test-files/
 lsf-configurator/mnt
+.env.dev
 
 temp
 #Log files

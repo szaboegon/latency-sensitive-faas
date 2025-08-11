@@ -14,6 +14,15 @@ export const useFunctionApps = () => {
     });
 };
 
+export const useFunctionAppById = (id: string) => {
+    return useQuery<FunctionApp | null>({
+        queryKey: ['functionApp', id],
+        queryFn: useMockData
+            ? async () => functionAppsMock.find(app => app.id === id) || null
+            : () => FunctionAppService.fetchFunctionAppById(id),
+    });
+};
+
 export const useCreateFunctionApp = () => useMutation({
         mutationFn: FunctionAppService.createFunctionApp,
     });

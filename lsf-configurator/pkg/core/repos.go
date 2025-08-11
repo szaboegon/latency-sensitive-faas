@@ -3,6 +3,7 @@ package core
 type FunctionAppRepository interface {
 	Save(app *FunctionApp) error
 	GetByID(id string) (*FunctionApp, error)
+	GetAll() ([]*FunctionApp, error)
 	Delete(id string) error
 }
 

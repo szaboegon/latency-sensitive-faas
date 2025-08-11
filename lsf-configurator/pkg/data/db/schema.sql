@@ -1,6 +1,8 @@
 CREATE TABLE IF NOT EXISTS function_apps (
     id TEXT PRIMARY KEY,
-    name TEXT NOT NULL
+    name TEXT NOT NULL,
+    components TEXT,
+    files TEXT
 );
 
 CREATE TABLE IF NOT EXISTS function_compositions (

@@ -2,13 +2,12 @@ import React from "react";
 import {  Typography, Box, Grid } from "@mui/material";
 import { useParams } from "react-router";
 import FunctionCompositionCard from "../components/FunctionCompositionCard";
-import { useFunctionApps } from "../hooks/functionAppsHooks";
+import { useFunctionAppById } from "../hooks/functionAppsHooks";
 import type { FunctionComposition } from "../models/models";
 
 const FunctionAppDetails: React.FC = () => {
   const { id } = useParams();
-  const { data: functionApps, isLoading, error } = useFunctionApps();
-  const app = functionApps?.find((app) => app.id === id);
+  const { data: app, isLoading, error } = useFunctionAppById(id?? "");
 
   if (isLoading) {
     return (

@@ -46,6 +46,14 @@ func NewComposer(
 	}
 }
 
+func (c *Composer) GetFunctionApp(appId string) (*FunctionApp, error) {
+	return c.functionAppRepo.GetByID(appId)
+}
+
+func (c *Composer) ListFunctionApps() ([]*FunctionApp, error) {
+	return c.functionAppRepo.GetAll()
+}
+
 func (c *Composer) CreateFunctionApp(
 	uploadDir string,
 	files []*multipart.FileHeader,

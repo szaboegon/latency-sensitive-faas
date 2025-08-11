@@ -8,6 +8,8 @@ import {
   Button,
   Input,
 } from "@mui/material"
+import { useCreateFunctionApp } from "../hooks/functionAppsHooks"
+import type { FunctionApp } from "../models/models"
 
 interface AddFunctionAppModalProps {
   open: boolean
@@ -24,9 +26,14 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
   onClose,
 }) => {
   const { register, handleSubmit } = useForm<FormData>()
+  const { mutate } = useCreateFunctionApp()
 
   const onSubmit = (data: FormData) => {
-    console.log(data)
+    const fcApp: FunctionApp = {
+      name: data.name,
+      files: Array.from(data.files).map((file) => file.name),
+    }
+    mutate(fcApp)
     onClose()
   }
 
