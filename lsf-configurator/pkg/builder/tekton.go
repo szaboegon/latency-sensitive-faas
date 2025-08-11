@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"time"
 
 	tektonv1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1"
 	tektonclientset "github.com/tektoncd/pipeline/pkg/client/clientset/versioned"
@@ -16,6 +17,8 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
+
+const TimeoutDuration = 8 * time.Minute // Default timeout for builds
 
 type TektonConfig struct {
 	Namespace      string
@@ -41,6 +44,17 @@ func NewTektonBuilder(cfg TektonConfig, concurrencyLimit int) *TektonBuilder {
 func (b *TektonBuilder) Build(ctx context.Context, fc core.FunctionComposition, buildDir string) error {
 	// Acquire semaphore
 	b.concurrencyLimiter <- struct{}{}
+
+	// Start a timeout goroutine to release the semaphore after a certain duration
+	go func() {
+		select {
+		case <-time.After(TimeoutDuration):
+			b.releaseSemaphore()
+			log.Printf("Timeout reached, semaphore released for build %s", fc.Id)
+		case <-ctx.Done():
+
+		}
+	}()
 
 	var config *rest.Config
 	var err error
@@ -105,6 +119,7 @@ func (b *TektonBuilder) Build(ctx context.Context, fc core.FunctionComposition, 
 	_, err = tektonClient.TektonV1().PipelineRuns(b.Namespace).Create(ctx, pr, metav1.CreateOptions{})
 	if err != nil {
 		log.Printf("Error creating PipelineRun: %v", err)
+		b.releaseSemaphore() // Ensure semaphore is released on error
 		return fmt.Errorf("failed to create PipelineRun: %w", err)
 	}
 	log.Printf("PipelineRun %s created successfully in namespace %s", prName, b.Namespace)
@@ -112,8 +127,16 @@ func (b *TektonBuilder) Build(ctx context.Context, fc core.FunctionComposition, 
 }
 
 func (b *TektonBuilder) NotifyBuildFinished() {
-	// Release the concurrency limiter
-	<-b.concurrencyLimiter
+	b.releaseSemaphore()
+}
+
+func (b *TektonBuilder) releaseSemaphore() {
+	select {
+	case <-b.concurrencyLimiter:
+		// Semaphore released successfully
+	default:
+		// Semaphore already released, no action needed
+	}
 }
 
 func getEnv(key, def string) string {
