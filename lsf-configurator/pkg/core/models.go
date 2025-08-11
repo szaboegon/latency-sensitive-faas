@@ -1,9 +1,12 @@
 package core
 
+type Component string
+
 type FunctionApp struct {
 	Id           string                          `json:"id,omitempty"`
 	Name         string                          `json:"name"`
 	Compositions map[string]*FunctionComposition `json:"compositions,omitempty"`
+	Components   []Component                     `json:"components,omitempty"`
 }
 
 type FunctionComposition struct {
@@ -17,8 +20,6 @@ type FunctionComposition struct {
 	Files         []string     `json:"files"`
 	Build
 }
-
-type Component string
 
 type Route struct {
 	To       string `json:"to"`
