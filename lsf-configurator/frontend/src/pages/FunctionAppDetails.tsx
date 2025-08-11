@@ -1,5 +1,5 @@
 import React from "react";
-import {  Typography, Box, Grid } from "@mui/material";
+import {  Typography, Box, Grid, Container } from "@mui/material";
 import { useParams } from "react-router";
 import FunctionCompositionCard from "../components/FunctionCompositionCard";
 import { useFunctionApps } from "../hooks/useFunctionApps";
@@ -62,13 +62,8 @@ const FunctionAppDetails: React.FC = () => {
   }
 
   return (
-    <Box
-      sx={{
-        height: "100vh",
-        padding: 2,
-      }}
-    >
-      <Box my={4}>
+    <Container>
+      <Box my={4} >
         <Typography variant="h4" gutterBottom>
           {app.name} Details
         </Typography>
@@ -107,7 +102,7 @@ const FunctionAppDetails: React.FC = () => {
           ))}
         </Grid>
       </Box>
-    </Box>
+    </Container>
   );
 };
 

@@ -1,6 +1,6 @@
 import React from "react";
 import { Drawer, List, ListItem, ListItemIcon, ListItemText, Toolbar, Typography, Box, ListItemButton } from "@mui/material";
-import { Home, Functions, Settings } from "@mui/icons-material";
+import { Home } from "@mui/icons-material";
 import { useNavigate } from "react-router";
 
 const Sidebar: React.FC = () => {
