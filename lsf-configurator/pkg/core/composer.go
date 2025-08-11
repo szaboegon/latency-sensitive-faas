@@ -56,7 +56,7 @@ func (c *Composer) CreateFunctionApp(
 	fcApp := FunctionApp{
 		Id:           id,
 		Name:         appName,
-		Compositions: make(map[string]*FunctionComposition),
+		Compositions: make([]*FunctionComposition, 0),
 	}
 
 	if err := c.functionAppRepo.Save(&fcApp); err != nil {

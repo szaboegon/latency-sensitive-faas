@@ -3,7 +3,7 @@ export type Component = string;
 export interface FunctionApp {
     id?: string;
     name: string;
-    compositions?: Record<string, FunctionComposition>;
+    compositions?: FunctionComposition[];
     components?: Component[];
 }
 

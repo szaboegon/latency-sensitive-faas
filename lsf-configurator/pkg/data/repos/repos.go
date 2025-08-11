@@ -56,7 +56,7 @@ func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
 		return nil, err
 	}
 
-	app.Compositions = make(map[string]*core.FunctionComposition)
+	app.Compositions = make([]*core.FunctionComposition, 0)
 
 	rows, err := r.db.Query(`SELECT id FROM function_compositions WHERE function_app_id = ?`, app.Id)
 	if err != nil {
@@ -75,7 +75,7 @@ func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
 		if err != nil {
 			return nil, err
 		}
-		app.Compositions[compID] = comp
+		app.Compositions = append(app.Compositions, comp)
 	}
 
 	return &app, nil

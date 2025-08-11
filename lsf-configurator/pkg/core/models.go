@@ -3,10 +3,10 @@ package core
 type Component string
 
 type FunctionApp struct {
-	Id           string                          `json:"id,omitempty"`
-	Name         string                          `json:"name"`
-	Compositions map[string]*FunctionComposition `json:"compositions,omitempty"`
-	Components   []Component                     `json:"components,omitempty"`
+	Id           string                 `json:"id,omitempty"`
+	Name         string                 `json:"name"`
+	Compositions []*FunctionComposition `json:"compositions,omitempty"`
+	Components   []Component            `json:"components,omitempty"`
 }
 
 type FunctionComposition struct {

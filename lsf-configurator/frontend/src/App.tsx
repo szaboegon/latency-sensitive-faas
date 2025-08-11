@@ -1,15 +1,24 @@
-import { Routes, Route } from 'react-router'
-import Home from './pages/Home'
-import FunctionAppDetails from './pages/FunctionAppDetails'
-import './App.css'
+import React from "react"
+import { BrowserRouter, Routes, Route } from "react-router"
+import { Box } from "@mui/material"
+import Home from "./pages/Home"
+import FunctionAppDetails from "./pages/FunctionAppDetails"
+import Sidebar from "./components/Sidebar"
+import "./App.css"
 
-function App() {
-
+const App: React.FC = () => {
   return (
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/function-apps/:id" element={<FunctionAppDetails />} />
-      </Routes>
+    <BrowserRouter>
+      <Box sx={{ display: "flex" }}>
+        <Sidebar />
+        <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/function-apps/:id" element={<FunctionAppDetails />} />
+          </Routes>
+        </Box>
+      </Box>
+    </BrowserRouter>
   )
 }
 

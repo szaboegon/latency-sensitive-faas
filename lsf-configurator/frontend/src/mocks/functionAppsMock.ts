@@ -5,8 +5,8 @@ export const functionAppsMock: FunctionApp[] = [
         id: '1',
         name: 'Function App 1',
         components: ['Component A', 'Component B'],
-        compositions: {
-            'composition1': {
+        compositions: [
+            {
                 id: 'composition1',
                 functionAppId: '1',
                 node: 'Node 1',
@@ -21,14 +21,14 @@ export const functionAppsMock: FunctionApp[] = [
                     timestamp: '2023-01-01T00:00:00Z',
                 },
             },
-        },
+        ],
     },
     {
         id: '2',
         name: 'Function App 2',
         components: ['Component X', 'Component Y'],
-        compositions: {
-            'composition2': {
+        compositions: [
+            {
                 id: 'composition2',
                 functionAppId: '2',
                 node: 'Node 2',
@@ -43,6 +43,162 @@ export const functionAppsMock: FunctionApp[] = [
                     timestamp: '2023-02-01T00:00:00Z',
                 },
             },
-        },
+        ],
+    },
+    {
+        id: '3',
+        name: 'Function App 3',
+        components: ['Component M', 'Component N', 'Component O'],
+        compositions: [
+            {
+                id: 'composition3a',
+                functionAppId: '3',
+                node: 'Node 3',
+                namespace: 'Namespace 3',
+                runtime: 'Go',
+                files: ['file5.go', 'file6.go'],
+                components: {
+                    'Component M': [{ to: 'Component N', function: 'func3a' }],
+                },
+                build: {
+                    image: 'image3a',
+                    timestamp: '2023-03-01T00:00:00Z',
+                },
+            },
+            {
+                id: 'composition3b',
+                functionAppId: '3',
+                node: 'Node 3',
+                namespace: 'Namespace 3',
+                runtime: 'Go',
+                files: ['file7.go', 'file8.go'],
+                components: {
+                    'Component N': [{ to: 'Component O', function: 'func3b' }],
+                },
+                build: {
+                    image: 'image3b',
+                    timestamp: '2023-03-02T00:00:00Z',
+                },
+            },
+        ],
+    },
+    {
+        id: '4',
+        name: 'Function App 4',
+        components: ['Component P', 'Component Q'],
+        compositions: [
+            {
+                id: 'composition4a',
+                functionAppId: '4',
+                node: 'Node 4',
+                namespace: 'Namespace 4',
+                runtime: 'Ruby',
+                files: ['file9.rb', 'file10.rb'],
+                components: {
+                    'Component P': [{ to: 'Component Q', function: 'func4a' }],
+                },
+                build: {
+                    image: 'image4a',
+                    timestamp: '2023-04-01T00:00:00Z',
+                },
+            },
+            {
+                id: 'composition4b',
+                functionAppId: '4',
+                node: 'Node 4',
+                namespace: 'Namespace 4',
+                runtime: 'Ruby',
+                files: ['file11.rb', 'file12.rb'],
+                components: {
+                    'Component Q': [{ to: 'Component P', function: 'func4b' }],
+                },
+                build: {
+                    image: 'image4b',
+                    timestamp: '2023-04-02T00:00:00Z',
+                },
+            },
+            {
+                id: 'composition4c',
+                functionAppId: '4',
+                node: 'Node 4',
+                namespace: 'Namespace 4',
+                runtime: 'Ruby',
+                files: ['file13.rb', 'file14.rb'],
+                components: {
+                    'Component P': [{ to: 'Component Q', function: 'func4c' }],
+                },
+                build: {
+                    image: 'image4c',
+                    timestamp: '2023-04-03T00:00:00Z',
+                },
+            },
+        ],
+    },
+    {
+        id: '5',
+        name: 'Function App 5',
+        components: ['Component R', 'Component S', 'Component T', 'Component U'],
+        compositions: [
+            {
+                id: 'composition5a',
+                functionAppId: '5',
+                node: 'Node 5',
+                namespace: 'Namespace 5',
+                runtime: 'Java',
+                files: ['file15.java', 'file16.java'],
+                components: {
+                    'Component R': [{ to: 'Component S', function: 'func5a' }],
+                },
+                build: {
+                    image: 'image5a',
+                    timestamp: '2023-05-01T00:00:00Z',
+                },
+            },
+            {
+                id: 'composition5b',
+                functionAppId: '5',
+                node: 'Node 5',
+                namespace: 'Namespace 5',
+                runtime: 'Java',
+                files: ['file17.java', 'file18.java'],
+                components: {
+                    'Component S': [{ to: 'Component T', function: 'func5b' }],
+                },
+                build: {
+                    image: 'image5b',
+                    timestamp: '2023-05-02T00:00:00Z',
+                },
+            },
+            {
+                id: 'composition5c',
+                functionAppId: '5',
+                node: 'Node 5',
+                namespace: 'Namespace 5',
+                runtime: 'Java',
+                files: ['file19.java', 'file20.java'],
+                components: {
+                    'Component T': [{ to: 'Component U', function: 'func5c' }],
+                },
+                build: {
+                    image: 'image5c',
+                    timestamp: '2023-05-03T00:00:00Z',
+                },
+            },
+            {
+                id: 'composition5d',
+                functionAppId: '5',
+                node: 'Node 5',
+                namespace: 'Namespace 5',
+                runtime: 'Java',
+                files: ['file21.java', 'file22.java'],
+                components: {
+                    'Component U': [{ to: 'Component R', function: 'func5d' }],
+                },
+                build: {
+                    image: 'image5d',
+                    timestamp: '2023-05-04T00:00:00Z',
+                },
+            },
+        ],
     },
 ];
