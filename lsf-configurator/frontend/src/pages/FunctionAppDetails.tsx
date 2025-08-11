@@ -2,7 +2,7 @@ import React from "react";
 import {  Typography, Box, Grid, Container } from "@mui/material";
 import { useParams } from "react-router";
 import FunctionCompositionCard from "../components/FunctionCompositionCard";
-import { useFunctionApps } from "../hooks/useFunctionApps";
+import { useFunctionApps } from "../hooks/functionAppsHooks";
 import type { FunctionComposition } from "../models/models";
 
 const FunctionAppDetails: React.FC = () => {
@@ -62,7 +62,6 @@ const FunctionAppDetails: React.FC = () => {
   }
 
   return (
-    <Container>
       <Box my={4} >
         <Typography variant="h4" gutterBottom>
           {app.name} Details
@@ -94,7 +93,7 @@ const FunctionAppDetails: React.FC = () => {
         <Typography variant="h5" gutterBottom>
           Function Compositions
         </Typography>
-        <Grid container rowSpacing={4} columnSpacing={3}>
+        <Grid container spacing={4}>
           {app.compositions?.map((composition: FunctionComposition) => (
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={composition.id}>
               <FunctionCompositionCard composition={composition} />
@@ -102,7 +101,6 @@ const FunctionAppDetails: React.FC = () => {
           ))}
         </Grid>
       </Box>
-    </Container>
   );
 };
 

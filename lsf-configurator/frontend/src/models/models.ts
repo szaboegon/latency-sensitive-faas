@@ -5,6 +5,7 @@ export interface FunctionApp {
     name: string;
     compositions?: FunctionComposition[];
     components?: Component[];
+    files?: string[];
 }
 
 export interface FunctionComposition {

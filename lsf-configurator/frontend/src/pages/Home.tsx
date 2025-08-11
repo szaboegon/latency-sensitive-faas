@@ -1,5 +1,5 @@
 import React from "react";
-import { useFunctionApps } from "../hooks/useFunctionApps";
+import { useFunctionApps } from "../hooks/functionAppsHooks";
 import { Container, Typography, Box } from "@mui/material";
 import FunctionAppCard from "../components/FunctionAppCard";
 import Grid  from "@mui/material/Grid";
@@ -29,7 +29,6 @@ const Home: React.FC = () => {
   }
 
   return (
-    <Container>
       <Box my={4}>
         <Typography variant="h4" gutterBottom>
           Function Apps Overview
@@ -39,7 +38,7 @@ const Home: React.FC = () => {
             No function apps found.
           </Typography>
         ) : (
-          <Grid container rowSpacing={9} columnSpacing={3}>
+          <Grid container spacing={3}>
             {functionApps?.map((app) => (
               <Grid size={{ xs: 12, sm: 6, md: 4 }} key={app.id}>
                 <FunctionAppCard app={app} />
@@ -48,7 +47,6 @@ const Home: React.FC = () => {
           </Grid>
         )}
       </Box>
-    </Container>
   );
 };
 
