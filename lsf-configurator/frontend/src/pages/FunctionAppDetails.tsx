@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { Typography, Box, Grid, Button, Tabs, Tab } from "@mui/material";
 import { useParams } from "react-router";
 import FunctionCompositionCard from "../components/FunctionCompositionCard";
@@ -7,8 +7,7 @@ import type { FunctionComposition } from "../models/models";
 import { generateComponentColor } from "../helpers/utilities";
 import { useDeleteFunctionComposition } from "../hooks/functionCompositionHooks";
 import AddIcon from "@mui/icons-material/Add";
-import ReactFlow, { MiniMap, Controls, Background } from "reactflow";
-import "reactflow/dist/style.css";
+import CallGraphView from "../components/CallGraphView";
 
 const FunctionAppDetails: React.FC = () => {
   const { id } = useParams();
@@ -148,6 +147,10 @@ const FunctionAppDetails: React.FC = () => {
             </Box>
           </Grid>
         </Grid>
+      )}
+
+      {tabValue === "graph" && (
+        <CallGraphView compositions={app.compositions ?? []} />
       )}
     </Box>
   );
