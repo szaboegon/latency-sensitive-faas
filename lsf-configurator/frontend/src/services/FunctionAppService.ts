@@ -13,8 +13,18 @@ const FunctionAppService = {
     return response.data;
   },
 
-  async createFunctionApp(newApp: FunctionApp): Promise<FunctionApp> {
-    const response = await axios.post(`${paths.apps}`, newApp);
+  async createFunctionApp(newApp: FunctionApp, files: FileList): Promise<FunctionApp> {
+    const formData = new FormData();
+    formData.append("json", JSON.stringify(newApp));
+    Array.from(files).forEach((file) => {
+      formData.append("files", file);
+    });
+
+    const response = await axios.post(`${paths.apps}`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response.data;
   },
 

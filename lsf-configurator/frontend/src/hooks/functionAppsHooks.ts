@@ -25,7 +25,8 @@ export const useFunctionAppById = (id: string) => {
 
 export const useCreateFunctionApp = () =>
   useMutation({
-    mutationFn: FunctionAppService.createFunctionApp,
+    mutationFn: (vars: { functionApp: FunctionApp; files: FileList }) =>
+      FunctionAppService.createFunctionApp(vars.functionApp, vars.files)
   });
 
 export const useDeleteFunctionApp = () =>

@@ -26,14 +26,14 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
   onClose,
 }) => {
   const { register, handleSubmit } = useForm<FormData>()
-  const { mutate } = useCreateFunctionApp()
+  const { mutate: createFunctionApp } = useCreateFunctionApp()
 
   const onSubmit = (data: FormData) => {
     const fcApp: FunctionApp = {
       name: data.name,
       files: Array.from(data.files).map((file) => file.name),
     }
-    mutate(fcApp)
+    createFunctionApp({ functionApp: fcApp, files: data.files })
     onClose()
   }
 

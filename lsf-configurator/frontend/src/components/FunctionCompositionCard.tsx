@@ -7,10 +7,11 @@ import { generateComponentColor } from "../helpers/utilities";
 
 interface Props {
   composition: FunctionComposition;
+  allCompositions: FunctionComposition[];
   onDelete: (id: string) => void; 
 }
 
-const FunctionCompositionCard: React.FC<Props> = ({ composition, onDelete }) => {
+const FunctionCompositionCard: React.FC<Props> = ({ composition, allCompositions, onDelete }) => {
   const [isModalOpen, setModalOpen] = useState(false);
 
   const handleOpenModal = () => setModalOpen(true);
@@ -171,6 +172,7 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, onDelete }) => 
         open={isModalOpen}
         onClose={handleCloseModal}
         composition={composition}
+        allCompositions={allCompositions}
       />
     </>
   );
