@@ -33,7 +33,7 @@ export const functionAppsMock: FunctionApp[] = [
                 files: ['file3.js', 'file4.js'],
                 components: {
                     'Component B1': [{ to: 'Component C1', function: 'composition1a' }],
-                    'Component C1': [{ to: 'Component A1', function: 'composition1a' }],
+                    'Component C1': [], 
                 },
                 build: {
                     image: 'image1b',
@@ -74,7 +74,7 @@ export const functionAppsMock: FunctionApp[] = [
                 files: ['file5.py', 'file6.py'],
                 components: {
                     'Component Y2': [{ to: 'Component Z2', function: 'composition2a' }],
-                    'Component Z2': [{ to: 'Component X2', function: 'composition2a' }],
+                    'Component Z2': [], 
                 },
                 build: {
                     image: 'image2b',
@@ -129,7 +129,7 @@ export const functionAppsMock: FunctionApp[] = [
                 runtime: 'Go',
                 files: ['file9.go', 'file10.go'],
                 components: {
-                    'Component O3': [{ to: 'Component M3', function: 'composition3a' }],
+                    'Component O3': [],
                 },
                 build: {
                     image: 'image3c',
@@ -166,7 +166,7 @@ export const functionAppsMock: FunctionApp[] = [
                 runtime: 'Ruby',
                 files: ['file11.rb', 'file12.rb'],
                 components: {
-                    'Component Q4': [{ to: 'Component P4', function: 'composition4c' }],
+                    'Component Q4': [], 
                 },
                 build: {
                     image: 'image4b',
@@ -181,7 +181,7 @@ export const functionAppsMock: FunctionApp[] = [
                 runtime: 'Ruby',
                 files: ['file13.rb', 'file14.rb'],
                 components: {
-                    'Component P4': [{ to: 'Component Q4', function: 'composition4a' }],
+                    'Component P4': [],
                 },
                 build: {
                     image: 'image4c',
@@ -248,7 +248,7 @@ export const functionAppsMock: FunctionApp[] = [
                 runtime: 'Java',
                 files: ['file21.java', 'file22.java'],
                 components: {
-                    'Component U5': [{ to: 'Component R5', function: 'composition5a' }],
+                    'Component U5': [], // Remove cycle
                 },
                 build: {
                     image: 'image5d',

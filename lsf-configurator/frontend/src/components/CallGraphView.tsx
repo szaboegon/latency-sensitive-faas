@@ -9,7 +9,7 @@ import ReactFlow, {
   MarkerType,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import type { FunctionComposition } from "../models/models";
+import type { FunctionComposition, Route } from "../models/models";
 import { generateComponentColor } from "../helpers/utilities";
 
 interface CallGraphViewProps {
@@ -17,20 +17,20 @@ interface CallGraphViewProps {
 }
 
 /**
- * Layout constants - tweak to taste
+ * Layout constants
  */
 const COMPOSITION_WIDTH = 320;
 const TITLE_HEIGHT = 36;
 const COMPONENT_HEIGHT = 40;
 const COMPONENT_GAP = 12;
 const COMPOSITION_PADDING = 12;
+const COMPOSITION_VERTICAL_SPACING = 50;
 
 const CallGraphView: React.FC<CallGraphViewProps> = ({ compositions }) => {
   const { nodes, edges } = useMemo(() => {
     const rfNodes: Node[] = [];
     const rfEdges: Edge[] = [];
 
-    // Directly render compositions without dagre layout
     compositions.forEach((c, compIndex) => {
       const nComponents = Object.keys(c.components ?? {}).length;
       const height =
@@ -39,8 +39,8 @@ const CallGraphView: React.FC<CallGraphViewProps> = ({ compositions }) => {
         nComponents * (COMPONENT_HEIGHT + COMPONENT_GAP);
 
       const compId = c.id ?? "";
-      const topLeftX = compIndex * (COMPOSITION_WIDTH + 120); // simple horizontal spacing
-      const topLeftY = 0;
+      const topLeftX = 0; 
+      const topLeftY = compIndex * (height + COMPOSITION_VERTICAL_SPACING); 
 
       // Composition group node
       rfNodes.push({
@@ -114,7 +114,7 @@ const CallGraphView: React.FC<CallGraphViewProps> = ({ compositions }) => {
     compositions.forEach((c) => {
       const compId = c.id ?? "";
       Object.entries(c.components ?? {}).forEach(([sourceComponent, routes]) => {
-        (routes || []).forEach((r: any, idx: number) => {
+        (routes || []).forEach((r: Route, idx: number) => {
           const targetComp = r.function;
           const targetComponent = r.to;
           if (!targetComp || !targetComponent) return;
