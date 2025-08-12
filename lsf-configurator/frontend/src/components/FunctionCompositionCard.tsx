@@ -2,18 +2,25 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, Typography, Divider, Box, Chip, Stack, Button, Grid } from "@mui/material";
 import type { FunctionComposition } from "../models/models"; 
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import RoutingTableModal from "../components/RoutingTableModal"; // Import the modal component
+import RoutingTableModal from "../components/RoutingTableModal"; 
 import { generateComponentColor } from "../helpers/utilities";
 
 interface Props {
   composition: FunctionComposition;
+  onDelete: (id: string) => void; 
 }
 
-const FunctionCompositionCard: React.FC<Props> = ({ composition }) => {
+const FunctionCompositionCard: React.FC<Props> = ({ composition, onDelete }) => {
   const [isModalOpen, setModalOpen] = useState(false);
 
   const handleOpenModal = () => setModalOpen(true);
   const handleCloseModal = () => setModalOpen(false);
+
+  const handleDelete = () => {
+    if (composition.id) {
+      onDelete(composition.id);
+    }
+  };
 
   return (
     <>
@@ -109,9 +116,6 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition }) => {
                     background: "#f0fafa",
                   }}
                 >
-                  <Typography variant="body2" fontWeight="bold">
-                    Component: {component}
-                  </Typography>
                   {routes.map((route, rIdx) => (
                     <Stack
                       key={rIdx}
@@ -120,9 +124,13 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition }) => {
                       spacing={1}
                       sx={{ pl: 2, mt: 0.5 }}
                     >
-                      <Typography variant="body2">{route.function}</Typography>
+                      <Typography variant="body2" fontWeight="bold">
+                        {component}
+                      </Typography>
                       <ArrowForwardIcon fontSize="small" color="action" />
-                      <Typography variant="body2">{route.to}</Typography>
+                      <Typography variant="body2">
+                        {route.to} ({route.function})
+                      </Typography>
                     </Stack>
                   ))}
                 </Box>
@@ -132,9 +140,14 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition }) => {
 
 
           <Divider sx={{ my: 2 }} />
-          <Button variant="contained" color="primary" onClick={handleOpenModal}>
-            Edit Routing Table
-          </Button>
+          <Stack direction="row" spacing={2}>
+            <Button variant="contained" color="primary" onClick={handleOpenModal}>
+              Edit Routing Table
+            </Button>
+            <Button variant="outlined" color="error" onClick={handleDelete}>
+              Delete
+            </Button>
+          </Stack>
         </CardContent>
       </Card>
       <RoutingTableModal

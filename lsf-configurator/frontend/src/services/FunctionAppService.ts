@@ -17,6 +17,10 @@ const FunctionAppService = {
     const response = await axios.post(`${paths.apps}`, newApp);
     return response.data;
   },
+
+  async deleteFunctionApp(id: string): Promise<void> {
+    await axios.delete(`${paths.apps}/${id}`);
+  }
 };
 
 export default FunctionAppService;
