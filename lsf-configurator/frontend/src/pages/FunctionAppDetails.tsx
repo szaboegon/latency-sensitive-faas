@@ -1,5 +1,5 @@
-import React from "react";
-import {  Typography, Box, Grid, Button } from "@mui/material";
+import React, { useState, useMemo } from "react";
+import { Typography, Box, Grid, Button, Tabs, Tab } from "@mui/material";
 import { useParams } from "react-router";
 import FunctionCompositionCard from "../components/FunctionCompositionCard";
 import { useFunctionAppById } from "../hooks/functionAppsHooks";
@@ -7,15 +7,26 @@ import type { FunctionComposition } from "../models/models";
 import { generateComponentColor } from "../helpers/utilities";
 import { useDeleteFunctionComposition } from "../hooks/functionCompositionHooks";
 import AddIcon from "@mui/icons-material/Add";
+import ReactFlow, { MiniMap, Controls, Background } from "reactflow";
+import "reactflow/dist/style.css";
 
 const FunctionAppDetails: React.FC = () => {
   const { id } = useParams();
-  const { data: app, isLoading, error } = useFunctionAppById(id?? "");
+  const { data: app, isLoading, error } = useFunctionAppById(id ?? "");
   const { mutate: deleteComposition } = useDeleteFunctionComposition();
+
+  const [tabValue, setTabValue] = useState<"list" | "graph">("list");
 
   const handleAddComposition = () => {
     // TODO
     console.log("Add new function composition");
+  };
+
+  const handleTabChange = (
+    _: React.SyntheticEvent,
+    newValue: "list" | "graph"
+  ) => {
+    setTabValue(newValue);
   };
 
   if (isLoading) {
@@ -70,41 +81,47 @@ const FunctionAppDetails: React.FC = () => {
   }
 
   return (
-      <Box my={4} >
-        <Typography variant="h4" gutterBottom>
-          {app.name} Details
-        </Typography>
+    <Box my={4}>
+      <Typography variant="h4" gutterBottom>
+        {app.name} Details
+      </Typography>
 
-        {/* Components section */}
-        <Typography variant="h5" gutterBottom>
-          Components
-        </Typography>
-        <Grid container spacing={2} mb={4}>
-          {app.components?.map((component) => (
-            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={component}>
-              <Box
-                sx={{
-                  backgroundColor: generateComponentColor(component),
-                  borderRadius: 2,
-                  padding: 2,
-                  textAlign: "center",
-                  boxShadow: 2,
-                }}
-              >
-                <Typography variant="h6">{component}</Typography>
-              </Box>
-            </Grid>
-          ))}
-        </Grid>
+      {/* Components section */}
+      <Typography variant="h5" gutterBottom>
+        Components
+      </Typography>
+      <Grid container spacing={2} mb={4}>
+        {app.components?.map((component) => (
+          <Grid key={component} size={{ xs: 12, sm: 6, md: 4 }}>
+            <Box
+              sx={{
+                backgroundColor: generateComponentColor(component),
+                borderRadius: 2,
+                padding: 2,
+                textAlign: "center",
+                boxShadow: 2,
+              }}
+            >
+              <Typography variant="h6">{component}</Typography>
+            </Box>
+          </Grid>
+        ))}
+      </Grid>
 
-        {/* Function compositions */}
-        <Typography variant="h5" gutterBottom>
-          Function Compositions
-        </Typography>
+      {/* Tabs for compositions */}
+      <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2 }}>
+        <Tab label="List View" value="list" />
+        <Tab label="Call Graph View" value="graph" />
+      </Tabs>
+
+      {tabValue === "list" && (
         <Grid container spacing={4}>
           {app.compositions?.map((composition: FunctionComposition) => (
-            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={composition.id}>
-              <FunctionCompositionCard composition={composition} onDelete={deleteComposition}/>
+            <Grid key={composition.id} size={{ xs: 12, sm: 6, md: 4 }}>
+              <FunctionCompositionCard
+                composition={composition}
+                onDelete={deleteComposition}
+              />
             </Grid>
           ))}
           <Grid size={{ xs: 12, sm: 6, md: 4 }}>
@@ -131,9 +148,9 @@ const FunctionAppDetails: React.FC = () => {
             </Box>
           </Grid>
         </Grid>
-      </Box>
+      )}
+    </Box>
   );
 };
 
 export default FunctionAppDetails;
-
