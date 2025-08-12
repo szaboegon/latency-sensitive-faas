@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, Typography, Divider, Box, Chip, Stack, B
 import type { FunctionComposition } from "../models/models"; 
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import RoutingTableModal from "../components/RoutingTableModal"; // Import the modal component
+import { generateComponentColor } from "../helpers/utilities";
 
 interface Props {
   composition: FunctionComposition;
@@ -37,11 +38,11 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition }) => {
                 Components:
               </Typography>
               <Grid container spacing={1}>
-                {Object.keys(composition.components).map((component, index) => (
+                {Object.keys(composition.components).map((component) => (
                   <Grid size={{ xs: 6, sm: 4 }} key={component}>
                     <Box
                       sx={{
-                        backgroundColor: `hsl(${(index * 60) % 360}, 70%, 80%)`,
+                        backgroundColor: generateComponentColor(component),
                         borderRadius: 2,
                         padding: 1,
                         textAlign: "center",

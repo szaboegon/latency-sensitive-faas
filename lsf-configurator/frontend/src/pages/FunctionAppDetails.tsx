@@ -4,6 +4,7 @@ import { useParams } from "react-router";
 import FunctionCompositionCard from "../components/FunctionCompositionCard";
 import { useFunctionAppById } from "../hooks/functionAppsHooks";
 import type { FunctionComposition } from "../models/models";
+import { generateComponentColor } from "../helpers/utilities";
 
 const FunctionAppDetails: React.FC = () => {
   const { id } = useParams();
@@ -71,11 +72,11 @@ const FunctionAppDetails: React.FC = () => {
           Components
         </Typography>
         <Grid container spacing={2} mb={4}>
-          {app.components?.map((component, index) => (
+          {app.components?.map((component) => (
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={component}>
               <Box
                 sx={{
-                  backgroundColor: `hsl(${(index * 60) % 360}, 70%, 80%)`,
+                  backgroundColor: generateComponentColor(component),
                   borderRadius: 2,
                   padding: 2,
                   textAlign: "center",
