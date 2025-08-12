@@ -105,36 +105,53 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, onDelete }) => 
               <Typography variant="subtitle2" gutterBottom>
                 Routing Table:
               </Typography>
-              {Object.entries(composition.components).map(([component, routes], idx) => (
-                <Box
-                  key={idx}
-                  sx={{
-                    mb: 1.5,
-                    p: 1,
-                    border: "1px dashed #80deea",
-                    borderRadius: 2,
-                    background: "#f0fafa",
-                  }}
-                >
-                  {routes.map((route, rIdx) => (
-                    <Stack
-                      key={rIdx}
-                      direction="row"
-                      alignItems="center"
-                      spacing={1}
-                      sx={{ pl: 2, mt: 0.5 }}
-                    >
-                      <Typography variant="body2" fontWeight="bold">
-                        {component}
-                      </Typography>
-                      <ArrowForwardIcon fontSize="small" color="action" />
-                      <Typography variant="body2">
-                        {route.to} ({route.function})
-                      </Typography>
-                    </Stack>
+              <Box
+                sx={{
+                  mb: 1.5,
+                  p: 1,
+                  border: "1px dashed #80deea",
+                  borderRadius: 2,
+                  background: "#f0fafa",
+                }}
+              >
+                <Stack direction="column" spacing={1} sx={{ pl: 2, mt: 0.5 }}>
+                  {Object.entries(composition.components).map(([component, routes]) => (
+                    <>
+                      {routes.map((route, rIdx) => (
+                        <Stack
+                          key={`${component}-${rIdx}`}
+                          direction="row"
+                          alignItems="center"
+                          spacing={1}
+                        >
+                          <Typography variant="body2" fontWeight="bold">
+                            {component}
+                          </Typography>
+                          <ArrowForwardIcon fontSize="small" color="action" />
+                          <Typography variant="body2">
+                            {route.to} ({route.function})
+                          </Typography>
+                        </Stack>
+                      ))}
+                      {routes.length === 0 && (
+                        <Stack
+                          direction="row"
+                          alignItems="center"
+                          spacing={1}
+                        >
+                          <Typography variant="body2" fontWeight="bold">
+                            {component}
+                          </Typography>
+                          <ArrowForwardIcon fontSize="small" color="action" />
+                          <Typography variant="body2">
+                            &lt;none&gt;
+                          </Typography>
+                        </Stack>
+                      )}
+                    </>
                   ))}
-                </Box>
-              ))}
+                </Stack>
+              </Box>
             </Box>
           )}
 
