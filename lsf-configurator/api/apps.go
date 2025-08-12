@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	AppsPath = "/apps/"
+	AppsPath = "/apps"
 )
 
 type HandlerApps struct {
@@ -26,9 +26,9 @@ func NewHandlerApps(composer *core.Composer, conf config.Configuration) *Handler
 	}
 
 	h.mux.HandleFunc("GET "+AppsPath, h.list)
-	h.mux.HandleFunc("GET "+AppsPath+"{id}", h.get)
-	h.mux.HandleFunc("POST "+AppsPath+"create", h.create)
-	h.mux.HandleFunc("DELETE "+AppsPath+"delete", h.delete)
+	h.mux.HandleFunc("GET "+AppsPath+"/{id}", h.get)
+	h.mux.HandleFunc("POST "+AppsPath, h.create)
+	h.mux.HandleFunc("DELETE "+AppsPath+"/{id}", h.delete)
 
 	return h
 }

@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	MetricsPath = "/metrics/"
+	MetricsPath = "/metrics"
 )
 
 type HandlerMetrics struct {
@@ -25,7 +25,7 @@ func NewHandlerMetrics(metricsClient metrics.MetricsReader, conf config.Configur
 		mux:           http.NewServeMux(),
 	}
 
-	h.mux.HandleFunc("GET "+MetricsPath+"apps/{app_id}", h.getAppMetrics)
+	h.mux.HandleFunc("GET "+MetricsPath+"/apps/{app_id}", h.getAppMetrics)
 
 	return h
 }

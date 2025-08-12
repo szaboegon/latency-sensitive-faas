@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	FunctionCompositionsPath = "/function_compositions/"
+	FunctionCompositionsPath = "/function_compositions"
 )
 
 type HandlerFunctionCompositions struct {
@@ -24,8 +24,8 @@ func NewHandlerFunctionCompositions(composer *core.Composer, conf config.Configu
 		mux:      http.NewServeMux(),
 	}
 
-	h.mux.HandleFunc("PUT "+FunctionCompositionsPath+"{fc_id}/routing_table", h.putRoutingTable)
-	h.mux.HandleFunc("POST "+FunctionCompositionsPath+"build_notify", h.buildNotify)
+	h.mux.HandleFunc("PUT "+FunctionCompositionsPath+"/{fc_id}/routing_table", h.putRoutingTable)
+	h.mux.HandleFunc("POST "+FunctionCompositionsPath+"/build_notify", h.buildNotify)
 
 	return h
 }
