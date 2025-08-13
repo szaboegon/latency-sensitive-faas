@@ -13,8 +13,9 @@ import {
   IconButton,
 } from "@mui/material";
 import { useForm, useFieldArray, useWatch, Controller } from "react-hook-form";
-import type { FunctionComposition } from "../models/models";
+import type { FunctionComposition, RoutingTable } from "../models/models";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { useModifyRoutingTable } from "../hooks/functionCompositionHooks";
 
 interface Props {
   open: boolean;
@@ -25,8 +26,8 @@ interface Props {
 
 interface Rule {
   component: string;
-  targetComposition: string | null;
-  targetComponent: string | null;
+  targetComposition: string;
+  targetComponent: string;
 }
 
 const RoutingTableModal: React.FC<Props> = ({
@@ -36,16 +37,22 @@ const RoutingTableModal: React.FC<Props> = ({
   allCompositions,
 }) => {
   const [tab, setTab] = useState(0);
-
+  const [jsonInput, setJsonInput] = useState("");
   const { control, handleSubmit } = useForm<{ rules: Rule[] }>({
     defaultValues: {
       rules: Object.entries(composition.components).flatMap(
         ([component, routes]) =>
-          routes.map((route) => ({
-            component,
-            targetComposition: route.function ?? null,
-            targetComponent: route.to ?? null,
-          }))
+          routes.length > 0
+            ? routes.map((route) => ({
+                component,
+                targetComposition: route.function ?? "",
+                targetComponent: route.to ?? "",
+              }))
+            : [{
+                component,
+                targetComposition: "",
+                targetComponent: ""
+              }]
       ),
     },
   });
@@ -60,6 +67,8 @@ const RoutingTableModal: React.FC<Props> = ({
     name: "rules",
   });
 
+  const {mutate: modifyRoutingTable} = useModifyRoutingTable()
+
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) =>
     setTab(newValue);
 
@@ -67,8 +76,22 @@ const RoutingTableModal: React.FC<Props> = ({
     append({ component: "", targetComposition: "", targetComponent: "" });
   };
 
-  const handleFormSubmit = (data: { rules: Rule[] }) => {
-    console.log("Form Data:", data);
+  const handleSaveFormInput = (rules: Rule[]) => {
+    const routingTable: RoutingTable = rules.reduce((acc, rule) => {
+      if (!acc[rule.component]) {
+        acc[rule.component] = [];
+      }
+      acc[rule.component].push({
+        to: rule.targetComponent === "None" ? "" : rule.targetComponent,
+        function: rule.targetComposition === "None" ? "" : rule.targetComposition,
+      });
+      return acc;
+    }, {} as RoutingTable);
+
+    modifyRoutingTable({
+      functionCompositionId: composition.id!,
+      routingTable,
+    });
     onClose();
   };
 
@@ -92,11 +115,94 @@ const RoutingTableModal: React.FC<Props> = ({
         </Typography>
 
         <Tabs value={tab} onChange={handleTabChange}>
-          <Tab label="JSON Input" />
           <Tab label="Form Input" />
+          <Tab label="JSON Input" />
         </Tabs>
 
         {tab === 0 && (
+          <Box mt={2}>
+            <form>
+              <Stack spacing={2}>
+                {fields.map((field, index) => {
+                  const selectedTargetCompId = watchedRules?.[index]?.targetComposition;
+                  const availableTargetComponents = Object.keys(
+                    allCompositions.find((comp) => comp.id === selectedTargetCompId)?.components ?? {}
+                  );
+
+                  return (
+                    <Stack key={field.id} direction="row" spacing={2} alignItems="center">
+                      {/* Current composition component */}
+                      <Controller
+                        name={`rules.${index}.component`}
+                        control={control}
+                        render={({ field }) => (
+                          <Select {...field} fullWidth>
+                            {Object.keys(composition.components).map((component) => (
+                              <MenuItem key={component} value={component}>
+                                {component}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        )}
+                      />
+
+                      {/* Arrow */}
+                      <Typography variant="body2" sx={{ mx: 1 }}>
+                        →
+                      </Typography>
+
+                      {/* Target composition */}
+                      <Controller
+                        name={`rules.${index}.targetComposition`}
+                        control={control}
+                        render={({ field }) => (
+                          <Select {...field} fullWidth value={field.value || "None"}>
+                            <MenuItem value="None">None</MenuItem>
+                            {allCompositions.map((comp) => (
+                              <MenuItem key={comp.id} value={comp.id}>
+                                {comp.id} ({comp.node})
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        )}
+                      />
+
+                      {/* Target component */}
+                      <Controller
+                        name={`rules.${index}.targetComponent`}
+                        control={control}
+                        render={({ field }) => (
+                          <Select {...field} fullWidth value={field.value || "None"}>
+                            <MenuItem value="None">None</MenuItem>
+                            {availableTargetComponents.map((component) => (
+                              <MenuItem key={component} value={component}>
+                                {component}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        )}
+                      />
+
+                      {/* Delete */}
+                      <IconButton onClick={() => remove(index)} color="error">
+                        <DeleteIcon />
+                      </IconButton>
+                    </Stack>
+                  );
+                })}
+
+                <Button variant="outlined" onClick={handleAddRule}>
+                  + Add Rule
+                </Button>
+                <Button type="submit" variant="contained" color="primary" onClick={handleSubmit((data) => handleSaveFormInput(data.rules))}>
+                  Save
+                </Button>
+              </Stack>
+            </form>
+          </Box>
+        )}
+
+        {tab === 1 && (
           <Box mt={2}>
             <TextField
               fullWidth
@@ -104,88 +210,27 @@ const RoutingTableModal: React.FC<Props> = ({
               rows={10}
               placeholder="Enter routing table in JSON format"
               variant="outlined"
+              onChange={(e) => setJsonInput(e.target.value)}
             />
-          </Box>
-        )}
-
-        {tab === 1 && (
-          <Box mt={2}>
-            <form onSubmit={handleSubmit(handleFormSubmit)}>
-              <Stack spacing={2}>
-               {fields.map((field, index) => {
-  const selectedTargetCompId = watchedRules?.[index]?.targetComposition;
-  const availableTargetComponents = Object.keys(
-    allCompositions.find((comp) => comp.id === selectedTargetCompId)?.components ?? {}
-  );
-
-  return (
-    <Stack key={field.id} direction="row" spacing={2} alignItems="center">
-      {/* Current composition component */}
-      <Controller
-        name={`rules.${index}.component`}
-        control={control}
-        render={({ field }) => (
-          <Select {...field} fullWidth>
-            {Object.keys(composition.components).map((component) => (
-              <MenuItem key={component} value={component}>
-                {component}
-              </MenuItem>
-            ))}
-          </Select>
-        )}
-      />
-
-      {/* Arrow */}
-      <Typography variant="body2" sx={{ mx: 1 }}>
-        →
-      </Typography>
-
-      {/* Target composition */}
-      <Controller
-        name={`rules.${index}.targetComposition`}
-        control={control}
-        render={({ field }) => (
-          <Select {...field} fullWidth>
-            {allCompositions.map((comp) => (
-              <MenuItem key={comp.id} value={comp.id}>
-                {comp.id} ({comp.node})
-              </MenuItem>
-            ))}
-          </Select>
-        )}
-      />
-
-      {/* Target component */}
-      <Controller
-        name={`rules.${index}.targetComponent`}
-        control={control}
-        render={({ field }) => (
-          <Select {...field} fullWidth>
-            {availableTargetComponents.map((component) => (
-              <MenuItem key={component} value={component}>
-                {component}
-              </MenuItem>
-            ))}
-          </Select>
-        )}
-      />
-
-      {/* Delete */}
-      <IconButton onClick={() => remove(index)} color="error">
-        <DeleteIcon />
-      </IconButton>
-    </Stack>
-  );
-})}
-
-                <Button variant="outlined" onClick={handleAddRule}>
-                  + Add Rule
-                </Button>
-                <Button type="submit" variant="contained" color="primary">
-                  Save
-                </Button>
-              </Stack>
-            </form>
+            <Button
+              variant="contained"
+              color="primary"
+              sx={{ mt: 2 }}
+              onClick={() => {
+                try {
+                  const parsedTable: RoutingTable = JSON.parse(jsonInput);
+                  modifyRoutingTable({
+                    functionCompositionId: composition.id!,
+                    routingTable: parsedTable,
+                  });
+                  onClose();
+                } catch (error) {
+                  console.error("Invalid JSON format:", error);
+                }
+              }}
+            >
+              Save
+            </Button>
           </Box>
         )}
       </Box>

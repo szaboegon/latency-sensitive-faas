@@ -8,7 +8,7 @@ const FunctionCompositionService = {
     await axios.delete(`${paths.functionCompositions}/${id}`);
   },
 
-  async modifyRoutingTable(functionCompositionId:number, routingTable: RoutingTable): Promise<void> {
+  async modifyRoutingTable(functionCompositionId: string, routingTable: RoutingTable): Promise<void> {
     await axios.put(`${paths.functionCompositions}/${functionCompositionId}/routing-table`, routingTable);
   }
 };

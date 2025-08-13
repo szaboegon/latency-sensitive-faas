@@ -248,7 +248,7 @@ export const functionAppsMock: FunctionApp[] = [
                 runtime: 'Java',
                 files: ['file21.java', 'file22.java'],
                 components: {
-                    'Component U5': [], // Remove cycle
+                    'Component U5': [], 
                 },
                 build: {
                     image: 'image5d',

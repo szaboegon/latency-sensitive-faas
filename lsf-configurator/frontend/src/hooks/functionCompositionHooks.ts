@@ -9,6 +9,6 @@ export const useDeleteFunctionComposition = () =>
 
 export const useModifyRoutingTable = () =>
   useMutation({
-    mutationFn: (vars: { functionCompositionId: number; routingTable: RoutingTable }) =>
+    mutationFn: (vars: { functionCompositionId: string; routingTable: RoutingTable }) =>
       FunctionCompositionService.modifyRoutingTable(vars.functionCompositionId, vars.routingTable),
   });
