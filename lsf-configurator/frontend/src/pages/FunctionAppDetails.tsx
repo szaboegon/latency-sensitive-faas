@@ -8,6 +8,7 @@ import { generateComponentColor } from "../helpers/utilities";
 import { useDeleteFunctionComposition } from "../hooks/functionCompositionHooks";
 import AddIcon from "@mui/icons-material/Add";
 import CallGraphView from "../components/CallGraphView";
+import FunctionCompositionAddModal from "../components/FunctionCompositionAddModal";
 
 const FunctionAppDetails: React.FC = () => {
   const { id } = useParams();
@@ -15,10 +16,14 @@ const FunctionAppDetails: React.FC = () => {
   const { mutate: deleteComposition } = useDeleteFunctionComposition();
 
   const [tabValue, setTabValue] = useState<"list" | "graph">("list");
+  const [isAddModalOpen, setAddModalOpen] = useState(false);
 
   const handleAddComposition = () => {
-    // TODO
-    console.log("Add new function composition");
+    setAddModalOpen(true);
+  };
+
+  const handleCloseAddModal = () => {
+    setAddModalOpen(false);
   };
 
   const handleTabChange = (
@@ -80,80 +85,89 @@ const FunctionAppDetails: React.FC = () => {
   }
 
   return (
-    <Box my={4}>
-      <Typography variant="h4" gutterBottom>
-        {app.name} Details
-      </Typography>
+    <>
+      <Box my={4}>
+        <Typography variant="h4" gutterBottom>
+          {app.name} Details
+        </Typography>
 
-      {/* Components section */}
-      <Typography variant="h5" gutterBottom>
-        Components
-      </Typography>
-      <Grid container spacing={2} mb={4}>
-        {app.components?.map((component) => (
-          <Grid key={component} size={{ xs: 12, sm: 6, md: 4 }}>
-            <Box
-              sx={{
-                backgroundColor: generateComponentColor(component),
-                borderRadius: 2,
-                padding: 2,
-                textAlign: "center",
-                boxShadow: 2,
-              }}
-            >
-              <Typography variant="h6">{component}</Typography>
-            </Box>
-          </Grid>
-        ))}
-      </Grid>
-
-      {/* Tabs for compositions */}
-      <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2 }}>
-        <Tab label="List View" value="list" />
-        <Tab label="Call Graph View" value="graph" />
-      </Tabs>
-
-      {tabValue === "list" && (
-        <Grid container spacing={4}>
-          {app.compositions?.map((composition: FunctionComposition) => (
-            <Grid key={composition.id} size={{ xs: 12, sm: 6, md: 4 }}>
-              <FunctionCompositionCard
-                composition={composition}
-                onDelete={deleteComposition}
-                allCompositions={app.compositions ?? []}
-              />
+        {/* Components section */}
+        <Typography variant="h5" gutterBottom>
+          Components
+        </Typography>
+        <Grid container spacing={2} mb={4}>
+          {app.components?.map((component) => (
+            <Grid key={component} size={{ xs: 12, sm: 6, md: 4 }}>
+              <Box
+                sx={{
+                  backgroundColor: generateComponentColor(component),
+                  borderRadius: 2,
+                  padding: 2,
+                  textAlign: "center",
+                  boxShadow: 2,
+                }}
+              >
+                <Typography variant="h6">{component}</Typography>
+              </Box>
             </Grid>
           ))}
-          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                height: "100%",
-                border: "1px dashed #b2ebf2",
-                borderRadius: 2,
-                padding: 2,
-                boxShadow: 2,
-                cursor: "pointer",
-              }}
-            >
-              <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={handleAddComposition}
-              >
-                Add Composition
-              </Button>
-            </Box>
-          </Grid>
         </Grid>
-      )}
 
-      {tabValue === "graph" && (
-        <CallGraphView compositions={app.compositions ?? []} />
-      )}
-    </Box>
+        {/* Tabs for compositions */}
+        <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2 }}>
+          <Tab label="List View" value="list" />
+          <Tab label="Call Graph View" value="graph" />
+        </Tabs>
+
+        {tabValue === "list" && (
+          <Grid container spacing={4}>
+            {app.compositions?.map((composition: FunctionComposition) => (
+              <Grid key={composition.id} size={{ xs: 12, sm: 6, md: 4 }}>
+                <FunctionCompositionCard
+                  composition={composition}
+                  onDelete={deleteComposition}
+                  allCompositions={app.compositions ?? []}
+                />
+              </Grid>
+            ))}
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: "100%",
+                  border: "1px dashed #b2ebf2",
+                  borderRadius: 2,
+                  padding: 2,
+                  boxShadow: 2,
+                  cursor: "pointer",
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={handleAddComposition}
+                >
+                  Add Composition
+                </Button>
+              </Box>
+            </Grid>
+          </Grid>
+        )}
+
+        {tabValue === "graph" && (
+          <CallGraphView compositions={app.compositions ?? []} />
+        )}
+      </Box>
+      <FunctionCompositionAddModal
+        open={isAddModalOpen}
+        onClose={handleCloseAddModal}
+        appFiles={app.files ?? []}
+        appComponents={app.components ?? []}
+        allCompositions={app.compositions ?? []}
+      />
+    </>
   );
 };
 

@@ -2,12 +2,12 @@ import React from "react";
 import { Stack, Select, MenuItem, Typography, Button, IconButton } from "@mui/material";
 import { useForm, useFieldArray, useWatch, Controller } from "react-hook-form";
 import DeleteIcon from "@mui/icons-material/Delete";
-import type { FunctionComposition } from "../models/models";
+import type { FunctionComposition, RoutingTable } from "../models/models";
 
 interface RoutingTableFormProps {
   composition: FunctionComposition;
   allCompositions: FunctionComposition[];
-  onSave: (rules: Rule[]) => void;
+  onSave: (routingTable: RoutingTable) => void;
 }
 
 interface Rule {
@@ -49,6 +49,21 @@ const RoutingTableForm: React.FC<RoutingTableFormProps> = ({
   const handleAddRule = () => {
     append({ component: "", targetComposition: "", targetComponent: "" });
   };
+
+  const handleSave =(rules: Rule[]) => {
+        const routingTable: RoutingTable = rules.reduce((acc, rule) => {
+          if (!acc[rule.component]) {
+            acc[rule.component] = [];
+          }
+          acc[rule.component].push({
+            to: rule.targetComponent === "None" ? "" : rule.targetComponent,
+            function: rule.targetComposition === "None" ? "" : rule.targetComposition,
+          });
+          return acc;
+        }, {} as RoutingTable);
+
+        onSave(routingTable)
+  }
 
   return (
     <form>
@@ -128,7 +143,7 @@ const RoutingTableForm: React.FC<RoutingTableFormProps> = ({
           type="submit"
           variant="contained"
           color="primary"
-          onClick={handleSubmit((data) => onSave(data.rules))}
+          onClick={handleSubmit((data) => handleSave(data.rules))}
         >
           Save
         </Button>

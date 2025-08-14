@@ -29,18 +29,7 @@ const RoutingTableModal: React.FC<Props> = ({
 }) => {
   const { mutate: modifyRoutingTable } = useModifyRoutingTable();
 
-  const handleSaveFormInput = (rules: Rule[]) => {
-    const routingTable: RoutingTable = rules.reduce((acc, rule) => {
-      if (!acc[rule.component]) {
-        acc[rule.component] = [];
-      }
-      acc[rule.component].push({
-        to: rule.targetComponent === "None" ? "" : rule.targetComponent,
-        function: rule.targetComposition === "None" ? "" : rule.targetComposition,
-      });
-      return acc;
-    }, {} as RoutingTable);
-
+  const handleSaveFormInput = (routingTable: RoutingTable) => {
     modifyRoutingTable({
       functionCompositionId: composition.id!,
       routingTable,
