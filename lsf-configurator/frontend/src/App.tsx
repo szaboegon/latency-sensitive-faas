@@ -6,6 +6,7 @@ import FunctionAppDetails from "./pages/FunctionAppDetails"
 import Sidebar from "./components/Sidebar"
 import AddIcon from "@mui/icons-material/Add"
 import AddFunctionAppModal from "./components/AddFunctionAppModal"
+import { ToastContainer } from "react-toastify"
 
 const App: React.FC = () => {
   const [isModalOpen, setModalOpen] = useState(false)
@@ -32,6 +33,7 @@ const App: React.FC = () => {
           <AddFunctionAppModal open={isModalOpen} onClose={handleCloseModal} />
         </Box>
       </Box>
+      <ToastContainer />
     </BrowserRouter>
   )
 }
