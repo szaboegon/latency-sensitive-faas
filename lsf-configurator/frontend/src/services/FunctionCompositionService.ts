@@ -1,6 +1,6 @@
 import axios from "axios";
 import paths from "../helpers/paths";
-import type { RoutingTable } from "../models/models";
+import type { FunctionComposition, RoutingTable } from "../models/models";
 
 const FunctionCompositionService = {
 
@@ -10,6 +10,10 @@ const FunctionCompositionService = {
 
   async modifyRoutingTable(functionCompositionId: string, routingTable: RoutingTable): Promise<void> {
     await axios.put(`${paths.functionCompositions}/${functionCompositionId}/routing-table`, routingTable);
+  },
+
+  async createFunctionComposition(appId: string, fc: FunctionComposition): Promise<void> {
+    await axios.post(`${paths.functionCompositions}?app_id=${appId}`, fc);
   }
 };
 

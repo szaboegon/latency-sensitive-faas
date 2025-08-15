@@ -3,7 +3,6 @@ import {
   Modal,
   Box,
   Typography,
-  TextField,
   Button,
   Select,
   MenuItem,
@@ -11,13 +10,17 @@ import {
   ListItemText,
   InputLabel,
   FormControl,
+  TextField,
 } from "@mui/material";
-import RoutingTableForm from "./RoutingTableForm";
+import { useForm, Controller } from "react-hook-form";
+import RoutingTableEditor from "./RoutingTableEditor";
 import type { Build, Component, FunctionComposition, RoutingTable } from "../models/models";
+import { useCreateFunctionComposition } from "../hooks/functionCompositionHooks";
 
 interface FunctionCompositionAddModalProps {
   open: boolean;
   onClose: () => void;
+  appId: string;
   appFiles: string[];
   appComponents: Component[];
   allCompositions: FunctionComposition[];
@@ -26,29 +29,39 @@ interface FunctionCompositionAddModalProps {
 const FunctionCompositionAddModal: React.FC<FunctionCompositionAddModalProps> = ({
   open,
   onClose,
+  appId,
   appFiles,
   appComponents,
-  allCompositions
+  allCompositions,
 }) => {
-  const [compositionData, setCompositionData] = useState({
-    node: "",
-    namespace: "",
-    runtime: "",
-    files: [] as string[],
-    components: [] as string[],
-    routingTable: {} as RoutingTable,
+  const { control, handleSubmit, setValue } = useForm<FunctionComposition>({
+    defaultValues: {
+      node: "",
+      namespace: "",
+      runtime: "",
+      files: [],
+      components: {},
+      build: {} as Build,
+    },
   });
 
-  const handleSave = () => {
-    console.log("Saving composition:", compositionData);
-    onClose();
+  const { mutate: createComposition } = useCreateFunctionComposition();
+
+  const [selectedComponents, setSelectedComponents] = useState<string[]>([]);
+
+  const handleComponentSelection = (selected: string[]) => {
+    setSelectedComponents(selected);
+    const newRoutingTable = selected.reduce((acc, component) => {
+      acc[component] = [];
+      return acc;
+    }, {} as RoutingTable);
+    setValue("components", newRoutingTable);
   };
 
-  const handleRoutingTableChange = (data: RoutingTable) => {
-    setCompositionData((prev) => ({
-      ...prev,
-      routingTable: { ...prev.routingTable, ...data },
-    }));
+  const onSubmit = (data: FunctionComposition) => {
+    console.log("Saving composition:", data);
+    createComposition({ appId, functionComposition: data });
+    onClose();
   };
 
   return (
@@ -69,117 +82,112 @@ const FunctionCompositionAddModal: React.FC<FunctionCompositionAddModalProps> = 
         <Typography variant="h6" mb={2}>
           Add New Function Composition
         </Typography>
-        <TextField
-          label="Node"
-          fullWidth
-          margin="normal"
-          value={compositionData.node}
-          onChange={(e) =>
-            setCompositionData((prev) => ({ ...prev, node: e.target.value }))
-          }
-        />
-        <TextField
-          label="Namespace"
-          fullWidth
-          margin="normal"
-          value={compositionData.namespace}
-          onChange={(e) =>
-            setCompositionData((prev) => ({
-              ...prev,
-              namespace: e.target.value,
-            }))
-          }
-        />
-        <FormControl fullWidth margin="normal">
-          <InputLabel id="runtime-label">Runtime</InputLabel>
-          <Select
-            labelId="runtime-label"
-            label="Runtime"
-            value={compositionData.runtime}
-            onChange={(e) =>
-              setCompositionData((prev) => ({
-                ...prev,
-                runtime: e.target.value as string,
-              }))
-            }
-          >
-            <MenuItem value="Node.js">Node.js</MenuItem>
-            <MenuItem value="Python">Python</MenuItem>
-            <MenuItem value="Go">Go</MenuItem>
-          </Select>
-        </FormControl>
-        <FormControl fullWidth margin="normal">
-          <InputLabel id="files-label">Files</InputLabel>
-          <Select
-            labelId="files-label"
-            label="Files"
-            multiple
-            value={compositionData.files}
-            onChange={(e) =>
-              setCompositionData((prev) => ({
-                ...prev,
-                files: e.target.value as string[],
-              }))
-            }
-            renderValue={(selected) => selected.join(", ")}
-          >
-            {appFiles.map((file) => (
-              <MenuItem key={file} value={file}>
-                <Checkbox checked={compositionData.files.includes(file)} />
-                <ListItemText primary={file} />
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl fullWidth margin="normal">
-          <InputLabel id="components-label">Components</InputLabel>
-          <Select
-            labelId="components-label"
-            label="Components"
-            multiple
-            value={compositionData.components}
-            onChange={(e) =>
-              setCompositionData((prev) => ({
-                ...prev,
-                components: e.target.value as string[],
-              }))
-            }
-            renderValue={(selected) => selected.join(", ")}
-          >
-            {appComponents.map((component) => (
-              <MenuItem key={component} value={component}>
-                <Checkbox
-                  checked={compositionData.components.includes(component)}
-                />
-                <ListItemText primary={component} />
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <RoutingTableForm
-          composition={{
-            id: "",
-            node: "",
-            components: compositionData.components.reduce((acc, comp) => {
-              acc[comp] = [];
-              return acc;
-            }, {} as RoutingTable),
-            namespace: "",
-            runtime: "",
-            files: [],
-            build: {} as Build,
-          }}
-          allCompositions={allCompositions}
-          onSave={handleRoutingTableChange}
-        />
-        <Box mt={2} display="flex" justifyContent="space-between">
-          <Button variant="outlined" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="contained" onClick={handleSave}>
-            Save
-          </Button>
-        </Box>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Controller
+            name="node"
+            control={control}
+            render={({ field }) => (
+              <TextField {...field} label="Node" fullWidth margin="normal" />
+            )}
+          />
+          <Controller
+            name="namespace"
+            control={control}
+            render={({ field }) => (
+              <TextField {...field} label="Namespace" fullWidth margin="normal" />
+            )}
+          />
+          <FormControl fullWidth margin="normal">
+            <InputLabel id="runtime-label">Runtime</InputLabel>
+            <Controller
+              name="runtime"
+              control={control}
+              render={({ field }) => (
+                <Select {...field} labelId="runtime-label" label="Runtime">
+                  <MenuItem value="Node.js">Node.js</MenuItem>
+                  <MenuItem value="Python">Python</MenuItem>
+                  <MenuItem value="Go">Go</MenuItem>
+                </Select>
+              )}
+            />
+          </FormControl>
+          <FormControl fullWidth margin="normal">
+            <InputLabel id="files-label">Files</InputLabel>
+            <Controller
+              name="files"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  labelId="files-label"
+                  label="Files"
+                  multiple
+                  renderValue={(selected) => selected.join(", ")}
+                >
+                  {appFiles.map((file) => (
+                    <MenuItem key={file} value={file}>
+                      <Checkbox checked={field.value.includes(file)} />
+                      <ListItemText primary={file} />
+                    </MenuItem>
+                  ))}
+                </Select>
+              )}
+            />
+          </FormControl>
+          <FormControl fullWidth margin="normal">
+            <InputLabel id="components-label">Components</InputLabel>
+            <Select
+              labelId="components-label"
+              label="Components"
+              multiple
+              value={selectedComponents}
+              onChange={(e) =>
+                handleComponentSelection(e.target.value as string[])
+              }
+              renderValue={(selected) => selected.join(", ")}
+            >
+              {appComponents.map((component) => (
+                <MenuItem key={component} value={component}>
+                  <Checkbox checked={selectedComponents.includes(component)} />
+                  <ListItemText primary={component} />
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Box
+            sx={{
+              borderTop: "1px solid #ccc",
+              my: 3,
+            }}
+          />
+          <Typography variant="body1" mb={2}>
+            Routing Table
+          </Typography>
+          <RoutingTableEditor
+            composition={{
+              id: "",
+              node: "",
+              components: selectedComponents.reduce((acc, component) => {
+                acc[component] = [];
+                return acc;
+              }, {} as RoutingTable),
+              namespace: "",
+              runtime: "",
+              files: [],
+              build: {} as Build,
+            }}
+            allCompositions={allCompositions}
+            onChange={(data) => setValue("components", data)}
+          />
+          <Box mt={2} display="flex" justifyContent="space-between">
+            <Button variant="outlined" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="contained">
+              Save
+            </Button>
+          </Box>
+        </form>
       </Box>
     </Modal>
   );

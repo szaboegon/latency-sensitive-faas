@@ -117,7 +117,7 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, allCompositions
               >
                 <Stack direction="column" spacing={1} sx={{ pl: 2, mt: 0.5 }}>
                   {Object.entries(composition.components).map(([component, routes]) => (
-                    <>
+                    <React.Fragment key={component}>
                       {routes.map((route, rIdx) => (
                         <Stack
                           key={`${component}-${rIdx}`}
@@ -149,7 +149,7 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, allCompositions
                           </Typography>
                         </Stack>
                       )}
-                    </>
+                    </React.Fragment>
                   ))}
                 </Stack>
               </Box>

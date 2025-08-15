@@ -1,24 +1,19 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Modal,
   Box,
   Typography,
+  Button,
 } from "@mui/material";
 import type { FunctionComposition, RoutingTable } from "../models/models";
 import { useModifyRoutingTable } from "../hooks/functionCompositionHooks";
-import RoutingTableForm from "./RoutingTableForm";
+import RoutingTableEditor from "./RoutingTableEditor";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   composition: FunctionComposition;
   allCompositions: FunctionComposition[];
-}
-
-interface Rule {
-  component: string;
-  targetComposition: string;
-  targetComponent: string;
 }
 
 const RoutingTableModal: React.FC<Props> = ({
@@ -28,14 +23,19 @@ const RoutingTableModal: React.FC<Props> = ({
   allCompositions,
 }) => {
   const { mutate: modifyRoutingTable } = useModifyRoutingTable();
+  const [routingTable, setRoutingTable] = useState<RoutingTable>(composition.components);
 
-  const handleSaveFormInput = (routingTable: RoutingTable) => {
+  const handleSaveFormInput = () => {
     modifyRoutingTable({
       functionCompositionId: composition.id!,
       routingTable,
     });
     onClose();
   };
+
+  const onRoutingTableChange = (newRoutingTable: RoutingTable) => {
+    setRoutingTable(newRoutingTable);
+  }
 
   return (
     <Modal open={open} onClose={onClose}>
@@ -55,13 +55,20 @@ const RoutingTableModal: React.FC<Props> = ({
         <Typography variant="h6" mb={2}>
           Edit Routing Table
         </Typography>
-          <Box mt={2}>
-            <RoutingTableForm
-              composition={composition}
-              allCompositions={allCompositions}
-              onSave={handleSaveFormInput}
-            />
-          </Box>
+        <Box mt={2}>
+          <RoutingTableEditor
+            composition={composition}
+            allCompositions={allCompositions}
+            onChange={onRoutingTableChange}
+          />
+          <Button
+            variant="contained"
+            sx={{ mt: 2, width: "100%" }}
+            onClick={() => handleSaveFormInput()}
+          >
+            Save
+          </Button>
+        </Box>
       </Box>
     </Modal>
   );

@@ -163,6 +163,7 @@ const FunctionAppDetails: React.FC = () => {
       <FunctionCompositionAddModal
         open={isAddModalOpen}
         onClose={handleCloseAddModal}
+        appId={app.id ?? ""}
         appFiles={app.files ?? []}
         appComponents={app.components ?? []}
         allCompositions={app.compositions ?? []}
