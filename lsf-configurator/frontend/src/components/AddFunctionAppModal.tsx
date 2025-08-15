@@ -7,6 +7,10 @@ import {
   TextField,
   Button,
   Input,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material"
 import { useCreateFunctionApp } from "../hooks/functionAppsHooks"
 import type { FunctionApp } from "../models/models"
@@ -19,6 +23,7 @@ interface AddFunctionAppModalProps {
 interface FormData {
   name: string
   files: FileList
+  runtime: string
 }
 
 const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
@@ -31,6 +36,7 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
   const onSubmit = (data: FormData) => {
     const fcApp: FunctionApp = {
       name: data.name,
+      runtime: data.runtime,
       files: Array.from(data.files).map((file) => file.name),
     }
     createFunctionApp({ functionApp: fcApp, files: data.files })
@@ -62,6 +68,19 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
             margin="normal"
             {...register("name", { required: true })}
           />
+          <FormControl fullWidth margin="normal">
+            <InputLabel id="runtime-label">Runtime</InputLabel>
+            <Select
+              {...register("runtime", { required: true })}
+              labelId="runtime-label"
+              label="Runtime"
+              defaultValue=""
+            >
+              <MenuItem value="Node.js">Node.js</MenuItem>
+              <MenuItem value="Python">Python</MenuItem>
+              <MenuItem value="Go">Go</MenuItem>
+            </Select>
+          </FormControl>
           <Input
             type="file"
             fullWidth

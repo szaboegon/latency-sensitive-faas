@@ -64,10 +64,6 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, allCompositions
               </Grid>
             </Box>
           )}
-          {/* Runtime */}
-          <Typography variant="subtitle2" color="textSecondary">
-            Runtime: {composition.runtime}
-          </Typography>
 
           {/* Build info */}
           {composition.build && (

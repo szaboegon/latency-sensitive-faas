@@ -23,16 +23,16 @@ const FunctionAppCard: React.FC<FunctionAppCardProps> = ({ app }) => {
     <Paper
       elevation={0}
       sx={{
+        borderRadius: 3,
+        boxShadow: 4,
+        background: "linear-gradient(135deg, #e0f7fa 0%, #fff 100%)",
+        border: "1px solid #b2ebf2",
         p: 3,
         display: "flex",
         flexDirection: "column",
-        borderRadius: 2,
-        border: "1px solid",
-        borderColor: "divider",
-        backgroundColor: "background.paper",
         transition: "box-shadow 0.2s ease-in-out, transform 0.1s ease-in-out",
         "&:hover": {
-          boxShadow: 4,
+          boxShadow: 6,
           transform: "translateY(-2px)",
         },
         height: "100%",
@@ -42,8 +42,12 @@ const FunctionAppCard: React.FC<FunctionAppCardProps> = ({ app }) => {
         {app.name}
       </Typography>
       <Divider sx={{ my: 1 }} />
+      {/* Runtime */}
+      <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+        Runtime: {app.runtime}
+      </Typography>
       <Typography
-        variant="subtitle2"
+        variant="h6"
         color="text.secondary"
         sx={{ mb: 1, fontWeight: 500 }}
       >
@@ -56,12 +60,18 @@ const FunctionAppCard: React.FC<FunctionAppCardProps> = ({ app }) => {
             sx={{
               px: 0,
               py: 0.5,
-              borderBottom: "1px solid",
-              borderColor: "divider",
+              borderRadius: 2,
+              backgroundColor: "#f0fafa",
+              boxShadow: 1,
+              mb: 1,
             }}
           >
             <ListItemText
-              primaryTypographyProps={{ variant: "body2", color: "text.primary" }}
+              primaryTypographyProps={{
+                variant: "body2",
+                color: "text.primary",
+                textAlign: "center",
+              }}
               primary={component}
             />
           </ListItem>

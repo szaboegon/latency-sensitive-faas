@@ -78,8 +78,9 @@ func main() {
 }
 
 func startHttpServer() *http.Server {
-	s := &http.Server{Addr: "0.0.0.0:8080"}
-	registerHandlers()
+	mux := http.NewServeMux()
+	s := &http.Server{Addr: "0.0.0.0:8080", Handler: loggingMiddleware(corsMiddleware(mux))}
+	registerHandlers(mux)
 
 	go func() {
 		log.Printf("Server listening on port 8080")
@@ -104,14 +105,21 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func registerHandlers() {
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("[%p] %s %s", r, r.Method, r.URL)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func registerHandlers(mux *http.ServeMux) {
 	http.HandleFunc(api.HealthzPath, api.HealthCheckHandler)
-	http.Handle(api.AppsPath, corsMiddleware(api.NewHandlerApps(composer, conf)))
-	http.Handle(api.FunctionCompositionsPath, corsMiddleware(api.NewHandlerFunctionCompositions(composer, conf)))
-	http.Handle(api.MetricsPath, corsMiddleware(api.NewHandlerMetrics(metricsReader, conf)))
+	http.Handle(api.AppsPath, api.NewHandlerApps(mux, composer, conf))
+	http.Handle(api.FunctionCompositionsPath, api.NewHandlerFunctionCompositions(mux, composer, conf))
+	http.Handle(api.MetricsPath, api.NewHandlerMetrics(mux, metricsReader, conf))
 
 	fs := http.FileServer(http.Dir("./public"))
-	http.Handle("/", corsMiddleware(fs))
+	http.Handle("/", fs)
 }
 
 func configureLogging() *os.File {

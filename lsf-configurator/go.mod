@@ -4,7 +4,6 @@ go 1.23.2
 
 require (
 	github.com/apex/log v1.9.0
-	github.com/docker/docker v27.5.0+incompatible
 	github.com/elastic/go-elasticsearch/v8 v8.18.0
 	github.com/go-redis/redis/v7 v7.4.1
 	github.com/google/uuid v1.6.0
@@ -49,6 +48,7 @@ require (
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/cli v27.5.1+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
+	github.com/docker/docker v27.5.0+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.8.2 // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect

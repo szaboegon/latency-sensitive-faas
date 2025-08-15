@@ -4,6 +4,7 @@ export const functionAppsMock: FunctionApp[] = [
     {
         id: '1',
         name: 'Function App 1',
+        runtime: 'Node.js',
         components: ['Component A1', 'Component B1', 'Component C1'],
         compositions: [
             {
@@ -11,7 +12,6 @@ export const functionAppsMock: FunctionApp[] = [
                 functionAppId: '1',
                 node: 'Node 1',
                 namespace: 'Namespace 1',
-                runtime: 'Node.js',
                 files: ['file1.js', 'file2.js'],
                 components: {
                     'Component A1': [
@@ -29,7 +29,6 @@ export const functionAppsMock: FunctionApp[] = [
                 functionAppId: '1',
                 node: 'Node 1',
                 namespace: 'Namespace 1',
-                runtime: 'Node.js',
                 files: ['file3.js', 'file4.js'],
                 components: {
                     'Component B1': [{ to: 'Component C1', function: 'composition1a' }],
@@ -45,6 +44,7 @@ export const functionAppsMock: FunctionApp[] = [
     {
         id: '2',
         name: 'Function App 2',
+        runtime: 'Python',
         components: ['Component X2', 'Component Y2', 'Component Z2'],
         compositions: [
             {
@@ -52,7 +52,6 @@ export const functionAppsMock: FunctionApp[] = [
                 functionAppId: '2',
                 node: 'Node 2',
                 namespace: 'Namespace 2',
-                runtime: 'Python',
                 files: ['file3.py', 'file4.py'],
                 components: {
                     'Component X2': [
@@ -70,7 +69,6 @@ export const functionAppsMock: FunctionApp[] = [
                 functionAppId: '2',
                 node: 'Node 2',
                 namespace: 'Namespace 2',
-                runtime: 'Python',
                 files: ['file5.py', 'file6.py'],
                 components: {
                     'Component Y2': [{ to: 'Component Z2', function: 'composition2a' }],
@@ -86,6 +84,7 @@ export const functionAppsMock: FunctionApp[] = [
     {
         id: '3',
         name: 'Function App 3',
+        runtime: 'Go',
         components: ['Component M3', 'Component N3', 'Component O3'],
         compositions: [
             {
@@ -93,7 +92,6 @@ export const functionAppsMock: FunctionApp[] = [
                 functionAppId: '3',
                 node: 'Node 3',
                 namespace: 'Namespace 3',
-                runtime: 'Go',
                 files: ['file5.go', 'file6.go'],
                 components: {
                     'Component M3': [
@@ -111,7 +109,6 @@ export const functionAppsMock: FunctionApp[] = [
                 functionAppId: '3',
                 node: 'Node 3',
                 namespace: 'Namespace 3',
-                runtime: 'Go',
                 files: ['file7.go', 'file8.go'],
                 components: {
                     'Component N3': [{ to: 'Component O3', function: 'composition3c' }],
@@ -126,7 +123,6 @@ export const functionAppsMock: FunctionApp[] = [
                 functionAppId: '3',
                 node: 'Node 3',
                 namespace: 'Namespace 3',
-                runtime: 'Go',
                 files: ['file9.go', 'file10.go'],
                 components: {
                     'Component O3': [],
@@ -141,6 +137,7 @@ export const functionAppsMock: FunctionApp[] = [
     {
         id: '4',
         name: 'Function App 4',
+        runtime: 'Ruby',
         components: ['Component P4', 'Component Q4'],
         compositions: [
             {
@@ -148,7 +145,6 @@ export const functionAppsMock: FunctionApp[] = [
                 functionAppId: '4',
                 node: 'Node 4',
                 namespace: 'Namespace 4',
-                runtime: 'Ruby',
                 files: ['file9.rb', 'file10.rb'],
                 components: {
                     'Component P4': [{ to: 'Component Q4', function: 'composition4b' }],
@@ -163,7 +159,6 @@ export const functionAppsMock: FunctionApp[] = [
                 functionAppId: '4',
                 node: 'Node 4',
                 namespace: 'Namespace 4',
-                runtime: 'Ruby',
                 files: ['file11.rb', 'file12.rb'],
                 components: {
                     'Component Q4': [], 
@@ -178,7 +173,6 @@ export const functionAppsMock: FunctionApp[] = [
                 functionAppId: '4',
                 node: 'Node 4',
                 namespace: 'Namespace 4',
-                runtime: 'Ruby',
                 files: ['file13.rb', 'file14.rb'],
                 components: {
                     'Component P4': [],
@@ -193,6 +187,7 @@ export const functionAppsMock: FunctionApp[] = [
     {
         id: '5',
         name: 'Function App 5',
+        runtime: 'Java',
         components: ['Component R5', 'Component S5', 'Component T5', 'Component U5'],
         compositions: [
             {
@@ -200,7 +195,6 @@ export const functionAppsMock: FunctionApp[] = [
                 functionAppId: '5',
                 node: 'Node 5',
                 namespace: 'Namespace 5',
-                runtime: 'Java',
                 files: ['file15.java', 'file16.java'],
                 components: {
                     'Component R5': [{ to: 'Component S5', function: 'composition5b' }],
@@ -215,7 +209,6 @@ export const functionAppsMock: FunctionApp[] = [
                 functionAppId: '5',
                 node: 'Node 5',
                 namespace: 'Namespace 5',
-                runtime: 'Java',
                 files: ['file17.java', 'file18.java'],
                 components: {
                     'Component S5': [{ to: 'Component T5', function: 'composition5c' }],
@@ -230,7 +223,6 @@ export const functionAppsMock: FunctionApp[] = [
                 functionAppId: '5',
                 node: 'Node 5',
                 namespace: 'Namespace 5',
-                runtime: 'Java',
                 files: ['file19.java', 'file20.java'],
                 components: {
                     'Component T5': [{ to: 'Component U5', function: 'composition5d' }],
@@ -245,7 +237,6 @@ export const functionAppsMock: FunctionApp[] = [
                 functionAppId: '5',
                 node: 'Node 5',
                 namespace: 'Namespace 5',
-                runtime: 'Java',
                 files: ['file21.java', 'file22.java'],
                 components: {
                     'Component U5': [], 

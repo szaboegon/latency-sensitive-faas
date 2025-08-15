@@ -17,11 +17,11 @@ type HandlerFunctionCompositions struct {
 	mux      *http.ServeMux
 }
 
-func NewHandlerFunctionCompositions(composer *core.Composer, conf config.Configuration) *HandlerFunctionCompositions {
+func NewHandlerFunctionCompositions(mux *http.ServeMux, composer *core.Composer, conf config.Configuration) *HandlerFunctionCompositions {
 	h := &HandlerFunctionCompositions{
 		composer: composer,
 		conf:     conf,
-		mux:      http.NewServeMux(),
+		mux:      mux,
 	}
 
 	h.mux.HandleFunc("PUT "+FunctionCompositionsPath+"/{fc_id}/routing_table", h.putRoutingTable)
@@ -36,11 +36,6 @@ func (h *HandlerFunctionCompositions) ServeHTTP(w http.ResponseWriter, r *http.R
 }
 
 func (h *HandlerFunctionCompositions) create(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
 	appId := r.URL.Query().Get("app_id")
 	if appId == "" {
 		http.Error(w, "Missing app_id", http.StatusBadRequest)
@@ -63,10 +58,6 @@ func (h *HandlerFunctionCompositions) create(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *HandlerFunctionCompositions) putRoutingTable(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
 	fcId := r.PathValue("fc_id")
 
 	var rt core.RoutingTable
@@ -85,10 +76,6 @@ func (h *HandlerFunctionCompositions) putRoutingTable(w http.ResponseWriter, r *
 }
 
 func (h *HandlerFunctionCompositions) buildNotify(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
 	var req struct {
 		FcId     string `json:"fc_id"`
 		ImageURL string `json:"image_url"`

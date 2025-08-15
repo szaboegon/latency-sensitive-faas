@@ -38,7 +38,6 @@ const FunctionCompositionAddModal: React.FC<FunctionCompositionAddModalProps> = 
     defaultValues: {
       node: "",
       namespace: "",
-      runtime: "",
       files: [],
       components: {},
       build: {} as Build,
@@ -97,20 +96,6 @@ const FunctionCompositionAddModal: React.FC<FunctionCompositionAddModalProps> = 
               <TextField {...field} label="Namespace" fullWidth margin="normal" />
             )}
           />
-          <FormControl fullWidth margin="normal">
-            <InputLabel id="runtime-label">Runtime</InputLabel>
-            <Controller
-              name="runtime"
-              control={control}
-              render={({ field }) => (
-                <Select {...field} labelId="runtime-label" label="Runtime">
-                  <MenuItem value="Node.js">Node.js</MenuItem>
-                  <MenuItem value="Python">Python</MenuItem>
-                  <MenuItem value="Go">Go</MenuItem>
-                </Select>
-              )}
-            />
-          </FormControl>
           <FormControl fullWidth margin="normal">
             <InputLabel id="files-label">Files</InputLabel>
             <Controller
@@ -172,7 +157,6 @@ const FunctionCompositionAddModal: React.FC<FunctionCompositionAddModalProps> = 
                 return acc;
               }, {} as RoutingTable),
               namespace: "",
-              runtime: "",
               files: [],
               build: {} as Build,
             }}

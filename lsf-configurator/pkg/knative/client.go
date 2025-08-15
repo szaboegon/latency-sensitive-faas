@@ -39,13 +39,13 @@ func NewClient(conf config.Configuration) *Client {
 	}
 }
 
-func (c *Client) Init(ctx context.Context, fc core.FunctionComposition, sourcePath string) (string, error) {
+func (c *Client) Init(ctx context.Context, fc core.FunctionComposition, runtime, sourcePath string) (string, error) {
 	buildDir := createBuildDir(sourcePath)
 
 	f := fn.Function{
 		Name:      fc.Id,
 		Namespace: fc.NameSpace,
-		Runtime:   fc.Runtime,
+		Runtime:   runtime,
 		Registry:  c.imageRegistry,
 		Invoke:    "http",
 		Root:      buildDir,
@@ -58,7 +58,7 @@ func (c *Client) Init(ctx context.Context, fc core.FunctionComposition, sourcePa
 	}
 
 	copyNonSourceFiles(sourcePath, buildDir, fc.Files)
-	bootstrapper, err := bootstrapping.NewBootstrapper(fc, buildDir, sourcePath)
+	bootstrapper, err := bootstrapping.NewBootstrapper(runtime, fc, buildDir, sourcePath)
 	if err != nil {
 		return "", err
 	}
@@ -71,11 +71,11 @@ func (c *Client) Init(ctx context.Context, fc core.FunctionComposition, sourcePa
 	return buildDir, nil
 }
 
-func (c *Client) Deploy(ctx context.Context, appId string, fc core.FunctionComposition) error {
+func (c *Client) Deploy(ctx context.Context, fc core.FunctionComposition, runtime string) error {
 	f := fn.Function{
 		Name:      fc.Id,
 		Namespace: fc.NameSpace,
-		Runtime:   fc.Runtime,
+		Runtime:   runtime,
 		Image:     fc.Image,
 		Deploy: fn.DeploySpec{
 			Image: fc.Image,
@@ -85,7 +85,7 @@ func (c *Client) Deploy(ctx context.Context, appId string, fc core.FunctionCompo
 			Namespace: fc.NameSpace,
 		},
 		Run: fn.RunSpec{
-			Envs: getDeployEnvs(appId, fc.Id),
+			Envs: getDeployEnvs(fc.FunctionAppId, fc.Id),
 		},
 	}
 
@@ -101,7 +101,6 @@ func (c *Client) Delete(ctx context.Context, fc core.FunctionComposition) error 
 	f := fn.Function{
 		Name:      fc.Id,
 		Namespace: fc.NameSpace,
-		Runtime:   fc.Runtime,
 		Image:     fc.Image,
 		Deploy: fn.DeploySpec{
 			Namespace: fc.NameSpace,

@@ -19,6 +19,11 @@ const (
 	QueueSize      = 30
 )
 
+// for now, only python is implemented
+var runtimeExtensions = map[string]string{
+	"python": ".py", // Python
+}
+
 type Composer struct {
 	knClient        KnClient
 	scheduler       Scheduler
@@ -65,12 +70,9 @@ func (c *Composer) CreateFunctionApp(
 		Id:           id,
 		Name:         appName,
 		Compositions: make([]*FunctionComposition, 0),
-		Files:        make([]string, len(files)),
+		Files:        make([]string, 0),
 		SourcePath:   "",
-	}
-
-	for i, fileHeader := range files {
-		fcApp.Files[i] = fileHeader.Filename
+		Components:   make([]Component, 0),
 	}
 
 	appDir := filepath.Join(uploadDir, fcApp.Id)
@@ -80,27 +82,38 @@ func (c *Composer) CreateFunctionApp(
 	}
 	fcApp.SourcePath = appDir
 
-	if err := c.functionAppRepo.Save(&fcApp); err != nil {
-		return nil, fmt.Errorf("could not persist function app: %w", err)
-	}
-
 	for _, fileHeader := range files {
+		fileName := fileHeader.Filename
+		if isComponent(fileName, fcApp.Runtime) {
+			componentName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
+			fcApp.Components = append(fcApp.Components, Component(componentName))
+		} else {
+			fcApp.Files = append(fcApp.Files, fileName)
+		}
 		err := filesystem.SaveMultiPartFile(fileHeader, appDir)
 		if err != nil {
 			return nil, err
 		}
 	}
 
+	if err := c.functionAppRepo.Save(&fcApp); err != nil {
+		return nil, fmt.Errorf("could not persist function app: %w", err)
+	}
+
 	// if there are any function compositions provided at creation, process them
 	for _, fc := range fcs {
 		err := c.AddFunctionComposition(fcApp.Id, &fc)
-
 		if err != nil {
 			return nil, fmt.Errorf("error while adding function compositions to app: %s", err.Error())
 		}
 	}
 
 	return &fcApp, nil
+}
+
+func isComponent(fileName string, runtime string) bool {
+	extension := filepath.Ext(fileName)
+	return runtimeExtensions[strings.ToLower(runtime)] == extension
 }
 
 func (c *Composer) AddFunctionComposition(appId string, fc *FunctionComposition) error {
@@ -124,7 +137,7 @@ func (c *Composer) AddFunctionComposition(appId string, fc *FunctionComposition)
 		return fmt.Errorf("could not set routing table for function: %s, %s", fc.Id, err.Error())
 	}
 
-	c.scheduler.AddTask(c.buildTask(*fc, fcApp.SourcePath), MaxRetries)
+	c.scheduler.AddTask(c.buildTask(*fc, fcApp.Runtime, fcApp.SourcePath), MaxRetries)
 	return nil
 }
 
@@ -173,15 +186,17 @@ func (c *Composer) NotifyBuildReady(fcId, imageURL string, status string) {
 		log.Errorf("build notify failed, fc with id %s does not exist", fcId)
 		return
 	}
+
+	fcApp, err := c.functionAppRepo.GetByID(fc.FunctionAppId)
+	if err != nil || fcApp == nil {
+		log.Errorf("function app with id %s does not exist", fc.FunctionAppId)
+		return
+	}
 	// If the build failed, requeue the build task, do not deploy
 	if strings.ToLower(status) == "failed" {
-		fcApp, err := c.functionAppRepo.GetByID(fc.FunctionAppId)
-		if err != nil || fcApp == nil {
-			log.Errorf("function app with id %s does not exist", fc.FunctionAppId)
-			return
-		}
+
 		log.Errorf("Build for function composition %s failed, requeuing...", fcId)
-		c.scheduler.AddTask(c.buildTask(*fc, fcApp.SourcePath), MaxRetries)
+		c.scheduler.AddTask(c.buildTask(*fc, fcApp.Runtime, fcApp.SourcePath), MaxRetries)
 		return
 	}
 
@@ -193,7 +208,7 @@ func (c *Composer) NotifyBuildReady(fcId, imageURL string, status string) {
 	}
 	log.Infof("Successfully built function composition with id %v. Image: %v", fc.Id, fc.Build.Image)
 
-	resultChan := c.scheduler.AddTask(c.deployTask(fc.FunctionAppId, *fc), MaxRetries)
+	resultChan := c.scheduler.AddTask(c.deployTask(*fc, fcApp.Runtime), MaxRetries)
 	r := <-resultChan
 	if r.Err != nil {
 		log.Errorf("Deploying of function composition with id %v failed: %v", fc.Id, r.Err)
@@ -216,9 +231,9 @@ func (c *Composer) setRoutingTable(fc *FunctionComposition, table RoutingTable) 
 	return nil
 }
 
-func (c *Composer) buildTask(fc FunctionComposition, sourcePath string) func() (interface{}, error) {
+func (c *Composer) buildTask(fc FunctionComposition, runtime, sourcePath string) func() (interface{}, error) {
 	return func() (interface{}, error) {
-		buildDir, err := c.knClient.Init(context.TODO(), fc, sourcePath)
+		buildDir, err := c.knClient.Init(context.TODO(), fc, runtime, sourcePath)
 		c.builder.Build(context.TODO(), fc, buildDir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build image: %v", err)
@@ -227,9 +242,9 @@ func (c *Composer) buildTask(fc FunctionComposition, sourcePath string) func() (
 	}
 }
 
-func (c *Composer) deployTask(appId string, fc FunctionComposition) func() (interface{}, error) {
+func (c *Composer) deployTask(fc FunctionComposition, runtime string) func() (interface{}, error) {
 	return func() (interface{}, error) {
-		return nil, c.knClient.Deploy(context.TODO(), appId, fc)
+		return nil, c.knClient.Deploy(context.TODO(), fc, runtime)
 	}
 }
 

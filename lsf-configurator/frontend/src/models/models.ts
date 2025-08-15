@@ -3,6 +3,8 @@ export type Component = string;
 export interface FunctionApp {
     id?: string;
     name: string;
+    runtime: string;
+    sourcePath?: string;
     compositions?: FunctionComposition[];
     components?: Component[];
     files?: string[];
@@ -14,12 +16,9 @@ export interface FunctionComposition {
     node?: string;
     components: RoutingTable;
     namespace: string;
-    sourcePath?: string;
-    runtime: string;
     files: string[];
     build: Build;
 }
-
 
 export interface Route {
     to: string;
