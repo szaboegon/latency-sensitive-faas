@@ -64,6 +64,7 @@ func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {
 	var payload struct {
 		Name         string                     `json:"name"`
 		Compositions []core.FunctionComposition `json:"compositions"`
+		Runtime      string                     `json:"runtime"`
 	}
 	if err := json.Unmarshal([]byte(jsonStr), &payload); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
@@ -77,7 +78,7 @@ func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.composer.CreateFunctionApp(h.conf.UploadDir, files, payload.Compositions, payload.Name)
+	_, err := h.composer.CreateFunctionApp(h.conf.UploadDir, files, payload.Compositions, payload.Name, payload.Runtime)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

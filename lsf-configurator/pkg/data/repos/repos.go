@@ -61,7 +61,7 @@ func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
 
 	var app core.FunctionApp
 	var componentsJSON, filesJSON, sourcePath string
-	if err := row.Scan(&app.Id, &app.Name, &componentsJSON, &filesJSON, &sourcePath); err != nil {
+	if err := row.Scan(&app.Id, &app.Name, &app.Runtime, &componentsJSON, &filesJSON, &sourcePath); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}

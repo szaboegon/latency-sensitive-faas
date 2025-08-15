@@ -64,6 +64,7 @@ func (c *Composer) CreateFunctionApp(
 	files []*multipart.FileHeader,
 	fcs []FunctionComposition,
 	appName string,
+	runtime string,
 ) (*FunctionApp, error) {
 	id := uuid.New()
 	fcApp := FunctionApp{
@@ -73,6 +74,7 @@ func (c *Composer) CreateFunctionApp(
 		Files:        make([]string, 0),
 		SourcePath:   "",
 		Components:   make([]Component, 0),
+		Runtime:      strings.ToLower(runtime),
 	}
 
 	appDir := filepath.Join(uploadDir, fcApp.Id)
@@ -113,7 +115,7 @@ func (c *Composer) CreateFunctionApp(
 
 func isComponent(fileName string, runtime string) bool {
 	extension := filepath.Ext(fileName)
-	return runtimeExtensions[strings.ToLower(runtime)] == extension
+	return runtimeExtensions[runtime] == extension
 }
 
 func (c *Composer) AddFunctionComposition(appId string, fc *FunctionComposition) error {
