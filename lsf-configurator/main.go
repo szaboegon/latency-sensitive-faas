@@ -91,14 +91,27 @@ func startHttpServer() *http.Server {
 	return s
 }
 
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func registerHandlers() {
 	http.HandleFunc(api.HealthzPath, api.HealthCheckHandler)
-	http.Handle(api.AppsPath, api.NewHandlerApps(composer, conf))
-	http.Handle(api.FunctionCompositionsPath, api.NewHandlerFunctionCompositions(composer, conf))
-	http.Handle(api.MetricsPath, api.NewHandlerMetrics(metricsReader, conf))
+	http.Handle(api.AppsPath, corsMiddleware(api.NewHandlerApps(composer, conf)))
+	http.Handle(api.FunctionCompositionsPath, corsMiddleware(api.NewHandlerFunctionCompositions(composer, conf)))
+	http.Handle(api.MetricsPath, corsMiddleware(api.NewHandlerMetrics(metricsReader, conf)))
 
 	fs := http.FileServer(http.Dir("./public"))
-	http.Handle("/", fs)
+	http.Handle("/", corsMiddleware(fs))
 }
 
 func configureLogging() *os.File {

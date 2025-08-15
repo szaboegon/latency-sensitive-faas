@@ -65,16 +65,23 @@ func (c *Composer) CreateFunctionApp(
 		Id:           id,
 		Name:         appName,
 		Compositions: make([]*FunctionComposition, 0),
+		Files:        make([]string, len(files)),
+		SourcePath:   "",
 	}
 
-	if err := c.functionAppRepo.Save(&fcApp); err != nil {
-		return nil, fmt.Errorf("could not persist function app: %w", err)
+	for i, fileHeader := range files {
+		fcApp.Files[i] = fileHeader.Filename
 	}
 
 	appDir := filepath.Join(uploadDir, fcApp.Id)
 	err := filesystem.CreateDir(appDir)
 	if err != nil {
 		return nil, fmt.Errorf("could not create directory for app files: %s", err.Error())
+	}
+	fcApp.SourcePath = appDir
+
+	if err := c.functionAppRepo.Save(&fcApp); err != nil {
+		return nil, fmt.Errorf("could not persist function app: %w", err)
 	}
 
 	for _, fileHeader := range files {
@@ -84,8 +91,8 @@ func (c *Composer) CreateFunctionApp(
 		}
 	}
 
+	// if there are any function compositions provided at creation, process them
 	for _, fc := range fcs {
-		fc.SourcePath = appDir
 		err := c.AddFunctionComposition(fcApp.Id, &fc)
 
 		if err != nil {
@@ -99,6 +106,12 @@ func (c *Composer) CreateFunctionApp(
 func (c *Composer) AddFunctionComposition(appId string, fc *FunctionComposition) error {
 	id := uuid.New()
 	fc.Id = "fc-" + id
+
+	fcApp, err := c.functionAppRepo.GetByID(appId)
+	if err != nil || fcApp == nil {
+		log.Errorf("function app with id %s does not exist", appId)
+		return fmt.Errorf("function app with id %s does not exist", appId)
+	}
 	fc.FunctionAppId = appId
 
 	if err := c.fcRepo.Save(fc); err != nil {
@@ -106,12 +119,12 @@ func (c *Composer) AddFunctionComposition(appId string, fc *FunctionComposition)
 	}
 
 	// set the routing table in the cluster-wide store, so functions can read it on startup
-	err := c.routingClient.SetRoutingTable(*fc)
+	err = c.routingClient.SetRoutingTable(*fc)
 	if err != nil {
 		return fmt.Errorf("could not set routing table for function: %s, %s", fc.Id, err.Error())
 	}
 
-	c.scheduler.AddTask(c.buildTask(*fc), MaxRetries)
+	c.scheduler.AddTask(c.buildTask(*fc, fcApp.SourcePath), MaxRetries)
 	return nil
 }
 
@@ -131,7 +144,7 @@ func (c *Composer) DeleteFunctionApp(appId string) error {
 			return r.Err
 		}
 		log.Infof("Successfully deleted function composition with id %v", fc.Id)
-		err = filesystem.DeleteDir(fc.SourcePath)
+		err = filesystem.DeleteDir(app.SourcePath)
 		if err != nil {
 			return fmt.Errorf("could not delete app source directory: %s", err.Error())
 		}
@@ -162,8 +175,13 @@ func (c *Composer) NotifyBuildReady(fcId, imageURL string, status string) {
 	}
 	// If the build failed, requeue the build task, do not deploy
 	if strings.ToLower(status) == "failed" {
+		fcApp, err := c.functionAppRepo.GetByID(fc.FunctionAppId)
+		if err != nil || fcApp == nil {
+			log.Errorf("function app with id %s does not exist", fc.FunctionAppId)
+			return
+		}
 		log.Errorf("Build for function composition %s failed, requeuing...", fcId)
-		c.scheduler.AddTask(c.buildTask(*fc), MaxRetries)
+		c.scheduler.AddTask(c.buildTask(*fc, fcApp.SourcePath), MaxRetries)
 		return
 	}
 
@@ -198,9 +216,9 @@ func (c *Composer) setRoutingTable(fc *FunctionComposition, table RoutingTable) 
 	return nil
 }
 
-func (c *Composer) buildTask(fc FunctionComposition) func() (interface{}, error) {
+func (c *Composer) buildTask(fc FunctionComposition, sourcePath string) func() (interface{}, error) {
 	return func() (interface{}, error) {
-		buildDir, err := c.knClient.Init(context.TODO(), fc)
+		buildDir, err := c.knClient.Init(context.TODO(), fc, sourcePath)
 		c.builder.Build(context.TODO(), fc, buildDir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build image: %v", err)

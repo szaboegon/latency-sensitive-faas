@@ -37,8 +37,8 @@ func (r *functionAppRepo) Save(app *core.FunctionApp) error {
 	}
 
 	_, err = tx.Exec(`
-		INSERT OR REPLACE INTO function_apps (id, name, components, files) 
-		VALUES (?, ?, ?, ?)`, app.Id, app.Name, string(componentsJSON), string(filesJSON))
+		INSERT OR REPLACE INTO function_apps (id, name, components, files, source_path) 
+		VALUES (?, ?, ?, ?, ?)`, app.Id, app.Name, string(componentsJSON), string(filesJSON), app.SourcePath)
 	if err != nil {
 		return err
 	}
@@ -57,10 +57,10 @@ func (r *functionAppRepo) Save(app *core.FunctionApp) error {
 }
 
 func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
-	row := r.db.QueryRow(`SELECT id, name, components, files FROM function_apps WHERE id = ?`, id)
+	row := r.db.QueryRow(`SELECT id, name, components, files, source_path FROM function_apps WHERE id = ?`, id)
 
 	var app core.FunctionApp
-	if err := row.Scan(&app.Id, &app.Name, &app.Components, &app.Files); err != nil {
+	if err := row.Scan(&app.Id, &app.Name, &app.Components, &app.Files, &app.SourcePath); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -93,7 +93,7 @@ func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
 }
 
 func (r *functionAppRepo) GetAll() ([]*core.FunctionApp, error) {
-	rows, err := r.db.Query(`SELECT id, name, components, files FROM function_apps`)
+	rows, err := r.db.Query(`SELECT id, name, components, files, source_path FROM function_apps`)
 	if err != nil {
 		return nil, err
 	}
@@ -102,8 +102,8 @@ func (r *functionAppRepo) GetAll() ([]*core.FunctionApp, error) {
 	var apps []*core.FunctionApp
 	for rows.Next() {
 		var app core.FunctionApp
-		var componentsJSON, filesJSON string
-		if err := rows.Scan(&app.Id, &app.Name, &componentsJSON, &filesJSON); err != nil {
+		var componentsJSON, filesJSON, sourcePath string
+		if err := rows.Scan(&app.Id, &app.Name, &componentsJSON, &filesJSON, &sourcePath); err != nil {
 			return nil, err
 		}
 
@@ -150,10 +150,10 @@ func (r *functionCompositionRepo) Save(comp *core.FunctionComposition) error {
 
 	_, err = r.db.Exec(`
 		INSERT OR REPLACE INTO function_compositions (
-			id, function_app_id, node, namespace, source_path, runtime,
+			id, function_app_id, node, namespace, runtime,
 			image, timestamp, files, components
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		comp.Id, comp.FunctionAppId, comp.Node, comp.NameSpace, comp.SourcePath,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		comp.Id, comp.FunctionAppId, comp.Node, comp.NameSpace,
 		comp.Runtime, comp.Image, comp.Timestamp, string(filesJSON), string(componentsJSON),
 	)
 
@@ -162,7 +162,7 @@ func (r *functionCompositionRepo) Save(comp *core.FunctionComposition) error {
 
 func (r *functionCompositionRepo) GetByID(id string) (*core.FunctionComposition, error) {
 	row := r.db.QueryRow(`
-		SELECT id, function_app_id, node, namespace, source_path, runtime,
+		SELECT id, function_app_id, node, namespace, runtime,
 		       image, timestamp, files, components
 		FROM function_compositions
 		WHERE id = ?`, id)
@@ -171,7 +171,7 @@ func (r *functionCompositionRepo) GetByID(id string) (*core.FunctionComposition,
 	var filesJSON, componentsJSON string
 
 	err := row.Scan(
-		&comp.Id, &comp.FunctionAppId, &comp.Node, &comp.NameSpace, &comp.SourcePath,
+		&comp.Id, &comp.FunctionAppId, &comp.Node, &comp.NameSpace,
 		&comp.Runtime, &comp.Image, &comp.Timestamp,
 		&filesJSON, &componentsJSON,
 	)
@@ -211,11 +211,11 @@ func (r *functionCompositionRepo) saveWithTx(tx *sql.Tx, comp *core.FunctionComp
 
 	_, err = tx.Exec(`
 		INSERT OR REPLACE INTO function_compositions (
-			id, function_app_id, node, namespace, source_path, runtime,
+			id, function_app_id, node, namespace, runtime,
 			image, timestamp, files, components
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		comp.Id, comp.FunctionAppId, comp.Node, comp.NameSpace,
-		comp.SourcePath, comp.Runtime, comp.Image, comp.Timestamp,
+		comp.Runtime, comp.Image, comp.Timestamp,
 		string(filesJSON), string(componentsJSON),
 	)
 	return err

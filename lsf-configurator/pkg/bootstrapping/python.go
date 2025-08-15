@@ -30,7 +30,7 @@ func (b *PythonBootstrapper) Setup() error {
 		filesToCopy = append(filesToCopy, string(comp)+Extension)
 	}
 
-	componentFiles, err := filesystem.CopyFilesByNames(b.fc.SourcePath, b.buildDir, filesToCopy, false)
+	componentFiles, err := filesystem.CopyFilesByNames(b.sourcePath, b.buildDir, filesToCopy, false)
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (b *PythonBootstrapper) Setup() error {
 	}
 
 	templateReqFile := path.Join(b.buildDir, ReqFileName)
-	userReqFile := path.Join(b.fc.SourcePath, ReqFileName)
+	userReqFile := path.Join(b.sourcePath, ReqFileName)
 	err = mergeRequirements(templateReqFile, userReqFile)
 	if err != nil {
 		return err

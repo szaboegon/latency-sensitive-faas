@@ -5,7 +5,7 @@ import (
 	"lsf-configurator/pkg/core"
 )
 
-func NewBootstrapper(fc core.FunctionComposition, buildDir string) (Bootstrapper, error) {
+func NewBootstrapper(fc core.FunctionComposition, buildDir string, sourcePath string) (Bootstrapper, error) {
 	switch fc.Runtime {
 	case "python":
 		return &PythonBootstrapper{BaseBootstrapper{fc: fc, buildDir: buildDir}}, nil

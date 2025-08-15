@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	AppsPath = "/apps"
+	AppsPath = "/function_apps"
 )
 
 type HandlerApps struct {
@@ -81,8 +81,8 @@ func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {
 
 	jsonStr := r.FormValue("json")
 	var payload struct {
-		FunctionAppName string                     `json:"function_app_name"`
-		Compositions    []core.FunctionComposition `json:"compositions"`
+		Name         string                     `json:"name"`
+		Compositions []core.FunctionComposition `json:"compositions"`
 	}
 	if err := json.Unmarshal([]byte(jsonStr), &payload); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
@@ -96,7 +96,7 @@ func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.composer.CreateFunctionApp(h.conf.UploadDir, files, payload.Compositions, payload.FunctionAppName)
+	_, err := h.composer.CreateFunctionApp(h.conf.UploadDir, files, payload.Compositions, payload.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

@@ -39,8 +39,8 @@ func NewClient(conf config.Configuration) *Client {
 	}
 }
 
-func (c *Client) Init(ctx context.Context, fc core.FunctionComposition) (string, error) {
-	buildDir := createBuildDir(fc.SourcePath)
+func (c *Client) Init(ctx context.Context, fc core.FunctionComposition, sourcePath string) (string, error) {
+	buildDir := createBuildDir(sourcePath)
 
 	f := fn.Function{
 		Name:      fc.Id,
@@ -57,8 +57,8 @@ func (c *Client) Init(ctx context.Context, fc core.FunctionComposition) (string,
 		log.Fatalf("Could not initialize function based on config: %v", err)
 	}
 
-	copyNonSourceFiles(fc.SourcePath, buildDir, fc.Files)
-	bootstrapper, err := bootstrapping.NewBootstrapper(fc, buildDir)
+	copyNonSourceFiles(sourcePath, buildDir, fc.Files)
+	bootstrapper, err := bootstrapping.NewBootstrapper(fc, buildDir, sourcePath)
 	if err != nil {
 		return "", err
 	}

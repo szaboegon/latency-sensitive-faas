@@ -8,6 +8,7 @@ type FunctionApp struct {
 	Components   []Component            `json:"components,omitempty"`
 	Files        []string               `json:"files,omitempty"`
 	Compositions []*FunctionComposition `json:"compositions,omitempty"`
+	SourcePath   string                 `json:"source_path,omitempty"`
 }
 
 type FunctionComposition struct {
@@ -16,7 +17,6 @@ type FunctionComposition struct {
 	Node          string       `json:"node,omitempty"`
 	Components    RoutingTable `json:"components"`
 	NameSpace     string       `json:"namespace"`
-	SourcePath    string       `json:"source_path,omitempty"`
 	Runtime       string       `json:"runtime"`
 	Files         []string     `json:"files"`
 	Build
