@@ -47,6 +47,7 @@ const FunctionCompositionAddModal: React.FC<FunctionCompositionAddModalProps> = 
   const { mutate: createComposition } = useCreateFunctionComposition();
 
   const [selectedComponents, setSelectedComponents] = useState<string[]>([]);
+  const [autoDeploy, setAutoDeploy] = useState(false); 
 
   const handleComponentSelection = (selected: string[]) => {
     setSelectedComponents(selected);
@@ -59,7 +60,7 @@ const FunctionCompositionAddModal: React.FC<FunctionCompositionAddModalProps> = 
 
   const onSubmit = (data: FunctionComposition) => {
     console.log("Saving composition:", data);
-    createComposition({ appId, functionComposition: data });
+    createComposition({ appId, functionComposition: data, autoDeploy });
     onClose();
   };
 
@@ -159,10 +160,20 @@ const FunctionCompositionAddModal: React.FC<FunctionCompositionAddModalProps> = 
               namespace: "",
               files: [],
               build: {} as Build,
+              status: "pending",
             }}
             allCompositions={allCompositions}
             onChange={(data) => setValue("components", data)}
           />
+          <Box mt={2} display="flex" alignItems="center">
+            <Typography variant="body2" component="span" sx={{ mr: 1 }}>
+              Auto Deploy
+            </Typography>
+            <Checkbox
+              checked={autoDeploy}
+              onChange={(e) => setAutoDeploy(e.target.checked)}
+            />
+          </Box>
           <Box mt={2} display="flex" justifyContent="space-between">
             <Button variant="outlined" onClick={onClose}>
               Cancel

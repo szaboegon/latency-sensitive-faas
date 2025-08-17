@@ -12,8 +12,8 @@ const FunctionCompositionService = {
     await axios.put(`${paths.functionCompositions}/${functionCompositionId}/routing-table`, routingTable);
   },
 
-  async createFunctionComposition(appId: string, fc: FunctionComposition): Promise<void> {
-    await axios.post(`${paths.functionCompositions}?app_id=${appId}`, fc);
+  async createFunctionComposition(appId: string, fc: FunctionComposition, autoDeploy: boolean): Promise<void> {
+    await axios.post(`${paths.functionCompositions}?app_id=${appId}&auto_deploy=${autoDeploy}`, fc);
   }
 };
 

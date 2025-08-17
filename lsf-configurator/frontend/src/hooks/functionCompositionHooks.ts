@@ -15,6 +15,6 @@ export const useModifyRoutingTable = () =>
 
 export const useCreateFunctionComposition = () =>
   useMutation({
-    mutationFn: (vars: { appId: string; functionComposition: FunctionComposition }) =>
-      FunctionCompositionService.createFunctionComposition(vars.appId, vars.functionComposition),
+    mutationFn: (vars: { appId: string; functionComposition: FunctionComposition, autoDeploy: boolean }) =>
+      FunctionCompositionService.createFunctionComposition(vars.appId, vars.functionComposition, vars.autoDeploy),
   });
