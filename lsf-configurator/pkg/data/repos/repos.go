@@ -169,8 +169,7 @@ func (r *functionCompositionRepo) Save(comp *core.FunctionComposition) error {
 
 func (r *functionCompositionRepo) GetByID(id string) (*core.FunctionComposition, error) {
 	row := r.db.QueryRow(`
-		SELECT id, function_app_id
-		       image, timestamp, files, components, status
+		SELECT id, function_app_id, image, timestamp, files, components, status
 		FROM function_compositions
 		WHERE id = ?`, id)
 
@@ -194,6 +193,14 @@ func (r *functionCompositionRepo) GetByID(id string) (*core.FunctionComposition,
 	if err := json.Unmarshal([]byte(componentsJSON), &comp.Components); err != nil {
 		return nil, fmt.Errorf("failed to parse components: %w", err)
 	}
+
+	// Query related deployments
+	deploymentRepo := NewDeploymentRepository(r.db)
+	deployments, err := deploymentRepo.GetByFunctionCompositionID(comp.Id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query deployments for function composition %s: %w", comp.Id, err)
+	}
+	comp.Deployments = deployments
 
 	return &comp, nil
 }
