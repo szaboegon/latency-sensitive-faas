@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/apex/log"
@@ -25,12 +26,14 @@ var runtimeExtensions = map[string]string{
 }
 
 type Composer struct {
-	knClient        KnClient
-	scheduler       Scheduler
-	routingClient   RoutingClient
-	builder         Builder
-	functionAppRepo FunctionAppRepository
-	fcRepo          FunctionCompositionRepository
+	knClient           KnClient
+	scheduler          Scheduler
+	routingClient      RoutingClient
+	builder            Builder
+	functionAppRepo    FunctionAppRepository
+	fcRepo             FunctionCompositionRepository
+	buildAutoDeployMap map[string]bool
+	mapMutex           sync.RWMutex
 }
 
 func NewComposer(
@@ -42,12 +45,14 @@ func NewComposer(
 ) *Composer {
 	scheduler := NewScheduler(WorkerPoolSize, QueueSize)
 	return &Composer{
-		knClient:        knClient,
-		scheduler:       scheduler,
-		routingClient:   routingClient,
-		builder:         builder,
-		functionAppRepo: functionAppRepo,
-		fcRepo:          fcRepo,
+		knClient:           knClient,
+		scheduler:          scheduler,
+		routingClient:      routingClient,
+		builder:            builder,
+		functionAppRepo:    functionAppRepo,
+		fcRepo:             fcRepo,
+		buildAutoDeployMap: make(map[string]bool),
+		mapMutex:           sync.RWMutex{},
 	}
 }
 
@@ -104,7 +109,7 @@ func (c *Composer) CreateFunctionApp(
 
 	// if there are any function compositions provided at creation, process them
 	for _, fc := range fcs {
-		err := c.AddFunctionComposition(fcApp.Id, &fc)
+		err := c.AddFunctionComposition(fcApp.Id, &fc, true)
 		if err != nil {
 			return nil, fmt.Errorf("error while adding function compositions to app: %s", err.Error())
 		}
@@ -118,7 +123,7 @@ func isComponent(fileName string, runtime string) bool {
 	return runtimeExtensions[runtime] == extension
 }
 
-func (c *Composer) AddFunctionComposition(appId string, fc *FunctionComposition) error {
+func (c *Composer) AddFunctionComposition(appId string, fc *FunctionComposition, autoDeploy bool) error {
 	id := uuid.New()
 	fc.Id = "fc-" + id
 
@@ -140,7 +145,20 @@ func (c *Composer) AddFunctionComposition(appId string, fc *FunctionComposition)
 	}
 
 	c.scheduler.AddTask(c.buildTask(*fc, fcApp.Runtime, fcApp.SourcePath), MaxRetries)
+	c.mapMutex.Lock()
+	defer c.mapMutex.Unlock()
+	c.buildAutoDeployMap[fc.Id] = autoDeploy
 	return nil
+}
+
+func (c *Composer) DeployFunctionComposition(fc *FunctionComposition) {
+	resultChan := c.scheduler.AddTask(c.deployTask(*fc), MaxRetries)
+	r := <-resultChan
+	if r.Err != nil {
+		log.Errorf("Deploying of function composition with id %v failed: %v", fc.Id, r.Err)
+		return
+	}
+	log.Infof("Successfully deployed function composition with id %v", fc.Id)
 }
 
 func (c *Composer) DeleteFunctionApp(appId string) error {
@@ -194,6 +212,14 @@ func (c *Composer) NotifyBuildReady(fcId, imageURL string, status string) {
 		log.Errorf("function app with id %s does not exist", fc.FunctionAppId)
 		return
 	}
+	c.mapMutex.RLock()
+	defer c.mapMutex.RUnlock()
+	autoDeploy, exists := c.buildAutoDeployMap[fcId]
+	if !exists {
+		log.Errorf("AutoDeploy value for function composition %s not found", fcId)
+		return
+	}
+
 	// If the build failed, requeue the build task, do not deploy
 	if strings.ToLower(status) == "failed" {
 
@@ -210,13 +236,12 @@ func (c *Composer) NotifyBuildReady(fcId, imageURL string, status string) {
 	}
 	log.Infof("Successfully built function composition with id %v. Image: %v", fc.Id, fc.Build.Image)
 
-	resultChan := c.scheduler.AddTask(c.deployTask(*fc, fcApp.Runtime), MaxRetries)
-	r := <-resultChan
-	if r.Err != nil {
-		log.Errorf("Deploying of function composition with id %v failed: %v", fc.Id, r.Err)
-		return
+	// Deploy only if autoDeploy is true
+	if autoDeploy {
+		c.DeployFunctionComposition(fc)
+	} else {
+		log.Infof("AutoDeploy is disabled for function composition %s. Skipping deployment.", fcId)
 	}
-	log.Infof("Successfully deployed function composition with id %v", fc.Id)
 }
 
 func (c *Composer) setRoutingTable(fc *FunctionComposition, table RoutingTable) error {
@@ -244,9 +269,9 @@ func (c *Composer) buildTask(fc FunctionComposition, runtime, sourcePath string)
 	}
 }
 
-func (c *Composer) deployTask(fc FunctionComposition, runtime string) func() (interface{}, error) {
+func (c *Composer) deployTask(fc FunctionComposition) func() (interface{}, error) {
 	return func() (interface{}, error) {
-		return nil, c.knClient.Deploy(context.TODO(), fc, runtime)
+		return nil, c.knClient.Deploy(context.TODO(), fc)
 	}
 }
 

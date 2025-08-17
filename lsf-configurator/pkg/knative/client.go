@@ -71,11 +71,10 @@ func (c *Client) Init(ctx context.Context, fc core.FunctionComposition, runtime,
 	return buildDir, nil
 }
 
-func (c *Client) Deploy(ctx context.Context, fc core.FunctionComposition, runtime string) error {
+func (c *Client) Deploy(ctx context.Context, fc core.FunctionComposition) error {
 	f := fn.Function{
 		Name:      fc.Id,
 		Namespace: fc.NameSpace,
-		Runtime:   runtime,
 		Image:     fc.Image,
 		Deploy: fn.DeploySpec{
 			Image: fc.Image,

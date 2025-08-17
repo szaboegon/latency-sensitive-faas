@@ -13,8 +13,7 @@ import (
 
 type KnClient interface {
 	Init(ctx context.Context, fc FunctionComposition, runtime, sourcePath string) (string, error)
-	//Build(ctx context.Context, fc FunctionComposition) (FunctionComposition, error)
-	Deploy(ctx context.Context, fc FunctionComposition, runtime string) error
+	Deploy(ctx context.Context, fc FunctionComposition) error
 	Delete(ctx context.Context, fc FunctionComposition) error
 }
 
