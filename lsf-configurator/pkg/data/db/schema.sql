@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS function_compositions (
     image TEXT,
     timestamp TEXT,
     files TEXT,           
-    components TEXT,      
+    components TEXT, 
+    status TEXT DEFAULT 'pending',     
     FOREIGN KEY (function_app_id) REFERENCES function_apps(id) ON DELETE CASCADE
 );

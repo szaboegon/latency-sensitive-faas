@@ -5,6 +5,14 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import RoutingTableModal from "../components/RoutingTableModal"; 
 import { generateComponentColor } from "../helpers/utilities";
 
+const StatusColorMap: Record<"pending" | "built" | "deployed" | "error", string> = {
+    pending: "#ff9800",
+    built: "#4caf50",   
+    deployed: "#2196f3", 
+    error: "#f44336"    
+};
+
+
 interface Props {
   composition: FunctionComposition;
   allCompositions: FunctionComposition[];
@@ -39,7 +47,27 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, allCompositions
         />
 
         <CardContent>
-            {/* Components Visualization */}
+          {/* Status Indicator */}
+          <Box mb={2}>
+            <Typography variant="subtitle2" gutterBottom>
+              Status:
+            </Typography>
+            <Box
+              sx={{
+                display: "inline-block",
+                padding: "4px 8px",
+                borderRadius: 2,
+                backgroundColor: StatusColorMap[composition.status],
+                color: "#fff",
+                fontWeight: "bold",
+                textAlign: "center",
+              }}
+            >
+              {composition.status.charAt(0).toUpperCase() + composition.status.slice(1)}
+            </Box>
+          </Box>
+
+          {/* Components Visualization */}
           {composition.components && (
             <Box mb={2}>
               <Typography variant="subtitle2" gutterBottom>

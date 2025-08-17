@@ -23,6 +23,7 @@ export const functionAppsMock: FunctionApp[] = [
                     image: 'image1a',
                     timestamp: '2023-01-01T00:00:00Z',
                 },
+                status: "pending",
             },
             {
                 id: 'composition1b',
@@ -38,6 +39,7 @@ export const functionAppsMock: FunctionApp[] = [
                     image: 'image1b',
                     timestamp: '2023-01-02T00:00:00Z',
                 },
+                status: "built",
             },
         ],
     },
@@ -63,6 +65,7 @@ export const functionAppsMock: FunctionApp[] = [
                     image: 'image2a',
                     timestamp: '2023-02-01T00:00:00Z',
                 },
+                status: "deployed",
             },
             {
                 id: 'composition2b',
@@ -78,6 +81,7 @@ export const functionAppsMock: FunctionApp[] = [
                     image: 'image2b',
                     timestamp: '2023-02-02T00:00:00Z',
                 },
+                status: "error",
             },
         ],
     },
@@ -103,6 +107,7 @@ export const functionAppsMock: FunctionApp[] = [
                     image: 'image3a',
                     timestamp: '2023-03-01T00:00:00Z',
                 },
+                status: "pending",
             },
             {
                 id: 'composition3b',
@@ -117,6 +122,7 @@ export const functionAppsMock: FunctionApp[] = [
                     image: 'image3b',
                     timestamp: '2023-03-02T00:00:00Z',
                 },
+                status: "built",
             },
             {
                 id: 'composition3c',
@@ -131,6 +137,7 @@ export const functionAppsMock: FunctionApp[] = [
                     image: 'image3c',
                     timestamp: '2023-03-03T00:00:00Z',
                 },
+                status: "built",
             },
         ],
     },
@@ -153,6 +160,7 @@ export const functionAppsMock: FunctionApp[] = [
                     image: 'image4a',
                     timestamp: '2023-04-01T00:00:00Z',
                 },
+                status: "pending",
             },
             {
                 id: 'composition4b',
@@ -167,6 +175,7 @@ export const functionAppsMock: FunctionApp[] = [
                     image: 'image4b',
                     timestamp: '2023-04-02T00:00:00Z',
                 },
+                status: "built",
             },
             {
                 id: 'composition4c',
@@ -181,6 +190,7 @@ export const functionAppsMock: FunctionApp[] = [
                     image: 'image4c',
                     timestamp: '2023-04-03T00:00:00Z',
                 },
+                status: "built",
             },
         ],
     },
@@ -203,6 +213,7 @@ export const functionAppsMock: FunctionApp[] = [
                     image: 'image5a',
                     timestamp: '2023-05-01T00:00:00Z',
                 },
+                status: "pending",
             },
             {
                 id: 'composition5b',
@@ -217,6 +228,7 @@ export const functionAppsMock: FunctionApp[] = [
                     image: 'image5b',
                     timestamp: '2023-05-02T00:00:00Z',
                 },
+                status: "pending",
             },
             {
                 id: 'composition5c',
@@ -231,6 +243,7 @@ export const functionAppsMock: FunctionApp[] = [
                     image: 'image5c',
                     timestamp: '2023-05-03T00:00:00Z',
                 },
+                status: "pending",
             },
             {
                 id: 'composition5d',
@@ -245,6 +258,7 @@ export const functionAppsMock: FunctionApp[] = [
                     image: 'image5d',
                     timestamp: '2023-05-04T00:00:00Z',
                 },
+                status: "built",
             },
         ],
     },

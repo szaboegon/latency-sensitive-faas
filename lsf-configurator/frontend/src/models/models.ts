@@ -18,6 +18,7 @@ export interface FunctionComposition {
     namespace: string;
     files: string[];
     build: Build;
+    status: "pending" | "built" | "deployed" | "error";
 }
 
 export interface Route {
