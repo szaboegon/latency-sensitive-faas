@@ -157,12 +157,11 @@ func (r *functionCompositionRepo) Save(comp *core.FunctionComposition) error {
 
 	_, err = r.db.Exec(`
 		INSERT OR REPLACE INTO function_compositions (
-			id, function_app_id, node, namespace,
+			id, function_app_id,
 			image, timestamp, files, components, status
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		comp.Id, comp.FunctionAppId, comp.Node, comp.NameSpace,
-		comp.Image, comp.Timestamp, string(filesJSON), string(componentsJSON),
-		comp.Status,
+		) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		comp.Id, comp.FunctionAppId, comp.Image,
+		comp.Timestamp, string(filesJSON), string(componentsJSON), comp.Status,
 	)
 
 	return err
@@ -170,7 +169,7 @@ func (r *functionCompositionRepo) Save(comp *core.FunctionComposition) error {
 
 func (r *functionCompositionRepo) GetByID(id string) (*core.FunctionComposition, error) {
 	row := r.db.QueryRow(`
-		SELECT id, function_app_id, node, namespace,
+		SELECT id, function_app_id
 		       image, timestamp, files, components, status
 		FROM function_compositions
 		WHERE id = ?`, id)
@@ -179,8 +178,7 @@ func (r *functionCompositionRepo) GetByID(id string) (*core.FunctionComposition,
 	var filesJSON, componentsJSON string
 
 	err := row.Scan(
-		&comp.Id, &comp.FunctionAppId, &comp.Node, &comp.NameSpace,
-		&comp.Image, &comp.Timestamp,
+		&comp.Id, &comp.FunctionAppId, &comp.Image, &comp.Timestamp,
 		&filesJSON, &componentsJSON, &comp.Status,
 	)
 	if err != nil {
@@ -219,12 +217,136 @@ func (r *functionCompositionRepo) saveWithTx(tx *sql.Tx, comp *core.FunctionComp
 
 	_, err = tx.Exec(`
 		INSERT OR REPLACE INTO function_compositions (
-			id, function_app_id, node, namespace,
+			id, function_app_id,
 			image, timestamp, files, components, status
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		comp.Id, comp.FunctionAppId, comp.Node, comp.NameSpace,
-		comp.Image, comp.Timestamp,
+		) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		comp.Id, comp.FunctionAppId, comp.Image, comp.Timestamp,
 		string(filesJSON), string(componentsJSON), comp.Status,
 	)
 	return err
+}
+
+type deploymentRepo struct {
+	db *sql.DB
+}
+
+func NewDeploymentRepository(db *sql.DB) *deploymentRepo {
+	return &deploymentRepo{db: db}
+}
+
+func (r *deploymentRepo) Save(deployment *core.Deployment) error {
+	dbWriteMutex.Lock()
+	defer dbWriteMutex.Unlock()
+
+	routingTableJSON, err := json.Marshal(deployment.RoutingTable)
+	if err != nil {
+		return fmt.Errorf("failed to marshal routing table: %w", err)
+	}
+
+	_, err = r.db.Exec(`
+		INSERT OR REPLACE INTO deployments (
+			id, function_composition_id, node, namespace, routing_table
+		) VALUES (?, ?, ?, ?, ?)`,
+		deployment.Id, deployment.FunctionCompositionId, deployment.Node, deployment.Namespace, string(routingTableJSON),
+	)
+	return err
+}
+
+func (r *deploymentRepo) Delete(id string) error {
+	dbWriteMutex.Lock()
+	defer dbWriteMutex.Unlock()
+
+	_, err := r.db.Exec(`DELETE FROM deployments WHERE id = ?`, id)
+	return err
+}
+
+func (r *deploymentRepo) GetByID(id string) (*core.Deployment, error) {
+	row := r.db.QueryRow(`
+		SELECT id, function_composition_id, node, namespace, routing_table
+		FROM deployments
+		WHERE id = ?`, id)
+
+	var deployment core.Deployment
+	var routingTableJSON string
+
+	err := row.Scan(
+		&deployment.Id, &deployment.FunctionCompositionId, &deployment.Node, &deployment.Namespace, &routingTableJSON,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	if err := json.Unmarshal([]byte(routingTableJSON), &deployment.RoutingTable); err != nil {
+		return nil, fmt.Errorf("failed to parse routing table: %w", err)
+	}
+
+	return &deployment, nil
+}
+
+func (r *deploymentRepo) GetByFunctionCompositionID(functionCompositionID string) ([]*core.Deployment, error) {
+	rows, err := r.db.Query(`
+		SELECT id, function_composition_id, node, namespace, routing_table
+		FROM deployments
+		WHERE function_composition_id = ?`, functionCompositionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var deployments []*core.Deployment
+	for rows.Next() {
+		var deployment core.Deployment
+		var routingTableJSON string
+
+		err := rows.Scan(
+			&deployment.Id, &deployment.FunctionCompositionId, &deployment.Node, &deployment.Namespace, &routingTableJSON,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := json.Unmarshal([]byte(routingTableJSON), &deployment.RoutingTable); err != nil {
+			return nil, fmt.Errorf("failed to parse routing table: %w", err)
+		}
+
+		deployments = append(deployments, &deployment)
+	}
+
+	return deployments, nil
+}
+
+func (r *deploymentRepo) GetByFunctionAppID(functionAppID string) ([]*core.Deployment, error) {
+	rows, err := r.db.Query(`
+		SELECT d.id, d.function_composition_id, d.node, d.namespace, d.routing_table
+		FROM deployments d
+		INNER JOIN function_compositions fc ON d.function_composition_id = fc.id
+		WHERE fc.function_app_id = ?`, functionAppID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var deployments []*core.Deployment
+	for rows.Next() {
+		var deployment core.Deployment
+		var routingTableJSON string
+
+		err := rows.Scan(
+			&deployment.Id, &deployment.FunctionCompositionId, &deployment.Node, &deployment.Namespace, &routingTableJSON,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := json.Unmarshal([]byte(routingTableJSON), &deployment.RoutingTable); err != nil {
+			return nil, fmt.Errorf("failed to parse routing table: %w", err)
+		}
+
+		deployments = append(deployments, &deployment)
+	}
+
+	return deployments, nil
 }

@@ -5,7 +5,6 @@ import (
 	"lsf-configurator/pkg/config"
 	"lsf-configurator/pkg/core"
 	"net/http"
-	"strconv"
 )
 
 const (
@@ -38,19 +37,6 @@ func (h *HandlerFunctionCompositions) ServeHTTP(w http.ResponseWriter, r *http.R
 
 func (h *HandlerFunctionCompositions) create(w http.ResponseWriter, r *http.Request) {
 	appId := r.URL.Query().Get("app_id")
-	autoDeploy := r.URL.Query().Get("auto_deploy")
-
-	autoDeployBool := false
-	err := error(nil)
-
-	if autoDeploy != "" {
-		autoDeployBool, err = strconv.ParseBool(autoDeploy)
-		if err != nil {
-			http.Error(w, "Invalid auto_deploy value", http.StatusBadRequest)
-			return
-		}
-	}
-
 	if appId == "" {
 		http.Error(w, "Missing app_id", http.StatusBadRequest)
 		return
@@ -62,7 +48,7 @@ func (h *HandlerFunctionCompositions) create(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = h.composer.AddFunctionComposition(appId, &fc, autoDeployBool)
+	err := h.composer.AddFunctionComposition(appId, &fc)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -72,7 +58,7 @@ func (h *HandlerFunctionCompositions) create(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *HandlerFunctionCompositions) putRoutingTable(w http.ResponseWriter, r *http.Request) {
-	fcId := r.PathValue("fc_id")
+	deploymentId := r.PathValue("deployment_id")
 
 	var rt core.RoutingTable
 	if err := json.NewDecoder(r.Body).Decode(&rt); err != nil {
@@ -80,7 +66,7 @@ func (h *HandlerFunctionCompositions) putRoutingTable(w http.ResponseWriter, r *
 		return
 	}
 
-	err := h.composer.SetRoutingTable(fcId, rt)
+	err := h.composer.SetRoutingTable(deploymentId, rt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

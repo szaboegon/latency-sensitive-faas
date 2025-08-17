@@ -13,12 +13,18 @@ export interface FunctionApp {
 export interface FunctionComposition {
     id?: string;
     functionAppId?: string;
-    node?: string;
-    components: RoutingTable;
-    namespace: string;
+    components: string[];
     files: string[];
     build: Build;
     status: "pending" | "built" | "deployed" | "error";
+}
+
+export interface Deployment {
+    id?: string;
+    functionCompositionId?: string;
+    namespace: string;
+    node: string;
+    routingTable: RoutingTable;
 }
 
 export interface Route {

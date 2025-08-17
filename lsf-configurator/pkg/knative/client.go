@@ -43,13 +43,12 @@ func (c *Client) Init(ctx context.Context, fc core.FunctionComposition, runtime,
 	buildDir := createBuildDir(sourcePath)
 
 	f := fn.Function{
-		Name:      fc.Id,
-		Namespace: fc.NameSpace,
-		Runtime:   runtime,
-		Registry:  c.imageRegistry,
-		Invoke:    "http",
-		Root:      buildDir,
-		Template:  CompositionTemplateName,
+		Name:     fc.Id,
+		Runtime:  runtime,
+		Registry: c.imageRegistry,
+		Invoke:   "http",
+		Root:     buildDir,
+		Template: CompositionTemplateName,
 	}
 
 	_, err := c.fnClient.Init(f)
@@ -71,46 +70,41 @@ func (c *Client) Init(ctx context.Context, fc core.FunctionComposition, runtime,
 	return buildDir, nil
 }
 
-func (c *Client) Deploy(ctx context.Context, fc core.FunctionComposition) error {
+func (c *Client) Deploy(ctx context.Context, deployment core.Deployment, image, appId string) error {
 	f := fn.Function{
-		Name:      fc.Id,
-		Namespace: fc.NameSpace,
-		Image:     fc.Image,
+		Name:      deployment.Id,
+		Namespace: deployment.Namespace,
+		Image:     image,
 		Deploy: fn.DeploySpec{
-			Image: fc.Image,
+			Image: image,
 			NodeAffinity: fn.NodeAffinity{
-				RequiredNodes: []string{fc.Node},
+				RequiredNodes: []string{deployment.Node},
 			},
-			Namespace: fc.NameSpace,
+			Namespace: deployment.Namespace,
 		},
 		Run: fn.RunSpec{
-			Envs: getDeployEnvs(fc.FunctionAppId, fc.Id),
+			Envs: getDeployEnvs(appId, deployment.Id),
 		},
 	}
 
-	if fc.Image == "" {
-		return fmt.Errorf("cannot deploy function %v, because it has no corresponding image", fc.Id)
+	if f.Image == "" {
+		return fmt.Errorf("cannot deploy function deployment %v, because it has no corresponding image", deployment.Id)
 	}
 
 	_, err := c.fnClient.Deploy(ctx, f, fn.WithDeploySkipBuildCheck(true))
 	return err
 }
 
-func (c *Client) Delete(ctx context.Context, fc core.FunctionComposition) error {
+func (c *Client) Delete(ctx context.Context, deployment core.Deployment) error {
 	f := fn.Function{
-		Name:      fc.Id,
-		Namespace: fc.NameSpace,
-		Image:     fc.Image,
+		Name:      deployment.Id,
+		Namespace: deployment.Namespace,
 		Deploy: fn.DeploySpec{
-			Namespace: fc.NameSpace,
+			Namespace: deployment.Namespace,
 		},
 	}
 
-	if fc.Image == "" {
-		return fmt.Errorf("cannot delete function %v, because it has no corresponding image", fc.Id)
-	}
-
-	err := c.fnClient.Remove(ctx, fc.Id, fc.NameSpace, f, true)
+	err := c.fnClient.Remove(ctx, deployment.Id, deployment.Namespace, f, true)
 	if err != nil {
 		return err
 	}
@@ -129,13 +123,9 @@ func copyNonSourceFiles(sourcePath, buildDir string, fileNames []string) error {
 	return err
 }
 
-func cleanUpBuildDir(path string) error {
-	return filesystem.DeleteDir(path)
-}
-
-func getDeployEnvs(appId, fcId string) []fn.Env {
+func getDeployEnvs(appId, deploymentId string) []fn.Env {
 	envFuncName := "FUNCTION_NAME"
-	envFuncNameValue := fcId
+	envFuncNameValue := deploymentId
 
 	envAppName := "APP_NAME"
 	envAppNameValue := appId

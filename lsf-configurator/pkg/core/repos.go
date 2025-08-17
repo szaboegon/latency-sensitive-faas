@@ -12,3 +12,11 @@ type FunctionCompositionRepository interface {
 	GetByID(id string) (*FunctionComposition, error)
 	Delete(id string) error
 }
+
+type DeploymentRepository interface {
+	Save(deployment *Deployment) error
+	GetByID(id string) (*Deployment, error)
+	GetByFunctionCompositionID(functionCompositionID string) ([]*Deployment, error)
+	GetByFunctionAppID(functionAppID string) ([]*Deployment, error)
+	Delete(id string) error
+}

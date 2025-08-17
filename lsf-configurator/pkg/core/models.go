@@ -22,14 +22,20 @@ const (
 )
 
 type FunctionComposition struct {
-	Id            string       `json:"id,omitempty"`
-	FunctionAppId string       `json:"function_app_id,omitempty"`
-	Node          string       `json:"node,omitempty"`
-	Components    RoutingTable `json:"components"`
-	NameSpace     string       `json:"namespace"`
-	Files         []string     `json:"files"`
-	Status        Status       `json:"status,omitempty"`
+	Id            string      `json:"id,omitempty"`
+	FunctionAppId string      `json:"function_app_id,omitempty"`
+	Components    []Component `json:"components"`
+	Files         []string    `json:"files"`
+	Status        Status      `json:"status,omitempty"`
 	Build         `json:"build,omitempty"`
+}
+
+type Deployment struct {
+	Id                    string       `json:"id,omitempty"`
+	FunctionCompositionId string       `json:"function_composition_id,omitempty"`
+	Node                  string       `json:"node,omitempty"`
+	Namespace             string       `json:"namespace,omitempty"`
+	RoutingTable          RoutingTable `json:"routing_table,omitempty"`
 }
 
 type Route struct {

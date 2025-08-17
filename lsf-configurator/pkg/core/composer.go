@@ -8,7 +8,6 @@ import (
 	"mime/multipart"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/apex/log"
@@ -26,33 +25,32 @@ var runtimeExtensions = map[string]string{
 }
 
 type Composer struct {
-	knClient           KnClient
-	scheduler          Scheduler
-	routingClient      RoutingClient
-	builder            Builder
-	functionAppRepo    FunctionAppRepository
-	fcRepo             FunctionCompositionRepository
-	buildAutoDeployMap map[string]bool
-	mapMutex           sync.RWMutex
+	knClient        KnClient
+	scheduler       Scheduler
+	routingClient   RoutingClient
+	builder         Builder
+	functionAppRepo FunctionAppRepository
+	fcRepo          FunctionCompositionRepository
+	deploymentRepo  DeploymentRepository
 }
 
 func NewComposer(
 	functionAppRepo FunctionAppRepository,
 	fcRepo FunctionCompositionRepository,
+	deploymentRepo DeploymentRepository,
 	routingClient RoutingClient,
 	knClient KnClient,
 	builder Builder,
 ) *Composer {
 	scheduler := NewScheduler(WorkerPoolSize, QueueSize)
 	return &Composer{
-		knClient:           knClient,
-		scheduler:          scheduler,
-		routingClient:      routingClient,
-		builder:            builder,
-		functionAppRepo:    functionAppRepo,
-		fcRepo:             fcRepo,
-		buildAutoDeployMap: make(map[string]bool),
-		mapMutex:           sync.RWMutex{},
+		knClient:        knClient,
+		scheduler:       scheduler,
+		routingClient:   routingClient,
+		builder:         builder,
+		functionAppRepo: functionAppRepo,
+		fcRepo:          fcRepo,
+		deploymentRepo:  deploymentRepo,
 	}
 }
 
@@ -109,7 +107,7 @@ func (c *Composer) CreateFunctionApp(
 
 	// if there are any function compositions provided at creation, process them
 	for _, fc := range fcs {
-		err := c.AddFunctionComposition(fcApp.Id, &fc, true)
+		err := c.AddFunctionComposition(fcApp.Id, &fc)
 		if err != nil {
 			return nil, fmt.Errorf("error while adding function compositions to app: %s", err.Error())
 		}
@@ -123,7 +121,7 @@ func isComponent(fileName string, runtime string) bool {
 	return runtimeExtensions[runtime] == extension
 }
 
-func (c *Composer) AddFunctionComposition(appId string, fc *FunctionComposition, autoDeploy bool) error {
+func (c *Composer) AddFunctionComposition(appId string, fc *FunctionComposition) error {
 	id := uuid.New()
 	fc.Id = "fc-" + id
 	fc.Status = StatusPending
@@ -139,21 +137,18 @@ func (c *Composer) AddFunctionComposition(appId string, fc *FunctionComposition,
 		return fmt.Errorf("failed to update function app: %w", err)
 	}
 
-	// set the routing table in the cluster-wide store, so functions can read it on startup
-	err = c.routingClient.SetRoutingTable(*fc)
-	if err != nil {
-		return fmt.Errorf("could not set routing table for function: %s, %s", fc.Id, err.Error())
-	}
-
 	c.scheduler.AddTask(c.buildTask(*fc, fcApp.Runtime, fcApp.SourcePath), MaxRetries)
-	c.mapMutex.Lock()
-	defer c.mapMutex.Unlock()
-	c.buildAutoDeployMap[fc.Id] = autoDeploy
 	return nil
 }
 
-func (c *Composer) DeployFunctionComposition(fc *FunctionComposition) {
-	resultChan := c.scheduler.AddTask(c.deployTask(*fc), MaxRetries)
+func (c *Composer) CreateFcDeployment(fc *FunctionComposition, namespace, node string, routingTable RoutingTable) {
+	deployment := Deployment{
+		Id:           fc.Id + "-deployment-" + uuid.New(),
+		Namespace:    namespace,
+		Node:         node,
+		RoutingTable: routingTable,
+	}
+	resultChan := c.scheduler.AddTask(c.deployTask(deployment, fc.Build.Image, fc.FunctionAppId), MaxRetries)
 	r := <-resultChan
 	if r.Err != nil {
 		log.Errorf("Deploying of function composition with id %v failed: %v", fc.Id, r.Err)
@@ -171,16 +166,20 @@ func (c *Composer) DeleteFunctionApp(appId string) error {
 		return fmt.Errorf("function app with id %s does not exist", appId)
 	}
 
-	// delete all function compositions of the app
-	for _, fc := range app.Compositions {
-		resultChan := c.scheduler.AddTask(c.deleteTask(*fc), MaxRetries)
+	// delete all deployments of the app
+	deployments, err := c.deploymentRepo.GetByFunctionAppID(appId)
+	if err != nil {
+		return fmt.Errorf("failed to get deployments for function app %s: %w", appId, err)
+	}
+	for _, d := range deployments {
+		resultChan := c.scheduler.AddTask(c.deleteTask(*d), MaxRetries)
 
 		r := <-resultChan
 		if r.Err != nil {
-			log.Errorf("Deleting function composition with id %v failed: %v", fc.Id, r.Err)
+			log.Errorf("Deleting deployment with id %v failed: %v", d.Id, r.Err)
 			return r.Err
 		}
-		log.Infof("Successfully deleted function composition with id %v", fc.Id)
+		log.Infof("Successfully deleted deployment with id %v", d.Id)
 		err = filesystem.DeleteDir(app.SourcePath)
 		if err != nil {
 			return fmt.Errorf("could not delete app source directory: %s", err.Error())
@@ -193,13 +192,13 @@ func (c *Composer) DeleteFunctionApp(appId string) error {
 	return nil
 }
 
-func (c *Composer) SetRoutingTable(fcId string, table RoutingTable) error {
-	fc, err := c.fcRepo.GetByID(fcId)
-	if err != nil || fc == nil {
-		return fmt.Errorf("function composition with id %s does not exist", fcId)
+func (c *Composer) SetRoutingTable(deploymentId string, table RoutingTable) error {
+	deployment, err := c.deploymentRepo.GetByID(deploymentId)
+	if err != nil || deployment == nil {
+		return fmt.Errorf("deployment with id %s does not exist", deploymentId)
 	}
 
-	return c.setRoutingTable(fc, table)
+	return c.setRoutingTable(deployment, table)
 }
 
 // Called by HTTP handler when CI/CD pipeline notifies build is ready
@@ -214,13 +213,6 @@ func (c *Composer) NotifyBuildReady(fcId, imageURL string, status string) {
 	fcApp, err := c.functionAppRepo.GetByID(fc.FunctionAppId)
 	if err != nil || fcApp == nil {
 		log.Errorf("function app with id %s does not exist", fc.FunctionAppId)
-		return
-	}
-	c.mapMutex.RLock()
-	defer c.mapMutex.RUnlock()
-	autoDeploy, exists := c.buildAutoDeployMap[fcId]
-	if !exists {
-		log.Errorf("AutoDeploy value for function composition %s not found", fcId)
 		return
 	}
 
@@ -240,24 +232,17 @@ func (c *Composer) NotifyBuildReady(fcId, imageURL string, status string) {
 		return
 	}
 	log.Infof("Successfully built function composition with id %v. Image: %v", fc.Id, fc.Build.Image)
-
-	// Deploy only if autoDeploy is true
-	if autoDeploy {
-		c.DeployFunctionComposition(fc)
-	} else {
-		log.Infof("AutoDeploy is disabled for function composition %s. Skipping deployment.", fcId)
-	}
 }
 
-func (c *Composer) setRoutingTable(fc *FunctionComposition, table RoutingTable) error {
-	fc.Components = table
-	err := c.routingClient.SetRoutingTable(*fc)
+func (c *Composer) setRoutingTable(deployment *Deployment, table RoutingTable) error {
+	deployment.RoutingTable = table
+	err := c.routingClient.SetRoutingTable(*deployment)
 	if err != nil {
-		return fmt.Errorf("could not set routing table for function: %s, %s", fc.Id, err.Error())
+		return fmt.Errorf("could not set routing table for deployment: %s, %s", deployment.Id, err.Error())
 	}
 
-	if err := c.fcRepo.Save(fc); err != nil {
-		return fmt.Errorf("failed to update function composition: %w", err)
+	if err := c.deploymentRepo.Save(deployment); err != nil {
+		return fmt.Errorf("failed to update deployment: %w", err)
 	}
 
 	return nil
@@ -274,15 +259,15 @@ func (c *Composer) buildTask(fc FunctionComposition, runtime, sourcePath string)
 	}
 }
 
-func (c *Composer) deployTask(fc FunctionComposition) func() (interface{}, error) {
+func (c *Composer) deployTask(deployment Deployment, image, appId string) func() (interface{}, error) {
 	return func() (interface{}, error) {
-		return nil, c.knClient.Deploy(context.TODO(), fc)
+		return nil, c.knClient.Deploy(context.TODO(), deployment, image, appId)
 	}
 }
 
-func (c *Composer) deleteTask(fc FunctionComposition) func() (interface{}, error) {
+func (c *Composer) deleteTask(deployment Deployment) func() (interface{}, error) {
 	return func() (interface{}, error) {
-		return nil, c.knClient.Delete(context.TODO(), fc)
+		return nil, c.knClient.Delete(context.TODO(), deployment)
 	}
 }
 

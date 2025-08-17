@@ -50,10 +50,12 @@ func main() {
 
 	functionAppRepo := repos.NewFunctionAppRepository(db)
 	fcRepo := repos.NewFunctionCompositionRepository(db)
+	deploymentRepo := repos.NewDeploymentRepository(db)
+
 	if err != nil {
 		log.Fatalf("failed to initialize database: %v", err)
 	}
-	composer = core.NewComposer(functionAppRepo, fcRepo, routingClient, knClient, tektonBuilder)
+	composer = core.NewComposer(functionAppRepo, fcRepo, deploymentRepo, routingClient, knClient, tektonBuilder)
 
 	metricsReader, err = metrics.NewMetricsReader(conf.MetricsBackendAddress)
 	if err != nil {
