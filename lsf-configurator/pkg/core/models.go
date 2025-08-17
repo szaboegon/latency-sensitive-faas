@@ -12,6 +12,15 @@ type FunctionApp struct {
 	SourcePath   string                 `json:"source_path,omitempty"`
 }
 
+type Status string
+
+const (
+	StatusPending  Status = "pending"
+	StatusBuilt    Status = "built"
+	StatusDeployed Status = "deployed"
+	StatusError    Status = "error"
+)
+
 type FunctionComposition struct {
 	Id            string       `json:"id,omitempty"`
 	FunctionAppId string       `json:"function_app_id,omitempty"`
@@ -19,7 +28,8 @@ type FunctionComposition struct {
 	Components    RoutingTable `json:"components"`
 	NameSpace     string       `json:"namespace"`
 	Files         []string     `json:"files"`
-	Build
+	Status        Status       `json:"status,omitempty"`
+	Build         `json:"build,omitempty"`
 }
 
 type Route struct {

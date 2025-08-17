@@ -5,6 +5,7 @@ import (
 	"lsf-configurator/pkg/config"
 	"lsf-configurator/pkg/core"
 	"net/http"
+	"strconv"
 )
 
 const (
@@ -37,6 +38,19 @@ func (h *HandlerFunctionCompositions) ServeHTTP(w http.ResponseWriter, r *http.R
 
 func (h *HandlerFunctionCompositions) create(w http.ResponseWriter, r *http.Request) {
 	appId := r.URL.Query().Get("app_id")
+	autoDeploy := r.URL.Query().Get("auto_deploy")
+
+	autoDeployBool := false
+	err := error(nil)
+
+	if autoDeploy != "" {
+		autoDeployBool, err = strconv.ParseBool(autoDeploy)
+		if err != nil {
+			http.Error(w, "Invalid auto_deploy value", http.StatusBadRequest)
+			return
+		}
+	}
+
 	if appId == "" {
 		http.Error(w, "Missing app_id", http.StatusBadRequest)
 		return
@@ -48,7 +62,7 @@ func (h *HandlerFunctionCompositions) create(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err := h.composer.AddFunctionComposition(appId, &fc)
+	err = h.composer.AddFunctionComposition(appId, &fc, autoDeployBool)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

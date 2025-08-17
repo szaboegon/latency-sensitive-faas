@@ -142,6 +142,7 @@ const FunctionAppDetails: React.FC = () => {
                   padding: 2,
                   boxShadow: 2,
                   cursor: "pointer",
+                  minHeight: "600px",
                 }}
               >
                 <Button

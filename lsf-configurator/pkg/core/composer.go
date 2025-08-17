@@ -126,6 +126,7 @@ func isComponent(fileName string, runtime string) bool {
 func (c *Composer) AddFunctionComposition(appId string, fc *FunctionComposition, autoDeploy bool) error {
 	id := uuid.New()
 	fc.Id = "fc-" + id
+	fc.Status = StatusPending
 
 	fcApp, err := c.functionAppRepo.GetByID(appId)
 	if err != nil || fcApp == nil {
@@ -156,9 +157,12 @@ func (c *Composer) DeployFunctionComposition(fc *FunctionComposition) {
 	r := <-resultChan
 	if r.Err != nil {
 		log.Errorf("Deploying of function composition with id %v failed: %v", fc.Id, r.Err)
+		fc.Status = StatusError
+		c.fcRepo.Save(fc)
 		return
 	}
 	log.Infof("Successfully deployed function composition with id %v", fc.Id)
+	fc.Status = StatusDeployed
 }
 
 func (c *Composer) DeleteFunctionApp(appId string) error {
@@ -230,6 +234,7 @@ func (c *Composer) NotifyBuildReady(fcId, imageURL string, status string) {
 
 	fc.Build.Image = imageURL
 	fc.Build.Timestamp = createBuildTimestamp()
+	fc.Status = StatusBuilt
 	if err := c.fcRepo.Save(fc); err != nil {
 		log.Errorf("Failed to save function composition with id %s: %v", fc.Id, err)
 		return

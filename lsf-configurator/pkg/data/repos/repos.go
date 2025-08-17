@@ -158,10 +158,11 @@ func (r *functionCompositionRepo) Save(comp *core.FunctionComposition) error {
 	_, err = r.db.Exec(`
 		INSERT OR REPLACE INTO function_compositions (
 			id, function_app_id, node, namespace,
-			image, timestamp, files, components
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			image, timestamp, files, components, status
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		comp.Id, comp.FunctionAppId, comp.Node, comp.NameSpace,
 		comp.Image, comp.Timestamp, string(filesJSON), string(componentsJSON),
+		comp.Status,
 	)
 
 	return err
@@ -170,7 +171,7 @@ func (r *functionCompositionRepo) Save(comp *core.FunctionComposition) error {
 func (r *functionCompositionRepo) GetByID(id string) (*core.FunctionComposition, error) {
 	row := r.db.QueryRow(`
 		SELECT id, function_app_id, node, namespace,
-		       image, timestamp, files, components
+		       image, timestamp, files, components, status
 		FROM function_compositions
 		WHERE id = ?`, id)
 
@@ -180,7 +181,7 @@ func (r *functionCompositionRepo) GetByID(id string) (*core.FunctionComposition,
 	err := row.Scan(
 		&comp.Id, &comp.FunctionAppId, &comp.Node, &comp.NameSpace,
 		&comp.Image, &comp.Timestamp,
-		&filesJSON, &componentsJSON,
+		&filesJSON, &componentsJSON, &comp.Status,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -219,11 +220,11 @@ func (r *functionCompositionRepo) saveWithTx(tx *sql.Tx, comp *core.FunctionComp
 	_, err = tx.Exec(`
 		INSERT OR REPLACE INTO function_compositions (
 			id, function_app_id, node, namespace,
-			image, timestamp, files, components
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			image, timestamp, files, components, status
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		comp.Id, comp.FunctionAppId, comp.Node, comp.NameSpace,
 		comp.Image, comp.Timestamp,
-		string(filesJSON), string(componentsJSON),
+		string(filesJSON), string(componentsJSON), comp.Status,
 	)
 	return err
 }
