@@ -303,7 +303,7 @@ func (r *deploymentRepo) GetByFunctionCompositionID(functionCompositionID string
 	}
 	defer rows.Close()
 
-	var deployments []*core.Deployment
+	deployments := make([]*core.Deployment, 0)
 	for rows.Next() {
 		var deployment core.Deployment
 		var routingTableJSON string

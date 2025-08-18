@@ -1,5 +1,12 @@
 import React from "react";
-import { Stack, Select, MenuItem, Typography, Button, IconButton } from "@mui/material";
+import {
+  Stack,
+  Select,
+  MenuItem,
+  Typography,
+  Button,
+  IconButton,
+} from "@mui/material";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import DeleteIcon from "@mui/icons-material/Delete";
 import type { Deployment, RoutingTable } from "../models/models";
@@ -28,10 +35,10 @@ const RoutingTableEditor: React.FC<RoutingTableFormProps> = ({
           routes.length > 0
             ? routes.map((route) => ({
                 component,
-                targetComposition: route.function ?? "",
+                targetDeployment: route.function ?? "",
                 targetComponent: route.to ?? "",
               }))
-            : [{ component, targetComposition: "", targetComponent: "" }]
+            : [{ component, targetDeployment: "", targetComponent: "" }]
       ),
     },
   });
@@ -73,7 +80,8 @@ const RoutingTableEditor: React.FC<RoutingTableFormProps> = ({
       {fields.map((field, index) => {
         const selectedTargetDepId = watchedRules?.[index]?.targetDeployment;
         const availableTargetComponents = Object.keys(
-          allDeployments.find((dep) => dep.id === selectedTargetDepId)?.routingTable ?? {}
+          allDeployments.find((dep) => dep.id === selectedTargetDepId)
+            ?.routingTable ?? {}
         );
 
         return (
@@ -120,11 +128,13 @@ const RoutingTableEditor: React.FC<RoutingTableFormProps> = ({
                   }}
                 >
                   <MenuItem value="None">None</MenuItem>
-                  {allDeployments.map((dep) => (
-                    <MenuItem key={dep.id} value={dep.id}>
-                      {dep.id} ({dep.node})
-                    </MenuItem>
-                  ))}
+                  {allDeployments
+                    .filter((dep): dep is Deployment => !!dep)
+                    .map((dep) => (
+                      <MenuItem key={dep.id} value={dep.id}>
+                        {dep.id} ({dep.node})
+                      </MenuItem>
+                    ))}
                 </Select>
               )}
             />

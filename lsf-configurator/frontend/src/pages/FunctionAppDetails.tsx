@@ -14,6 +14,7 @@ const FunctionAppDetails: React.FC = () => {
   const { id } = useParams();
   const { data: app, isLoading, error } = useFunctionAppById(id ?? "");
   const { mutate: deleteComposition } = useDeleteFunctionComposition();
+  console.log("FunctionAppDetails app:", app);
 
   const [tabValue, setTabValue] = useState<"list" | "graph">("list");
   const [isAddModalOpen, setAddModalOpen] = useState(false);

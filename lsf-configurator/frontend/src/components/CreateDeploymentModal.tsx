@@ -14,6 +14,7 @@ import type {
   RoutingTable,
 } from "../models/models";
 import { useForm, Controller } from "react-hook-form";
+import { useCreateDeployment } from "../hooks/deploymentHooks";
 
 interface Props {
   open: boolean;
@@ -42,13 +43,20 @@ const CreateDeploymentModal: React.FC<Props> = ({
     },
   });
 
+  const { mutate: createDeployment } = useCreateDeployment();
+
   const handleAddDeployment = (data: {
     node: string;
     namespace: string;
     routingTable: RoutingTable;
   }) => {
-    console.log("Adding deployment:", { compositionId, ...data });
-    //TODO API call to add deployment
+    const newDeployment: Deployment = {
+      functionCompositionId: compositionId,
+      node: data.node,
+      namespace: data.namespace,
+      routingTable: data.routingTable,
+    };
+    createDeployment(newDeployment);
     onClose();
   };
 

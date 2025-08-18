@@ -24,7 +24,6 @@ func NewHandlerFunctionCompositions(mux *http.ServeMux, composer *core.Composer,
 		mux:      mux,
 	}
 
-	h.mux.HandleFunc("PUT "+FunctionCompositionsPath+"/{fc_id}/routing_table", h.putRoutingTable)
 	h.mux.HandleFunc("POST "+FunctionCompositionsPath+"/build_notify", h.buildNotify)
 	h.mux.HandleFunc("POST "+FunctionCompositionsPath, h.create)
 
@@ -55,24 +54,6 @@ func (h *HandlerFunctionCompositions) create(w http.ResponseWriter, r *http.Requ
 	}
 
 	w.WriteHeader(http.StatusCreated)
-}
-
-func (h *HandlerFunctionCompositions) putRoutingTable(w http.ResponseWriter, r *http.Request) {
-	deploymentId := r.PathValue("deployment_id")
-
-	var rt core.RoutingTable
-	if err := json.NewDecoder(r.Body).Decode(&rt); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
-		return
-	}
-
-	err := h.composer.SetRoutingTable(deploymentId, rt)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
 }
 
 func (h *HandlerFunctionCompositions) buildNotify(w http.ResponseWriter, r *http.Request) {

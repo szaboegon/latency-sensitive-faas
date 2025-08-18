@@ -141,23 +141,45 @@ func (c *Composer) AddFunctionComposition(appId string, fc *FunctionComposition)
 	return nil
 }
 
-func (c *Composer) CreateFcDeployment(fc *FunctionComposition, namespace, node string, routingTable RoutingTable) {
+func (c *Composer) CreateFcDeployment(fcId, namespace, node string, routingTable RoutingTable) (*Deployment, error) {
+	fc, err := c.fcRepo.GetByID(fcId)
+	if err != nil || fc == nil {
+		return nil, fmt.Errorf("function composition with id %s does not exist", fcId)
+	}
+
+	if fc.Status != StatusBuilt {
+		return nil, fmt.Errorf("function composition with id %s is not built yet", fcId)
+	}
+
 	deployment := Deployment{
-		Id:           fc.Id + "-deployment-" + uuid.New(),
-		Namespace:    namespace,
-		Node:         node,
-		RoutingTable: routingTable,
+		Id:                    fcId + "-deployment-" + uuid.New(),
+		FunctionCompositionId: fcId,
+		Namespace:             namespace,
+		Node:                  node,
+		RoutingTable:          routingTable,
 	}
-	resultChan := c.scheduler.AddTask(c.deployTask(deployment, fc.Build.Image, fc.FunctionAppId), MaxRetries)
-	r := <-resultChan
-	if r.Err != nil {
-		log.Errorf("Deploying of function composition with id %v failed: %v", fc.Id, r.Err)
-		fc.Status = StatusError
+
+	err = c.deploymentRepo.Save(&deployment)
+	if err != nil {
+		return nil, fmt.Errorf("failed to save deployment: %w", err)
+	}
+
+	// Add deployment task to the scheduler in the background
+	go func() {
+		resultChan := c.scheduler.AddTask(c.deployTask(deployment, fc.Build.Image, fc.FunctionAppId), MaxRetries)
+		r := <-resultChan
+		if r.Err != nil {
+			log.Errorf("Deploying of function composition with id %v failed: %v", fc.Id, r.Err)
+			fc.Status = StatusError
+			c.fcRepo.Save(fc)
+			return
+		}
+		log.Infof("Successfully deployed function composition with id %v", fc.Id)
+		fc.Status = StatusDeployed
 		c.fcRepo.Save(fc)
-		return
-	}
-	log.Infof("Successfully deployed function composition with id %v", fc.Id)
-	fc.Status = StatusDeployed
+	}()
+
+	return &deployment, nil
 }
 
 func (c *Composer) DeleteFunctionApp(appId string) error {

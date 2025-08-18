@@ -28,7 +28,7 @@ type FunctionComposition struct {
 	Files         []string    `json:"files"`
 	Status        Status      `json:"status,omitempty"`
 	Build         `json:"build,omitempty"`
-	Deployments   []*Deployment `json:"deployments,omitempty"`
+	Deployments   []*Deployment `json:"deployments"`
 }
 
 type Deployment struct {
