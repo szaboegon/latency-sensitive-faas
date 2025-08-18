@@ -118,6 +118,7 @@ func registerHandlers(mux *http.ServeMux) {
 	http.HandleFunc(api.HealthzPath, api.HealthCheckHandler)
 	http.Handle(api.AppsPath, api.NewHandlerApps(mux, composer, conf))
 	http.Handle(api.FunctionCompositionsPath, api.NewHandlerFunctionCompositions(mux, composer, conf))
+	http.Handle(api.DeploymentsPath, api.NewHandlerDeployments(mux, composer, conf))
 	http.Handle(api.MetricsPath, api.NewHandlerMetrics(mux, metricsReader, conf))
 
 	fs := http.FileServer(http.Dir("./public"))
