@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Typography, Box, Grid, Button, Tabs, Tab } from "@mui/material";
 import { useParams } from "react-router";
 import FunctionCompositionCard from "../components/FunctionCompositionCard";
@@ -17,6 +17,11 @@ const FunctionAppDetails: React.FC = () => {
 
   const [tabValue, setTabValue] = useState<"list" | "graph">("list");
   const [isAddModalOpen, setAddModalOpen] = useState(false);
+
+  const allDeployments = useMemo(
+    () => app?.compositions?.flatMap((composition) => composition.deployments) ?? [],
+    [app]
+  );
 
   const handleAddComposition = () => {
     setAddModalOpen(true);
@@ -126,9 +131,7 @@ const FunctionAppDetails: React.FC = () => {
                 <FunctionCompositionCard
                   composition={composition}
                   onDelete={deleteComposition}
-                  allDeployments={app.compositions?.flatMap(
-                    (comp) => comp.deployments
-                  ) ?? []}
+                  allDeployments={allDeployments} 
                 />
               </Grid>
             ))}
@@ -160,7 +163,7 @@ const FunctionAppDetails: React.FC = () => {
         )}
 
         {tabValue === "graph" && (
-          <CallGraphView compositions={app.compositions ?? []} />
+          <CallGraphView deployments={allDeployments} /> 
         )}
       </Box>
       <FunctionCompositionAddModal

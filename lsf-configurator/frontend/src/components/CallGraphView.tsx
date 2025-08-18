@@ -9,11 +9,11 @@ import ReactFlow, {
   MarkerType,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import type { FunctionComposition, Route } from "../models/models";
+import type { Deployment } from "../models/models";
 import { generateComponentColor } from "../helpers/utilities";
 
 interface CallGraphViewProps {
-  compositions: FunctionComposition[];
+  deployments: Deployment[];
 }
 
 /**
@@ -24,27 +24,27 @@ const TITLE_HEIGHT = 36;
 const COMPONENT_HEIGHT = 40;
 const COMPONENT_GAP = 12;
 const COMPOSITION_PADDING = 12;
-const COMPOSITION_VERTICAL_SPACING = 50;
+const COMPOSITION_VERTICAL_SPACING = 200;
 
-const CallGraphView: React.FC<CallGraphViewProps> = ({ compositions }) => {
+const CallGraphView: React.FC<CallGraphViewProps> = ({ deployments }) => {
   const { nodes, edges } = useMemo(() => {
     const rfNodes: Node[] = [];
     const rfEdges: Edge[] = [];
 
-    compositions.forEach((c, compIndex) => {
-      const nComponents = Object.keys(c.components ?? {}).length;
+    deployments.forEach((deployment, depIndex) => {
+      const nComponents = Object.keys(deployment.routingTable ?? {}).length;
       const height =
         TITLE_HEIGHT +
         COMPOSITION_PADDING * 2 +
         nComponents * (COMPONENT_HEIGHT + COMPONENT_GAP);
 
-      const compId = c.id ?? "";
-      const topLeftX = 0; 
-      const topLeftY = compIndex * (height + COMPOSITION_VERTICAL_SPACING); 
+      const depId = deployment.id ?? "";
+      const topLeftX = 0;
+      const topLeftY = depIndex * (height + COMPOSITION_VERTICAL_SPACING);
 
-      // Composition group node
+      // Deployment group node
       rfNodes.push({
-        id: compId,
+        id: depId,
         type: "group",
         position: { x: topLeftX, y: topLeftY },
         data: {},
@@ -61,9 +61,9 @@ const CallGraphView: React.FC<CallGraphViewProps> = ({ compositions }) => {
 
       // Title bar node inside the group
       rfNodes.push({
-        id: `${compId}-title`,
-        data: { label: `${c.id} (${c.node})` },
-        parentNode: compId,
+        id: `${depId}-title`,
+        data: { label: `${deployment.id} (${deployment.node})` },
+        parentNode: depId,
         extent: "parent",
         position: { x: COMPOSITION_PADDING, y: 6 },
         style: {
@@ -78,17 +78,17 @@ const CallGraphView: React.FC<CallGraphViewProps> = ({ compositions }) => {
         },
       });
 
-      // Component nodes inside the composition
-      const componentNames = Object.keys(c.components ?? {});
+      // Component nodes inside the deployment
+      const componentNames = Object.keys(deployment.routingTable ?? {});
       componentNames.forEach((componentName, idx) => {
         const localX = COMPOSITION_PADDING;
         const localY =
           TITLE_HEIGHT + COMPOSITION_PADDING + idx * (COMPONENT_HEIGHT + COMPONENT_GAP);
 
         rfNodes.push({
-          id: `${compId}-${componentName}`,
+          id: `${depId}-${componentName}`,
           data: { label: componentName },
-          parentNode: compId,
+          parentNode: depId,
           extent: "parent",
           position: { x: localX, y: localY },
           sourcePosition: Position.Right,
@@ -111,16 +111,16 @@ const CallGraphView: React.FC<CallGraphViewProps> = ({ compositions }) => {
     });
 
     // Build edges
-    compositions.forEach((c) => {
-      const compId = c.id ?? "";
-      Object.entries(c.components ?? {}).forEach(([sourceComponent, routes]) => {
-        (routes || []).forEach((r: Route, idx: number) => {
-          const targetComp = r.function;
-          const targetComponent = r.to;
-          if (!targetComp || !targetComponent) return;
+    deployments.forEach((deployment) => {
+      const depId = deployment.id ?? "";
+      Object.entries(deployment.routingTable ?? {}).forEach(([sourceComponent, routes]) => {
+        (routes || []).forEach((route, idx) => {
+          const targetDepId = route.function;
+          const targetComponent = route.to;
+          if (!targetDepId || !targetComponent) return;
 
-          const sourceId = `${compId}-${sourceComponent}`;
-          const targetId = `${targetComp}-${targetComponent}`;
+          const sourceId = `${depId}-${sourceComponent}`;
+          const targetId = `${targetDepId}-${targetComponent}`;
 
           rfEdges.push({
             id: `e-${sourceId}-to-${targetId}-${idx}`,
@@ -139,7 +139,7 @@ const CallGraphView: React.FC<CallGraphViewProps> = ({ compositions }) => {
     });
 
     return { nodes: rfNodes, edges: rfEdges };
-  }, [compositions]);
+  }, [deployments]);
 
   return (
     <div style={{ width: "100%", height: "80vh" }}>

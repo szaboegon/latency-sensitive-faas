@@ -5,7 +5,7 @@ export const functionAppsMock: FunctionApp[] = [
     id: '1',
     name: 'Function App 1',
     runtime: 'Node.js',
-    components: ['Component A1', 'Component B1', 'Component C1'], // Added components field
+    components: ['Component A1', 'Component B1', 'Component C1'],
     compositions: [
       {
         id: 'composition1a',
@@ -25,8 +25,8 @@ export const functionAppsMock: FunctionApp[] = [
             namespace: 'Namespace 1',
             routingTable: {
               'Component A1': [
-                { to: 'Component B1', function: 'composition1b' },
-                { to: 'Component C1', function: 'composition1b' },
+                { to: 'Component B1', function: 'deployment1b' },
+                { to: 'Component C1', function: 'deployment1b' },
               ],
               'Component B1': [],
               'Component C1': [],
@@ -51,7 +51,7 @@ export const functionAppsMock: FunctionApp[] = [
             node: 'Node 1',
             namespace: 'Namespace 1',
             routingTable: {
-              'Component B1': [{ to: 'Component C1', function: 'composition1a' }],
+              'Component B1': [{ to: 'Component C1', function: 'deployment1a' }],
               'Component C1': [],
             },
           },
@@ -83,8 +83,8 @@ export const functionAppsMock: FunctionApp[] = [
             namespace: 'Namespace 2',
             routingTable: {
               'Component X2': [
-                { to: 'Component Y2', function: 'composition2b' },
-                { to: 'Component Z2', function: 'composition2b' },
+                { to: 'Component Y2', function: 'deployment2b' },
+                { to: 'Component Z2', function: 'deployment2b' },
               ],
               'Component Y2': [],
               'Component Z2': [],
@@ -109,7 +109,7 @@ export const functionAppsMock: FunctionApp[] = [
             node: 'Node 2',
             namespace: 'Namespace 2',
             routingTable: {
-              'Component Y2': [{ to: 'Component Z2', function: 'composition2a' }],
+              'Component Y2': [{ to: 'Component Z2', function: 'deployment2a' }],
               'Component Z2': [],
             },
           },
@@ -121,7 +121,7 @@ export const functionAppsMock: FunctionApp[] = [
     id: '3',
     name: 'Function App 3',
     runtime: 'Go',
-    components: ['Component M3', 'Component N3', 'Component O3'], 
+    components: ['Component M3', 'Component N3', 'Component O3'],
     compositions: [
       {
         id: 'composition3a',
@@ -141,8 +141,8 @@ export const functionAppsMock: FunctionApp[] = [
             namespace: 'Namespace 3',
             routingTable: {
               'Component M3': [
-                { to: 'Component N3', function: 'composition3b' },
-                { to: 'Component O3', function: 'composition3c' },
+                { to: 'Component N3', function: 'deployment3b' },
+                { to: 'Component O3', function: 'deployment3c' },
               ],
               'Component N3': [],
               'Component O3': [],
@@ -167,7 +167,7 @@ export const functionAppsMock: FunctionApp[] = [
             node: 'Node 3',
             namespace: 'Namespace 3',
             routingTable: {
-              'Component N3': [{ to: 'Component O3', function: 'composition3c' }],
+              'Component N3': [{ to: 'Component O3', function: 'deployment3c' }],
               'Component O3': [],
             },
           },
@@ -276,7 +276,7 @@ export const functionAppsMock: FunctionApp[] = [
     id: '5',
     name: 'Function App 5',
     runtime: 'Java',
-    components: ['Component R5', 'Component S5', 'Component T5', 'Component U5'], 
+    components: ['Component R5', 'Component S5', 'Component T5', 'Component U5'],
     compositions: [
       {
         id: 'composition5a',
