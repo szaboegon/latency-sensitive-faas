@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Modal,
   Box,
@@ -10,11 +10,9 @@ import {
   ListItemText,
   InputLabel,
   FormControl,
-  TextField,
 } from "@mui/material";
 import { useForm, Controller } from "react-hook-form";
-import RoutingTableEditor from "./RoutingTableEditor";
-import type { Build, Component, FunctionComposition, RoutingTable } from "../models/models";
+import type { Build, FunctionComposition } from "../models/models";
 import { useCreateFunctionComposition } from "../hooks/functionCompositionHooks";
 
 interface FunctionCompositionAddModalProps {
@@ -22,8 +20,7 @@ interface FunctionCompositionAddModalProps {
   onClose: () => void;
   appId: string;
   appFiles: string[];
-  appComponents: Component[];
-  allCompositions: FunctionComposition[];
+  appComponents: string[];
 }
 
 const FunctionCompositionAddModal: React.FC<FunctionCompositionAddModalProps> = ({
@@ -32,12 +29,9 @@ const FunctionCompositionAddModal: React.FC<FunctionCompositionAddModalProps> = 
   appId,
   appFiles,
   appComponents,
-  allCompositions,
 }) => {
-  const { control, handleSubmit, setValue } = useForm<FunctionComposition>({
+  const { control, handleSubmit } = useForm<FunctionComposition>({
     defaultValues: {
-      node: "",
-      namespace: "",
       files: [],
       components: [],
       build: {} as Build,
@@ -46,21 +40,9 @@ const FunctionCompositionAddModal: React.FC<FunctionCompositionAddModalProps> = 
 
   const { mutate: createComposition } = useCreateFunctionComposition();
 
-  const [selectedComponents, setSelectedComponents] = useState<string[]>([]);
-  const [autoDeploy, setAutoDeploy] = useState(false); 
-
-  const handleComponentSelection = (selected: string[]) => {
-    setSelectedComponents(selected);
-    const newRoutingTable = selected.reduce((acc, component) => {
-      acc[component] = [];
-      return acc;
-    }, {} as RoutingTable);
-    setValue("components", newRoutingTable);
-  };
-
   const onSubmit = (data: FunctionComposition) => {
     console.log("Saving composition:", data);
-    createComposition({ appId, functionComposition: data, autoDeploy });
+    createComposition({ appId, functionComposition: data });
     onClose();
   };
 
@@ -83,20 +65,6 @@ const FunctionCompositionAddModal: React.FC<FunctionCompositionAddModalProps> = 
           Add New Function Composition
         </Typography>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <Controller
-            name="node"
-            control={control}
-            render={({ field }) => (
-              <TextField {...field} label="Node" fullWidth margin="normal" />
-            )}
-          />
-          <Controller
-            name="namespace"
-            control={control}
-            render={({ field }) => (
-              <TextField {...field} label="Namespace" fullWidth margin="normal" />
-            )}
-          />
           <FormControl fullWidth margin="normal">
             <InputLabel id="files-label">Files</InputLabel>
             <Controller
@@ -122,58 +90,27 @@ const FunctionCompositionAddModal: React.FC<FunctionCompositionAddModalProps> = 
           </FormControl>
           <FormControl fullWidth margin="normal">
             <InputLabel id="components-label">Components</InputLabel>
-            <Select
-              labelId="components-label"
-              label="Components"
-              multiple
-              value={selectedComponents}
-              onChange={(e) =>
-                handleComponentSelection(e.target.value as string[])
-              }
-              renderValue={(selected) => selected.join(", ")}
-            >
-              {appComponents.map((component) => (
-                <MenuItem key={component} value={component}>
-                  <Checkbox checked={selectedComponents.includes(component)} />
-                  <ListItemText primary={component} />
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Box
-            sx={{
-              borderTop: "1px solid #ccc",
-              my: 3,
-            }}
-          />
-          <Typography variant="body1" mb={2}>
-            Routing Table
-          </Typography>
-          <RoutingTableEditor
-            composition={{
-              id: "",
-              node: "",
-              components: selectedComponents.reduce((acc, component) => {
-                acc[component] = [];
-                return acc;
-              }, {} as RoutingTable),
-              namespace: "",
-              files: [],
-              build: {} as Build,
-              status: "pending",
-            }}
-            allCompositions={allCompositions}
-            onChange={(data) => setValue("components", data)}
-          />
-          <Box mt={2} display="flex" alignItems="center">
-            <Typography variant="body2" component="span" sx={{ mr: 1 }}>
-              Auto Deploy
-            </Typography>
-            <Checkbox
-              checked={autoDeploy}
-              onChange={(e) => setAutoDeploy(e.target.checked)}
+            <Controller
+              name="components"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  labelId="components-label"
+                  label="Components"
+                  multiple
+                  renderValue={(selected) => selected.join(", ")}
+                >
+                  {appComponents.map((component) => (
+                    <MenuItem key={component} value={component}>
+                      <Checkbox checked={field.value.includes(component)} />
+                      <ListItemText primary={component} />
+                    </MenuItem>
+                  ))}
+                </Select>
+              )}
             />
-          </Box>
+          </FormControl>
           <Box mt={2} display="flex" justifyContent="space-between">
             <Button variant="outlined" onClick={onClose}>
               Cancel

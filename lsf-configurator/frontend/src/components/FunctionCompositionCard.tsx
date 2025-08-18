@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, Typography, Divider, Box, Chip, Stack, Button } from "@mui/material";
 import type { FunctionComposition, Deployment } from "../models/models"; 
 import DeploymentDetailsDrawer from "../components/DeploymentDetailsDrawer"; 
+import CreateDeploymentModal from "./CreateDeploymentModal"; 
 import { generateComponentColor } from "../helpers/utilities";
 
 const StatusColorMap: Record<"pending" | "built" | "deployed" | "error", string> = {
@@ -19,6 +20,7 @@ interface Props {
 
 const FunctionCompositionCard: React.FC<Props> = ({ composition, allDeployments, onDelete }) => {
   const [selectedDeployment, setSelectedDeployment] = useState<Deployment | null>(null);
+  const [isAddDeploymentModalOpen, setAddDeploymentModalOpen] = useState(false);
 
   const handleDelete = () => {
     if (composition.id) {
@@ -28,6 +30,9 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, allDeployments,
 
   const handleOpenDrawer = (deployment: Deployment) => setSelectedDeployment(deployment);
   const handleCloseDrawer = () => setSelectedDeployment(null);
+
+  const handleOpenAddDeploymentModal = () => setAddDeploymentModalOpen(true);
+  const handleCloseAddDeploymentModal = () => setAddDeploymentModalOpen(false);
 
   return (
     <>
@@ -142,6 +147,9 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, allDeployments,
 
           <Divider sx={{ my: 2 }} />
           <Stack direction="row" spacing={2}>
+            <Button variant="contained" color="primary" onClick={handleOpenAddDeploymentModal}>
+              New Deployment
+            </Button>
             <Button variant="outlined" color="error" onClick={handleDelete}>
               Delete
             </Button>
@@ -154,6 +162,15 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, allDeployments,
         deployment={selectedDeployment}
         onClose={handleCloseDrawer}
         allDeployments={allDeployments} // Pass all deployments for routing table editing
+      />
+
+      {/* Add Deployment Modal */}
+      <CreateDeploymentModal
+        open={isAddDeploymentModalOpen}
+        onClose={handleCloseAddDeploymentModal}
+        compositionId={composition.id ?? ""}
+        components={composition.components || []}
+        allDeployments={allDeployments}
       />
     </>
   );

@@ -169,7 +169,6 @@ const FunctionAppDetails: React.FC = () => {
         appId={app.id ?? ""}
         appFiles={app.files ?? []}
         appComponents={app.components ?? []}
-        allCompositions={app.compositions ?? []}
       />
     </>
   );
