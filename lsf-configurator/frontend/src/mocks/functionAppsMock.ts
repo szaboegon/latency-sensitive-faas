@@ -1,265 +1,374 @@
 import type { FunctionApp } from '../models/models';
 
 export const functionAppsMock: FunctionApp[] = [
-    {
-        id: '1',
-        name: 'Function App 1',
-        runtime: 'Node.js',
+  {
+    id: '1',
+    name: 'Function App 1',
+    runtime: 'Node.js',
+    components: ['Component A1', 'Component B1', 'Component C1'], // Added components field
+    compositions: [
+      {
+        id: 'composition1a',
+        functionAppId: '1',
+        files: ['file1.js', 'file2.js'],
+        build: {
+          image: 'image1a',
+          timestamp: '2023-01-01T00:00:00Z',
+        },
+        status: 'pending',
         components: ['Component A1', 'Component B1', 'Component C1'],
-        compositions: [
-            {
-                id: 'composition1a',
-                functionAppId: '1',
-                node: 'Node 1',
-                namespace: 'Namespace 1',
-                files: ['file1.js', 'file2.js'],
-                components: {
-                    'Component A1': [
-                        { to: 'Component B1', function: 'composition1b' },
-                        { to: 'Component C1', function: 'composition1b' },
-                    ],
-                },
-                build: {
-                    image: 'image1a',
-                    timestamp: '2023-01-01T00:00:00Z',
-                },
-                status: "pending",
+        deployments: [
+          {
+            id: 'deployment1a',
+            functionCompositionId: 'composition1a',
+            node: 'Node 1',
+            namespace: 'Namespace 1',
+            routingTable: {
+              'Component A1': [
+                { to: 'Component B1', function: 'composition1b' },
+                { to: 'Component C1', function: 'composition1b' },
+              ],
+              'Component B1': [],
+              'Component C1': [],
             },
-            {
-                id: 'composition1b',
-                functionAppId: '1',
-                node: 'Node 1',
-                namespace: 'Namespace 1',
-                files: ['file3.js', 'file4.js'],
-                components: {
-                    'Component B1': [{ to: 'Component C1', function: 'composition1a' }],
-                    'Component C1': [], 
-                },
-                build: {
-                    image: 'image1b',
-                    timestamp: '2023-01-02T00:00:00Z',
-                },
-                status: "built",
-            },
+          },
         ],
-    },
-    {
-        id: '2',
-        name: 'Function App 2',
-        runtime: 'Python',
+      },
+      {
+        id: 'composition1b',
+        functionAppId: '1',
+        files: ['file3.js', 'file4.js'],
+        build: {
+          image: 'image1b',
+          timestamp: '2023-01-02T00:00:00Z',
+        },
+        status: 'built',
+        components: ['Component B1', 'Component C1'],
+        deployments: [
+          {
+            id: 'deployment1b',
+            functionCompositionId: 'composition1b',
+            node: 'Node 1',
+            namespace: 'Namespace 1',
+            routingTable: {
+              'Component B1': [{ to: 'Component C1', function: 'composition1a' }],
+              'Component C1': [],
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: '2',
+    name: 'Function App 2',
+    runtime: 'Python',
+    components: ['Component X2', 'Component Y2', 'Component Z2'],
+    compositions: [
+      {
+        id: 'composition2a',
+        functionAppId: '2',
+        files: ['file3.py', 'file4.py'],
+        build: {
+          image: 'image2a',
+          timestamp: '2023-02-01T00:00:00Z',
+        },
+        status: 'deployed',
         components: ['Component X2', 'Component Y2', 'Component Z2'],
-        compositions: [
-            {
-                id: 'composition2a',
-                functionAppId: '2',
-                node: 'Node 2',
-                namespace: 'Namespace 2',
-                files: ['file3.py', 'file4.py'],
-                components: {
-                    'Component X2': [
-                        { to: 'Component Y2', function: 'composition2b' },
-                        { to: 'Component Z2', function: 'composition2b' },
-                    ],
-                },
-                build: {
-                    image: 'image2a',
-                    timestamp: '2023-02-01T00:00:00Z',
-                },
-                status: "deployed",
+        deployments: [
+          {
+            id: 'deployment2a',
+            functionCompositionId: 'composition2a',
+            node: 'Node 2',
+            namespace: 'Namespace 2',
+            routingTable: {
+              'Component X2': [
+                { to: 'Component Y2', function: 'composition2b' },
+                { to: 'Component Z2', function: 'composition2b' },
+              ],
+              'Component Y2': [],
+              'Component Z2': [],
             },
-            {
-                id: 'composition2b',
-                functionAppId: '2',
-                node: 'Node 2',
-                namespace: 'Namespace 2',
-                files: ['file5.py', 'file6.py'],
-                components: {
-                    'Component Y2': [{ to: 'Component Z2', function: 'composition2a' }],
-                    'Component Z2': [], 
-                },
-                build: {
-                    image: 'image2b',
-                    timestamp: '2023-02-02T00:00:00Z',
-                },
-                status: "error",
-            },
+          },
         ],
-    },
-    {
-        id: '3',
-        name: 'Function App 3',
-        runtime: 'Go',
+      },
+      {
+        id: 'composition2b',
+        functionAppId: '2',
+        files: ['file5.py', 'file6.py'],
+        build: {
+          image: 'image2b',
+          timestamp: '2023-02-02T00:00:00Z',
+        },
+        status: 'error',
+        components: ['Component Y2', 'Component Z2'],
+        deployments: [
+          {
+            id: 'deployment2b',
+            functionCompositionId: 'composition2b',
+            node: 'Node 2',
+            namespace: 'Namespace 2',
+            routingTable: {
+              'Component Y2': [{ to: 'Component Z2', function: 'composition2a' }],
+              'Component Z2': [],
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: '3',
+    name: 'Function App 3',
+    runtime: 'Go',
+    components: ['Component M3', 'Component N3', 'Component O3'], 
+    compositions: [
+      {
+        id: 'composition3a',
+        functionAppId: '3',
+        files: ['file5.go', 'file6.go'],
+        build: {
+          image: 'image3a',
+          timestamp: '2023-03-01T00:00:00Z',
+        },
+        status: 'pending',
         components: ['Component M3', 'Component N3', 'Component O3'],
-        compositions: [
-            {
-                id: 'composition3a',
-                functionAppId: '3',
-                node: 'Node 3',
-                namespace: 'Namespace 3',
-                files: ['file5.go', 'file6.go'],
-                components: {
-                    'Component M3': [
-                        { to: 'Component N3', function: 'composition3b' },
-                        { to: 'Component O3', function: 'composition3c' },
-                    ],
-                },
-                build: {
-                    image: 'image3a',
-                    timestamp: '2023-03-01T00:00:00Z',
-                },
-                status: "pending",
+        deployments: [
+          {
+            id: 'deployment3a',
+            functionCompositionId: 'composition3a',
+            node: 'Node 3',
+            namespace: 'Namespace 3',
+            routingTable: {
+              'Component M3': [
+                { to: 'Component N3', function: 'composition3b' },
+                { to: 'Component O3', function: 'composition3c' },
+              ],
+              'Component N3': [],
+              'Component O3': [],
             },
-            {
-                id: 'composition3b',
-                functionAppId: '3',
-                node: 'Node 3',
-                namespace: 'Namespace 3',
-                files: ['file7.go', 'file8.go'],
-                components: {
-                    'Component N3': [{ to: 'Component O3', function: 'composition3c' }],
-                },
-                build: {
-                    image: 'image3b',
-                    timestamp: '2023-03-02T00:00:00Z',
-                },
-                status: "built",
-            },
-            {
-                id: 'composition3c',
-                functionAppId: '3',
-                node: 'Node 3',
-                namespace: 'Namespace 3',
-                files: ['file9.go', 'file10.go'],
-                components: {
-                    'Component O3': [],
-                },
-                build: {
-                    image: 'image3c',
-                    timestamp: '2023-03-03T00:00:00Z',
-                },
-                status: "built",
-            },
+          },
         ],
-    },
-    {
-        id: '4',
-        name: 'Function App 4',
-        runtime: 'Ruby',
+      },
+      {
+        id: 'composition3b',
+        functionAppId: '3',
+        files: ['file7.go', 'file8.go'],
+        build: {
+          image: 'image3b',
+          timestamp: '2023-03-02T00:00:00Z',
+        },
+        status: 'built',
+        components: ['Component N3', 'Component O3'],
+        deployments: [
+          {
+            id: 'deployment3b',
+            functionCompositionId: 'composition3b',
+            node: 'Node 3',
+            namespace: 'Namespace 3',
+            routingTable: {
+              'Component N3': [{ to: 'Component O3', function: 'composition3c' }],
+              'Component O3': [],
+            },
+          },
+        ],
+      },
+      {
+        id: 'composition3c',
+        functionAppId: '3',
+        files: ['file9.go', 'file10.go'],
+        build: {
+          image: 'image3c',
+          timestamp: '2023-03-03T00:00:00Z',
+        },
+        status: 'built',
+        components: ['Component O3'],
+        deployments: [
+          {
+            id: 'deployment3c',
+            functionCompositionId: 'composition3c',
+            node: 'Node 3',
+            namespace: 'Namespace 3',
+            routingTable: {
+              'Component O3': [],
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: '4',
+    name: 'Function App 4',
+    runtime: 'Ruby',
+    components: ['Component P4', 'Component Q4'],
+    compositions: [
+      {
+        id: 'composition4a',
+        functionAppId: '4',
+        files: ['file9.rb', 'file10.rb'],
+        build: {
+          image: 'image4a',
+          timestamp: '2023-04-01T00:00:00Z',
+        },
+        status: 'pending',
         components: ['Component P4', 'Component Q4'],
-        compositions: [
-            {
-                id: 'composition4a',
-                functionAppId: '4',
-                node: 'Node 4',
-                namespace: 'Namespace 4',
-                files: ['file9.rb', 'file10.rb'],
-                components: {
-                    'Component P4': [{ to: 'Component Q4', function: 'composition4b' }],
-                },
-                build: {
-                    image: 'image4a',
-                    timestamp: '2023-04-01T00:00:00Z',
-                },
-                status: "pending",
+        deployments: [
+          {
+            id: 'deployment4a',
+            functionCompositionId: 'composition4a',
+            node: 'Node 4',
+            namespace: 'Namespace 4',
+            routingTable: {
+              'Component P4': [{ to: 'Component Q4', function: 'composition4b' }],
+              'Component Q4': [],
             },
-            {
-                id: 'composition4b',
-                functionAppId: '4',
-                node: 'Node 4',
-                namespace: 'Namespace 4',
-                files: ['file11.rb', 'file12.rb'],
-                components: {
-                    'Component Q4': [], 
-                },
-                build: {
-                    image: 'image4b',
-                    timestamp: '2023-04-02T00:00:00Z',
-                },
-                status: "built",
-            },
-            {
-                id: 'composition4c',
-                functionAppId: '4',
-                node: 'Node 4',
-                namespace: 'Namespace 4',
-                files: ['file13.rb', 'file14.rb'],
-                components: {
-                    'Component P4': [],
-                },
-                build: {
-                    image: 'image4c',
-                    timestamp: '2023-04-03T00:00:00Z',
-                },
-                status: "built",
-            },
+          },
         ],
-    },
-    {
-        id: '5',
-        name: 'Function App 5',
-        runtime: 'Java',
-        components: ['Component R5', 'Component S5', 'Component T5', 'Component U5'],
-        compositions: [
-            {
-                id: 'composition5a',
-                functionAppId: '5',
-                node: 'Node 5',
-                namespace: 'Namespace 5',
-                files: ['file15.java', 'file16.java'],
-                components: {
-                    'Component R5': [{ to: 'Component S5', function: 'composition5b' }],
-                },
-                build: {
-                    image: 'image5a',
-                    timestamp: '2023-05-01T00:00:00Z',
-                },
-                status: "pending",
+      },
+      {
+        id: 'composition4b',
+        functionAppId: '4',
+        files: ['file11.rb', 'file12.rb'],
+        build: {
+          image: 'image4b',
+          timestamp: '2023-04-02T00:00:00Z',
+        },
+        status: 'built',
+        components: ['Component Q4'],
+        deployments: [
+          {
+            id: 'deployment4b',
+            functionCompositionId: 'composition4b',
+            node: 'Node 4',
+            namespace: 'Namespace 4',
+            routingTable: {
+              'Component Q4': [],
             },
-            {
-                id: 'composition5b',
-                functionAppId: '5',
-                node: 'Node 5',
-                namespace: 'Namespace 5',
-                files: ['file17.java', 'file18.java'],
-                components: {
-                    'Component S5': [{ to: 'Component T5', function: 'composition5c' }],
-                },
-                build: {
-                    image: 'image5b',
-                    timestamp: '2023-05-02T00:00:00Z',
-                },
-                status: "pending",
-            },
-            {
-                id: 'composition5c',
-                functionAppId: '5',
-                node: 'Node 5',
-                namespace: 'Namespace 5',
-                files: ['file19.java', 'file20.java'],
-                components: {
-                    'Component T5': [{ to: 'Component U5', function: 'composition5d' }],
-                },
-                build: {
-                    image: 'image5c',
-                    timestamp: '2023-05-03T00:00:00Z',
-                },
-                status: "pending",
-            },
-            {
-                id: 'composition5d',
-                functionAppId: '5',
-                node: 'Node 5',
-                namespace: 'Namespace 5',
-                files: ['file21.java', 'file22.java'],
-                components: {
-                    'Component U5': [], 
-                },
-                build: {
-                    image: 'image5d',
-                    timestamp: '2023-05-04T00:00:00Z',
-                },
-                status: "built",
-            },
+          },
         ],
-    },
+      },
+      {
+        id: 'composition4c',
+        functionAppId: '4',
+        files: ['file13.rb', 'file14.rb'],
+        build: {
+          image: 'image4c',
+          timestamp: '2023-04-03T00:00:00Z',
+        },
+        status: 'built',
+        components: ['Component P4'],
+        deployments: [
+          {
+            id: 'deployment4c',
+            functionCompositionId: 'composition4c',
+            node: 'Node 4',
+            namespace: 'Namespace 4',
+            routingTable: {
+              'Component P4': [],
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: '5',
+    name: 'Function App 5',
+    runtime: 'Java',
+    components: ['Component R5', 'Component S5', 'Component T5', 'Component U5'], 
+    compositions: [
+      {
+        id: 'composition5a',
+        functionAppId: '5',
+        files: ['file15.java', 'file16.java'],
+        build: {
+          image: 'image5a',
+          timestamp: '2023-05-01T00:00:00Z',
+        },
+        status: 'pending',
+        components: ['Component R5', 'Component S5'],
+        deployments: [
+          {
+            id: 'deployment5a',
+            functionCompositionId: 'composition5a',
+            node: 'Node 5',
+            namespace: 'Namespace 5',
+            routingTable: {
+              'Component R5': [{ to: 'Component S5', function: 'composition5b' }],
+              'Component S5': [],
+            },
+          },
+        ],
+      },
+      {
+        id: 'composition5b',
+        functionAppId: '5',
+        files: ['file17.java', 'file18.java'],
+        build: {
+          image: 'image5b',
+          timestamp: '2023-05-02T00:00:00Z',
+        },
+        status: 'pending',
+        components: ['Component S5', 'Component T5'],
+        deployments: [
+          {
+            id: 'deployment5b',
+            functionCompositionId: 'composition5b',
+            node: 'Node 5',
+            namespace: 'Namespace 5',
+            routingTable: {
+              'Component S5': [{ to: 'Component T5', function: 'composition5c' }],
+              'Component T5': [],
+            },
+          },
+        ],
+      },
+      {
+        id: 'composition5c',
+        functionAppId: '5',
+        files: ['file19.java', 'file20.java'],
+        build: {
+          image: 'image5c',
+          timestamp: '2023-05-03T00:00:00Z',
+        },
+        status: 'pending',
+        components: ['Component T5', 'Component U5'],
+        deployments: [
+          {
+            id: 'deployment5c',
+            functionCompositionId: 'composition5c',
+            node: 'Node 5',
+            namespace: 'Namespace 5',
+            routingTable: {
+              'Component T5': [{ to: 'Component U5', function: 'composition5d' }],
+              'Component U5': [],
+            },
+          },
+        ],
+      },
+      {
+        id: 'composition5d',
+        functionAppId: '5',
+        files: ['file21.java', 'file22.java'],
+        build: {
+          image: 'image5d',
+          timestamp: '2023-05-04T00:00:00Z',
+        },
+        status: 'built',
+        components: ['Component U5'],
+        deployments: [
+          {
+            id: 'deployment5d',
+            functionCompositionId: 'composition5d',
+            node: 'Node 5',
+            namespace: 'Namespace 5',
+            routingTable: {
+              'Component U5': [],
+            },
+          },
+        ],
+      },
+    ],
+  },
 ];

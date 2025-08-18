@@ -126,7 +126,9 @@ const FunctionAppDetails: React.FC = () => {
                 <FunctionCompositionCard
                   composition={composition}
                   onDelete={deleteComposition}
-                  allCompositions={app.compositions ?? []}
+                  allDeployments={app.compositions?.flatMap(
+                    (comp) => comp.deployments
+                  ) ?? []}
                 />
               </Grid>
             ))}

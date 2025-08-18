@@ -2,28 +2,28 @@ import React from "react";
 import { Stack, Select, MenuItem, Typography, Button, IconButton } from "@mui/material";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import DeleteIcon from "@mui/icons-material/Delete";
-import type { FunctionComposition, RoutingTable } from "../models/models";
+import type { Deployment, RoutingTable } from "../models/models";
 
 interface RoutingTableFormProps {
-  composition: FunctionComposition;
-  allCompositions: FunctionComposition[];
+  deployment: Deployment;
+  allDeployments: Deployment[];
   onChange: (routingTable: RoutingTable) => void;
 }
 
 interface Rule {
   component: string;
-  targetComposition: string;
+  targetDeployment: string;
   targetComponent: string;
 }
 
 const RoutingTableEditor: React.FC<RoutingTableFormProps> = ({
-  composition,
-  allCompositions,
+  deployment,
+  allDeployments,
   onChange,
 }) => {
   const { control, watch } = useForm<{ rules: Rule[] }>({
     defaultValues: {
-      rules: Object.entries(composition.components).flatMap(
+      rules: Object.entries(deployment.routingTable).flatMap(
         ([component, routes]) =>
           routes.length > 0
             ? routes.map((route) => ({
@@ -50,7 +50,7 @@ const RoutingTableEditor: React.FC<RoutingTableFormProps> = ({
       }
       acc[rule.component].push({
         to: rule.targetComponent === "None" ? "" : rule.targetComponent,
-        function: rule.targetComposition === "None" ? "" : rule.targetComposition,
+        function: rule.targetDeployment === "None" ? "" : rule.targetDeployment,
       });
       return acc;
     }, {} as RoutingTable);
@@ -59,7 +59,7 @@ const RoutingTableEditor: React.FC<RoutingTableFormProps> = ({
   };
 
   const handleAddRule = () => {
-    append({ component: "", targetComposition: "", targetComponent: "" });
+    append({ component: "", targetDeployment: "", targetComponent: "" });
     notifyChange();
   };
 
@@ -71,9 +71,9 @@ const RoutingTableEditor: React.FC<RoutingTableFormProps> = ({
   return (
     <Stack spacing={2}>
       {fields.map((field, index) => {
-        const selectedTargetCompId = watchedRules?.[index]?.targetComposition;
+        const selectedTargetDepId = watchedRules?.[index]?.targetDeployment;
         const availableTargetComponents = Object.keys(
-          allCompositions.find((comp) => comp.id === selectedTargetCompId)?.components ?? {}
+          allDeployments.find((dep) => dep.id === selectedTargetDepId)?.routingTable ?? {}
         );
 
         return (
@@ -91,7 +91,7 @@ const RoutingTableEditor: React.FC<RoutingTableFormProps> = ({
                     notifyChange();
                   }}
                 >
-                  {Object.keys(composition.components).map((component) => (
+                  {Object.keys(deployment.routingTable).map((component) => (
                     <MenuItem key={component} value={component}>
                       {component}
                     </MenuItem>
@@ -105,9 +105,9 @@ const RoutingTableEditor: React.FC<RoutingTableFormProps> = ({
               →
             </Typography>
 
-            {/* Target composition */}
+            {/* Target deployment */}
             <Controller
-              name={`rules.${index}.targetComposition`}
+              name={`rules.${index}.targetDeployment`}
               control={control}
               render={({ field }) => (
                 <Select
@@ -120,9 +120,9 @@ const RoutingTableEditor: React.FC<RoutingTableFormProps> = ({
                   }}
                 >
                   <MenuItem value="None">None</MenuItem>
-                  {allCompositions.map((comp) => (
-                    <MenuItem key={comp.id} value={comp.id}>
-                      {comp.id} ({comp.node})
+                  {allDeployments.map((dep) => (
+                    <MenuItem key={dep.id} value={dep.id}>
+                      {dep.id} ({dep.node})
                     </MenuItem>
                   ))}
                 </Select>

@@ -39,7 +39,7 @@ const FunctionCompositionAddModal: React.FC<FunctionCompositionAddModalProps> = 
       node: "",
       namespace: "",
       files: [],
-      components: {},
+      components: [],
       build: {} as Build,
     },
   });

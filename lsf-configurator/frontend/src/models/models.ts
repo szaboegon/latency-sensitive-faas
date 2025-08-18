@@ -17,6 +17,7 @@ export interface FunctionComposition {
     files: string[];
     build: Build;
     status: "pending" | "built" | "deployed" | "error";
+    deployments: Deployment[];
 }
 
 export interface Deployment {

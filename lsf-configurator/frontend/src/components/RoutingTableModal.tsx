@@ -5,29 +5,29 @@ import {
   Typography,
   Button,
 } from "@mui/material";
-import type { FunctionComposition, RoutingTable } from "../models/models";
-import { useModifyRoutingTable } from "../hooks/functionCompositionHooks";
+import type { Deployment, RoutingTable } from "../models/models";
 import RoutingTableEditor from "./RoutingTableEditor";
+import { useModifyRoutingTable } from "../hooks/deploymentHooks";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  composition: FunctionComposition;
-  allCompositions: FunctionComposition[];
+  deployment: Deployment;
+  allDeployments: Deployment[];
 }
 
 const RoutingTableModal: React.FC<Props> = ({
   open,
   onClose,
-  composition,
-  allCompositions,
+  deployment,
+  allDeployments,
 }) => {
   const { mutate: modifyRoutingTable } = useModifyRoutingTable();
-  const [routingTable, setRoutingTable] = useState<RoutingTable>(composition.components);
+  const [routingTable, setRoutingTable] = useState<RoutingTable>(deployment.routingTable);
 
   const handleSaveFormInput = () => {
     modifyRoutingTable({
-      functionCompositionId: composition.id!,
+      deploymentId: deployment.id!,
       routingTable,
     });
     onClose();
@@ -57,8 +57,8 @@ const RoutingTableModal: React.FC<Props> = ({
         </Typography>
         <Box mt={2}>
           <RoutingTableEditor
-            composition={composition}
-            allCompositions={allCompositions}
+            deployment={deployment}
+            allDeployments={allDeployments}
             onChange={onRoutingTableChange}
           />
           <Button

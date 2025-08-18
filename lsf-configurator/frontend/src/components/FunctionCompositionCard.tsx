@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, Typography, Divider, Box, Chip, Stack, Button, Grid } from "@mui/material";
-import type { FunctionComposition } from "../models/models"; 
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import RoutingTableModal from "../components/RoutingTableModal"; 
+import { Card, CardContent, CardHeader, Typography, Divider, Box, Chip, Stack, Button } from "@mui/material";
+import type { FunctionComposition, Deployment } from "../models/models"; 
+import DeploymentDetailsDrawer from "../components/DeploymentDetailsDrawer"; 
 import { generateComponentColor } from "../helpers/utilities";
 
 const StatusColorMap: Record<"pending" | "built" | "deployed" | "error", string> = {
@@ -12,24 +11,23 @@ const StatusColorMap: Record<"pending" | "built" | "deployed" | "error", string>
     error: "#f44336"    
 };
 
-
 interface Props {
   composition: FunctionComposition;
-  allCompositions: FunctionComposition[];
-  onDelete: (id: string) => void; 
+  allDeployments: Deployment[];
+  onDelete: (id: string) => void;
 }
 
-const FunctionCompositionCard: React.FC<Props> = ({ composition, allCompositions, onDelete }) => {
-  const [isModalOpen, setModalOpen] = useState(false);
-
-  const handleOpenModal = () => setModalOpen(true);
-  const handleCloseModal = () => setModalOpen(false);
+const FunctionCompositionCard: React.FC<Props> = ({ composition, allDeployments, onDelete }) => {
+  const [selectedDeployment, setSelectedDeployment] = useState<Deployment | null>(null);
 
   const handleDelete = () => {
     if (composition.id) {
       onDelete(composition.id);
     }
   };
+
+  const handleOpenDrawer = (deployment: Deployment) => setSelectedDeployment(deployment);
+  const handleCloseDrawer = () => setSelectedDeployment(null);
 
   return (
     <>
@@ -43,7 +41,6 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, allCompositions
       >
         <CardHeader
           title={<Typography variant="h6">{composition.id || "Unnamed Composition"}</Typography>}
-          subheader={`Node: ${composition.node || "N/A"} • Namespace: ${composition.namespace}`}
         />
 
         <CardContent>
@@ -73,23 +70,22 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, allCompositions
               <Typography variant="subtitle2" gutterBottom>
                 Components:
               </Typography>
-              <Grid container spacing={1}>
-                {Object.keys(composition.components).map((component) => (
-                  <Grid size={{ xs: 6, sm: 4 }} key={component}>
-                    <Box
-                      sx={{
-                        backgroundColor: generateComponentColor(component),
-                        borderRadius: 2,
-                        padding: 1,
-                        textAlign: "center",
-                        boxShadow: 1,
-                      }}
-                    >
-                      <Typography variant="body2">{component}</Typography>
-                    </Box>
-                  </Grid>
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                {composition.components.map((component) => (
+                  <Box
+                    key={component}
+                    sx={{
+                      backgroundColor: generateComponentColor(component),
+                      borderRadius: 2,
+                      padding: 1,
+                      textAlign: "center",
+                      boxShadow: 1,
+                    }}
+                  >
+                    <Typography variant="body2">{component}</Typography>
+                  </Box>
                 ))}
-              </Grid>
+              </Stack>
             </Box>
           )}
 
@@ -124,82 +120,44 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, allCompositions
             </Box>
           )}
 
-          {/* Routing Table Visualization */}
-          {composition.components && (
+          {/* Deployments Visualization */}
+          {composition.deployments && composition.deployments.length > 0 && (
             <Box>
               <Typography variant="subtitle2" gutterBottom>
-                Routing Table:
+                Deployments:
               </Typography>
-              <Box
-                sx={{
-                  mb: 1.5,
-                  p: 1,
-                  border: "1px dashed #80deea",
-                  borderRadius: 2,
-                  background: "#f0fafa",
-                }}
-              >
-                <Stack direction="column" spacing={1} sx={{ pl: 2, mt: 0.5 }}>
-                  {Object.entries(composition.components).map(([component, routes]) => (
-                    <React.Fragment key={component}>
-                      {routes.map((route, rIdx) => (
-                        <Stack
-                          key={`${component}-${rIdx}`}
-                          direction="row"
-                          alignItems="center"
-                          spacing={1}
-                        >
-                          <Typography variant="body2" fontWeight="bold">
-                            {component}
-                          </Typography>
-                          <ArrowForwardIcon fontSize="small" color="action" />
-                          <Typography variant="body2">
-                            {route.to} ({route.function})
-                          </Typography>
-                        </Stack>
-                      ))}
-                      {routes.length === 0 && (
-                        <Stack
-                          direction="row"
-                          alignItems="center"
-                          spacing={1}
-                        >
-                          <Typography variant="body2" fontWeight="bold">
-                            {component}
-                          </Typography>
-                          <ArrowForwardIcon fontSize="small" color="action" />
-                          <Typography variant="body2">
-                            &lt;none&gt;
-                          </Typography>
-                        </Stack>
-                      )}
-                    </React.Fragment>
-                  ))}
-                </Stack>
-              </Box>
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                {composition.deployments.map((deployment, idx) => (
+                  <Chip
+                    key={idx}
+                    label={`${deployment.node} / ${deployment.namespace}`}
+                    onClick={() => handleOpenDrawer(deployment)}
+                    clickable
+                    sx={{ cursor: "pointer" }}
+                  />
+                ))}
+              </Stack>
             </Box>
           )}
 
-
           <Divider sx={{ my: 2 }} />
           <Stack direction="row" spacing={2}>
-            <Button variant="contained" color="primary" onClick={handleOpenModal}>
-              Edit Routing Table
-            </Button>
             <Button variant="outlined" color="error" onClick={handleDelete}>
               Delete
             </Button>
           </Stack>
         </CardContent>
       </Card>
-      <RoutingTableModal
-        open={isModalOpen}
-        onClose={handleCloseModal}
-        composition={composition}
-        allCompositions={allCompositions}
+
+      {/* Drawer for Deployment Details */}
+      <DeploymentDetailsDrawer
+        deployment={selectedDeployment}
+        onClose={handleCloseDrawer}
+        allDeployments={allDeployments} // Pass all deployments for routing table editing
       />
     </>
   );
 };
 
 export default FunctionCompositionCard;
+
