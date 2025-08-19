@@ -1,15 +1,15 @@
-import axios from "axios";
+import axiosInstance from "./axios";
 import type { FunctionApp } from "../models/models";
 import paths from "../helpers/paths";
 
 const FunctionAppService = {
   async fetchFunctionApps(): Promise<FunctionApp[]> {
-    const response = await axios.get(paths.apps);
+    const response = await axiosInstance.get(paths.apps);
     return response.data;
   },
 
   async fetchFunctionAppById(id: string): Promise<FunctionApp | null> {
-    const response = await axios.get(`${paths.apps}/${id}`);
+    const response = await axiosInstance.get(`${paths.apps}/${id}`);
     return response.data;
   },
 
@@ -20,7 +20,7 @@ const FunctionAppService = {
       formData.append("files", file);
     });
 
-    const response = await axios.post(`${paths.apps}`, formData, {
+    const response = await axiosInstance.post(`${paths.apps}`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -29,7 +29,7 @@ const FunctionAppService = {
   },
 
   async deleteFunctionApp(id: string): Promise<void> {
-    await axios.delete(`${paths.apps}/${id}`);
+    await axiosInstance.delete(`${paths.apps}/${id}`);
   }
 };
 
