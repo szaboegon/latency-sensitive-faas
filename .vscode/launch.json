@@ -31,6 +31,15 @@
             "host": "127.0.0.1",
             "remotePath": "/",
             "showLog": true
+        },
+        {
+            "name": "Frontend",
+            "type": "pwa-chrome",
+            "request": "launch",
+            "url": "http://localhost:5173",
+            "webRoot": "${workspaceFolder}/lsf-configurator/frontend",
+            "breakOnLoad": true,
+            "sourceMaps": true
         }
     ]
 }
