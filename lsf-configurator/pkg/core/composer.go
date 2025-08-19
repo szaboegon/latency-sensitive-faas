@@ -124,7 +124,7 @@ func isComponent(fileName string, runtime string) bool {
 func (c *Composer) AddFunctionComposition(appId string, fc *FunctionComposition) error {
 	id := uuid.New()
 	fc.Id = "fc-" + id
-	fc.Status = StatusPending
+	fc.Status = BuildStatusPending
 
 	fcApp, err := c.functionAppRepo.GetByID(appId)
 	if err != nil || fcApp == nil {
@@ -147,10 +147,6 @@ func (c *Composer) CreateFcDeployment(fcId, namespace, node string, routingTable
 		return nil, fmt.Errorf("function composition with id %s does not exist", fcId)
 	}
 
-	if fc.Status != StatusBuilt {
-		return nil, fmt.Errorf("function composition with id %s is not built yet", fcId)
-	}
-
 	deployment := Deployment{
 		Id:                    fcId + "-deployment-" + uuid.New(),
 		FunctionCompositionId: fcId,
@@ -159,26 +155,18 @@ func (c *Composer) CreateFcDeployment(fcId, namespace, node string, routingTable
 		RoutingTable:          routingTable,
 	}
 
+	if fc.Status == BuildStatusBuilt {
+		deployment.Status = DeploymentStatusPending
+		c.startDeployment(&deployment, fc)
+	} else {
+		deployment.Status = DeploymentStatusWaitingForBuild
+		log.Infof("Function composition with id %s is not built yet, deployment will be started after build is ready", fcId)
+	}
+
 	err = c.deploymentRepo.Save(&deployment)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save deployment: %w", err)
 	}
-
-	// Add deployment task to the scheduler in the background
-	go func() {
-		resultChan := c.scheduler.AddTask(c.deployTask(deployment, fc.Build.Image, fc.FunctionAppId), MaxRetries)
-		r := <-resultChan
-		if r.Err != nil {
-			log.Errorf("Deploying of function composition with id %v failed: %v", fc.Id, r.Err)
-			fc.Status = StatusError
-			c.fcRepo.Save(fc)
-			return
-		}
-		log.Infof("Successfully deployed function composition with id %v", fc.Id)
-		fc.Status = StatusDeployed
-		c.fcRepo.Save(fc)
-	}()
-
 	return &deployment, nil
 }
 
@@ -214,6 +202,33 @@ func (c *Composer) DeleteFunctionApp(appId string) error {
 	return nil
 }
 
+func (c *Composer) DeleteFunctionComposition(fcId string) error {
+	fc, err := c.fcRepo.GetByID(fcId)
+	if err != nil || fc == nil {
+		return fmt.Errorf("function composition with id %s does not exist", fcId)
+	}
+
+	go func() {
+		for _, deployment := range fc.Deployments {
+			resultChan := c.scheduler.AddTask(c.deleteTask(*deployment), MaxRetries)
+			r := <-resultChan
+			if r.Err != nil {
+				log.Errorf("Deleting of deployment with id %v failed: %v", deployment.Id, r.Err)
+				fc.Status = BuildStatusError
+				c.fcRepo.Save(fc)
+				return
+			}
+			log.Infof("Successfully deleted deployment with id %v", deployment.Id)
+		}
+		log.Infof("Successfully deleted all deployments for function composition with id %v", fc.Id)
+		if err := c.fcRepo.Delete(fcId); err != nil {
+			log.Errorf("failed to delete function composition: %w", err)
+		}
+	}()
+
+	return nil
+}
+
 func (c *Composer) SetRoutingTable(deploymentId string, table RoutingTable) error {
 	deployment, err := c.deploymentRepo.GetByID(deploymentId)
 	if err != nil || deployment == nil {
@@ -223,7 +238,6 @@ func (c *Composer) SetRoutingTable(deploymentId string, table RoutingTable) erro
 	return c.setRoutingTable(deployment, table)
 }
 
-// Called by HTTP handler when CI/CD pipeline notifies build is ready
 func (c *Composer) NotifyBuildReady(fcId, imageURL string, status string) {
 	c.builder.NotifyBuildFinished()
 	fc, err := c.fcRepo.GetByID(fcId)
@@ -240,7 +254,6 @@ func (c *Composer) NotifyBuildReady(fcId, imageURL string, status string) {
 
 	// If the build failed, requeue the build task, do not deploy
 	if strings.ToLower(status) == "failed" {
-
 		log.Errorf("Build for function composition %s failed, requeuing...", fcId)
 		c.scheduler.AddTask(c.buildTask(*fc, fcApp.Runtime, fcApp.SourcePath), MaxRetries)
 		return
@@ -248,12 +261,25 @@ func (c *Composer) NotifyBuildReady(fcId, imageURL string, status string) {
 
 	fc.Build.Image = imageURL
 	fc.Build.Timestamp = createBuildTimestamp()
-	fc.Status = StatusBuilt
+	fc.Status = BuildStatusBuilt
 	if err := c.fcRepo.Save(fc); err != nil {
 		log.Errorf("Failed to save function composition with id %s: %v", fc.Id, err)
 		return
 	}
 	log.Infof("Successfully built function composition with id %v. Image: %v", fc.Id, fc.Build.Image)
+
+	// Trigger any pending deployments
+	deployments, err := c.deploymentRepo.GetByFunctionCompositionID(fc.Id)
+	if err != nil {
+		log.Errorf("Failed to get deployments for function composition with id %s: %v", fc.Id, err)
+		return
+	}
+
+	for _, deployment := range deployments {
+		if deployment.Status == DeploymentStatusWaitingForBuild {
+			c.startDeployment(deployment, fc)
+		}
+	}
 }
 
 func (c *Composer) setRoutingTable(deployment *Deployment, table RoutingTable) error {
@@ -268,6 +294,20 @@ func (c *Composer) setRoutingTable(deployment *Deployment, table RoutingTable) e
 	}
 
 	return nil
+}
+
+func (c *Composer) startDeployment(deployment *Deployment, fc *FunctionComposition) {
+	resultChan := c.scheduler.AddTask(c.deployTask(*deployment, fc.Build.Image, fc.FunctionAppId), MaxRetries)
+	r := <-resultChan
+	if r.Err != nil {
+		log.Errorf("Deploying of function composition with id %v and deploymentId %v failed: %v, ", fc.Id, deployment.Id, r.Err)
+		deployment.Status = DeploymentStatusError
+		c.deploymentRepo.Save(deployment)
+		return
+	}
+	log.Infof("Successfully deployed function composition with id %v, deploymentId %v", fc.Id, deployment.Id)
+	deployment.Status = DeploymentStatusDeployed
+	c.deploymentRepo.Save(deployment)
 }
 
 func (c *Composer) buildTask(fc FunctionComposition, runtime, sourcePath string) func() (interface{}, error) {

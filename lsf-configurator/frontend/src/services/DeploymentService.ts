@@ -3,6 +3,7 @@ import paths from "../helpers/paths";
 import type { Deployment, RoutingTable } from "../models/models";
 
 const DeploymentService = {
+  //TODO routing table is empty here :(
   async createDeployment(deployment: Deployment): Promise<void> {
     await axiosInstance.post(paths.deployments, deployment);
   },

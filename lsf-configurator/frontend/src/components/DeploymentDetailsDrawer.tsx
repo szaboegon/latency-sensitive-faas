@@ -7,7 +7,7 @@ import RoutingTableModal from "./RoutingTableModal";
 interface Props {
   deployment: Deployment | null;
   onClose: () => void;
-  allDeployments: Deployment[]; // Pass all compositions for routing table editing
+  allDeployments: Deployment[]; 
 }
 
 const DeploymentDetailsDrawer: React.FC<Props> = ({ deployment, onClose, allDeployments }) => {

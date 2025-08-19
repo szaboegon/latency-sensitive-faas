@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import FunctionAppService from "../services/FunctionAppService";
 import { functionAppsMock } from "../mocks/functionAppsMock";
 import type { FunctionApp } from "../models/models";
@@ -16,20 +16,36 @@ export const useFunctionApps = () => {
 
 export const useFunctionAppById = (id: string) => {
   return useQuery<FunctionApp | null>({
-    queryKey: ["functionApp", id],
+    queryKey: ["functionApps", id],
     queryFn: useMockData
       ? async () => functionAppsMock.find((app) => app.id === id) || null
       : () => FunctionAppService.fetchFunctionAppById(id),
   });
 };
 
-export const useCreateFunctionApp = () =>
-  useMutation({
+export const useCreateFunctionApp = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationFn: (vars: { functionApp: FunctionApp; files: FileList }) =>
-      FunctionAppService.createFunctionApp(vars.functionApp, vars.files)
+      FunctionAppService.createFunctionApp(vars.functionApp, vars.files),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["functionApps"] });
+    },
+    meta: {
+      successMessage: "Function app created successfully!",
+    },
   });
+};
 
-export const useDeleteFunctionApp = () =>
-  useMutation({
+export const useDeleteFunctionApp = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationFn: FunctionAppService.deleteFunctionApp,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["functionApps"] }); 
+    },
+    meta: {
+      successMessage: "Function app deleted successfully!",
+    },
   });
+};

@@ -252,9 +252,9 @@ func (r *deploymentRepo) Save(deployment *core.Deployment) error {
 
 	_, err = r.db.Exec(`
 		INSERT OR REPLACE INTO deployments (
-			id, function_composition_id, node, namespace, routing_table
-		) VALUES (?, ?, ?, ?, ?)`,
-		deployment.Id, deployment.FunctionCompositionId, deployment.Node, deployment.Namespace, string(routingTableJSON),
+			id, function_composition_id, node, namespace, routing_table, status
+		) VALUES (?, ?, ?, ?, ?, ?)`,
+		deployment.Id, deployment.FunctionCompositionId, deployment.Node, deployment.Namespace, string(routingTableJSON), deployment.Status,
 	)
 	return err
 }
@@ -269,7 +269,7 @@ func (r *deploymentRepo) Delete(id string) error {
 
 func (r *deploymentRepo) GetByID(id string) (*core.Deployment, error) {
 	row := r.db.QueryRow(`
-		SELECT id, function_composition_id, node, namespace, routing_table
+		SELECT id, function_composition_id, node, namespace, routing_table, status
 		FROM deployments
 		WHERE id = ?`, id)
 
@@ -277,7 +277,8 @@ func (r *deploymentRepo) GetByID(id string) (*core.Deployment, error) {
 	var routingTableJSON string
 
 	err := row.Scan(
-		&deployment.Id, &deployment.FunctionCompositionId, &deployment.Node, &deployment.Namespace, &routingTableJSON,
+		&deployment.Id, &deployment.FunctionCompositionId, &deployment.Node,
+		&deployment.Namespace, &routingTableJSON, &deployment.Status,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -295,7 +296,7 @@ func (r *deploymentRepo) GetByID(id string) (*core.Deployment, error) {
 
 func (r *deploymentRepo) GetByFunctionCompositionID(functionCompositionID string) ([]*core.Deployment, error) {
 	rows, err := r.db.Query(`
-		SELECT id, function_composition_id, node, namespace, routing_table
+		SELECT id, function_composition_id, node, namespace, routing_table, status
 		FROM deployments
 		WHERE function_composition_id = ?`, functionCompositionID)
 	if err != nil {
@@ -309,7 +310,8 @@ func (r *deploymentRepo) GetByFunctionCompositionID(functionCompositionID string
 		var routingTableJSON string
 
 		err := rows.Scan(
-			&deployment.Id, &deployment.FunctionCompositionId, &deployment.Node, &deployment.Namespace, &routingTableJSON,
+			&deployment.Id, &deployment.FunctionCompositionId, &deployment.Node,
+			&deployment.Namespace, &routingTableJSON, &deployment.Status,
 		)
 		if err != nil {
 			return nil, err
@@ -327,7 +329,7 @@ func (r *deploymentRepo) GetByFunctionCompositionID(functionCompositionID string
 
 func (r *deploymentRepo) GetByFunctionAppID(functionAppID string) ([]*core.Deployment, error) {
 	rows, err := r.db.Query(`
-		SELECT d.id, d.function_composition_id, d.node, d.namespace, d.routing_table
+		SELECT d.id, d.function_composition_id, d.node, d.namespace, d.routing_table, d.status
 		FROM deployments d
 		INNER JOIN function_compositions fc ON d.function_composition_id = fc.id
 		WHERE fc.function_app_id = ?`, functionAppID)
@@ -342,7 +344,8 @@ func (r *deploymentRepo) GetByFunctionAppID(functionAppID string) ([]*core.Deplo
 		var routingTableJSON string
 
 		err := rows.Scan(
-			&deployment.Id, &deployment.FunctionCompositionId, &deployment.Node, &deployment.Namespace, &routingTableJSON,
+			&deployment.Id, &deployment.FunctionCompositionId, &deployment.Node,
+			&deployment.Namespace, &routingTableJSON, &deployment.Status,
 		)
 		if err != nil {
 			return nil, err

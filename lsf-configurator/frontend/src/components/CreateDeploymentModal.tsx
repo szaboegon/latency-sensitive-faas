@@ -8,11 +8,7 @@ import {
   Stack,
 } from "@mui/material";
 import RoutingTableEditor from "./RoutingTableEditor";
-import type {
-  Component,
-  Deployment,
-  RoutingTable,
-} from "../models/models";
+import type { Component, Deployment, RoutingTable } from "../models/models";
 import { useForm, Controller } from "react-hook-form";
 import { useCreateDeployment } from "../hooks/deploymentHooks";
 
@@ -39,7 +35,10 @@ const CreateDeploymentModal: React.FC<Props> = ({
     defaultValues: {
       node: "",
       namespace: "",
-      routingTable: {},
+      routingTable: components.reduce((acc, comp) => {
+        acc[comp] = [];
+        return acc;
+      }, {} as RoutingTable),
     },
   });
 

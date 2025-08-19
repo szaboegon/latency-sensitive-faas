@@ -26,6 +26,7 @@ func NewHandlerFunctionCompositions(mux *http.ServeMux, composer *core.Composer,
 
 	h.mux.HandleFunc("POST "+FunctionCompositionsPath+"/build_notify", h.buildNotify)
 	h.mux.HandleFunc("POST "+FunctionCompositionsPath, h.create)
+	h.mux.HandleFunc("DELETE "+FunctionCompositionsPath+"/{id}", h.delete)
 
 	return h
 }
@@ -68,4 +69,20 @@ func (h *HandlerFunctionCompositions) buildNotify(w http.ResponseWriter, r *http
 	}
 	go h.composer.NotifyBuildReady(req.FcId, req.ImageURL, req.Status)
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *HandlerFunctionCompositions) delete(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "Missing id", http.StatusBadRequest)
+		return
+	}
+
+	err := h.composer.DeleteFunctionComposition(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

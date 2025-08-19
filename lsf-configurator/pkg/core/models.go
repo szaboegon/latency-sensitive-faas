@@ -3,40 +3,49 @@ package core
 type Component string
 
 type FunctionApp struct {
-	Id           string                 `json:"id,omitempty"`
+	Id           string                 `json:"id"`
 	Name         string                 `json:"name"`
 	Runtime      string                 `json:"runtime"`
-	Components   []Component            `json:"components,omitempty"`
-	Files        []string               `json:"files,omitempty"`
-	Compositions []*FunctionComposition `json:"compositions,omitempty"`
-	SourcePath   string                 `json:"source_path,omitempty"`
+	Components   []Component            `json:"components"`
+	Files        []string               `json:"files"`
+	Compositions []*FunctionComposition `json:"compositions"`
+	SourcePath   string                 `json:"source_path"`
 }
 
-type Status string
+type BuildStatus string
 
 const (
-	StatusPending  Status = "pending"
-	StatusBuilt    Status = "built"
-	StatusDeployed Status = "deployed"
-	StatusError    Status = "error"
+	BuildStatusPending BuildStatus = "pending"
+	BuildStatusBuilt   BuildStatus = "built"
+	BuildStatusError   BuildStatus = "error"
 )
 
 type FunctionComposition struct {
-	Id            string      `json:"id,omitempty"`
-	FunctionAppId string      `json:"function_app_id,omitempty"`
+	Id            string      `json:"id"`
+	FunctionAppId string      `json:"function_app_id"`
 	Components    []Component `json:"components"`
 	Files         []string    `json:"files"`
-	Status        Status      `json:"status,omitempty"`
-	Build         `json:"build,omitempty"`
+	Status        BuildStatus `json:"status"`
+	Build         `json:"build"`
 	Deployments   []*Deployment `json:"deployments"`
 }
 
+type DeploymentStatus string
+
+const (
+	DeploymentStatusWaitingForBuild DeploymentStatus = "waiting_for_build"
+	DeploymentStatusPending         DeploymentStatus = "pending"
+	DeploymentStatusDeployed        DeploymentStatus = "deployed"
+	DeploymentStatusError           DeploymentStatus = "error"
+)
+
 type Deployment struct {
-	Id                    string       `json:"id,omitempty"`
-	FunctionCompositionId string       `json:"function_composition_id,omitempty"`
-	Node                  string       `json:"node,omitempty"`
-	Namespace             string       `json:"namespace,omitempty"`
-	RoutingTable          RoutingTable `json:"routing_table,omitempty"`
+	Id                    string           `json:"id"`
+	FunctionCompositionId string           `json:"function_composition_id"`
+	Node                  string           `json:"node"`
+	Namespace             string           `json:"namespace"`
+	RoutingTable          RoutingTable     `json:"routing_table"`
+	Status                DeploymentStatus `json:"status"`
 }
 
 type Route struct {
@@ -47,6 +56,6 @@ type Route struct {
 type RoutingTable map[Component][]Route
 
 type Build struct {
-	Image     string `json:"image,omitempty"`
-	Timestamp string `json:"timestamp,omitempty"`
+	Image     string `json:"image"`
+	Timestamp string `json:"timestamp"`
 }

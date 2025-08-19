@@ -24,5 +24,6 @@ CREATE TABLE IF NOT EXISTS deployments (
     node TEXT NOT NULL,
     namespace TEXT NOT NULL,
     routing_table TEXT NOT NULL,
+    status TEXT DEFAULT 'pending',
     FOREIGN KEY (function_composition_id) REFERENCES function_compositions(id) ON DELETE CASCADE
 );
