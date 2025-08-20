@@ -1,10 +1,10 @@
 import axiosInstance from "./axios";
 import paths from "../helpers/paths";
-import type { Deployment, RoutingTable } from "../models/models";
+import type { RoutingTable } from "../models/models";
+import type { DeploymentCreateDto } from "../models/dto";
 
 const DeploymentService = {
-  //TODO routing table is empty here :(
-  async createDeployment(deployment: Deployment): Promise<void> {
+  async createDeployment(deployment: DeploymentCreateDto): Promise<void> {
     await axiosInstance.post(paths.deployments, deployment);
   },
   async modifyRoutingTable(deploymentId: string, routingTable: RoutingTable): Promise<void> {

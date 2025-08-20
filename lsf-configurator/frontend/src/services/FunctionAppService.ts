@@ -1,35 +1,49 @@
 import axiosInstance from "./axios";
 import type { FunctionApp } from "../models/models";
 import paths from "../helpers/paths";
+import type { BulkCreateRequest, FunctionAppCreateDto } from "../models/dto";
 
 const FunctionAppService = {
   async fetchFunctionApps(): Promise<FunctionApp[]> {
-    const response = await axiosInstance.get(paths.apps);
+    const response = await axiosInstance.get(paths.functionApps);
     return response.data;
   },
 
   async fetchFunctionAppById(id: string): Promise<FunctionApp | null> {
-    const response = await axiosInstance.get(`${paths.apps}/${id}`);
+    const response = await axiosInstance.get(`${paths.functionApps}/${id}`);
     return response.data;
   },
 
-  async createFunctionApp(newApp: FunctionApp, files: FileList): Promise<FunctionApp> {
+  async createFunctionApp(newApp: FunctionAppCreateDto, files: FileList): Promise<void> {
     const formData = new FormData();
     formData.append("json", JSON.stringify(newApp));
     Array.from(files).forEach((file) => {
       formData.append("files", file);
     });
 
-    const response = await axiosInstance.post(`${paths.apps}`, formData, {
+    await axiosInstance.post(`${paths.functionApps}`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
     });
-    return response.data;
+  },
+
+  async bulkCreateFunctionApp(req: BulkCreateRequest, files: FileList): Promise<void> {
+    const formData = new FormData();
+    formData.append("json", JSON.stringify(req));
+    Array.from(files).forEach((file) => {
+      formData.append("files", file);
+    });
+
+    await axiosInstance.post(`${paths.functionApps}/bulk`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
   },
 
   async deleteFunctionApp(id: string): Promise<void> {
-    await axiosInstance.delete(`${paths.apps}/${id}`);
+    await axiosInstance.delete(`${paths.functionApps}/${id}`);
   }
 };
 

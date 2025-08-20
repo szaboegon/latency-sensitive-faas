@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import FunctionCompositionService from "../services/FunctionCompositionService";
-import type { FunctionComposition } from "../models/models";
+import type { FunctionCompositionCreateDto } from "../models/dto";
 
 export const useDeleteFunctionComposition = () => {
   const queryClient = useQueryClient();
@@ -18,7 +18,7 @@ export const useDeleteFunctionComposition = () => {
 export const useCreateFunctionComposition = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { appId: string; functionComposition: FunctionComposition }) =>
+    mutationFn: (vars: { appId: string; functionComposition: FunctionCompositionCreateDto }) =>
       FunctionCompositionService.createFunctionComposition(vars.appId, vars.functionComposition),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["functionApps"] }); 

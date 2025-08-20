@@ -1,0 +1,38 @@
+package api
+
+import "lsf-configurator/pkg/core"
+
+type FunctionAppCreateDto struct {
+	Name    string `json:"name"`
+	Runtime string `json:"runtime"`
+}
+
+type FunctionCompositionCreateDto struct {
+	FunctionAppId string   `json:"function_app_id"`
+	Components    []string `json:"components"`
+	Files         []string `json:"files"`
+}
+
+type DeploymentCreateDto struct {
+	FunctionCompositionId string            `json:"function_composition_id"`
+	Node                  string            `json:"node"`
+	Namespace             string            `json:"namespace"`
+	RoutingTable          core.RoutingTable `json:"routing_table"`
+}
+
+type BulkCreateRequest struct {
+	FunctionApp          FunctionAppCreateDto               `json:"function_app"`
+	FunctionCompositions []FunctionCompositionBulkCreateDto `json:"function_compositions"`
+}
+
+type FunctionCompositionBulkCreateDto struct {
+	Components  []string              `json:"components"`
+	Files       []string              `json:"files"`
+	Deployments []DeploymentCreateDto `json:"deployments"`
+}
+
+type DeploymentBulkCreateDto struct {
+	Node         string            `json:"node"`
+	Namespace    string            `json:"namespace"`
+	RoutingTable core.RoutingTable `json:"routing_table"`
+}

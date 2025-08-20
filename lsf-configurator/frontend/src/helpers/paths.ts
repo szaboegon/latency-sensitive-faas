@@ -1,10 +1,17 @@
-const serverPath = import.meta.env.VITE_API_BASE_URL
+const serverPath = import.meta.env.VITE_API_BASE_URL;
+
+const functionApps = `${serverPath}/function_apps`;
+const functionCompositions = `${serverPath}/function_compositions`;
+const deployments = `${serverPath}/deployments`;
+const metrics = `${serverPath}/metrics`;
 
 const paths = {
-  apps: `${serverPath}/function_apps`,
-  functionCompositions: `${serverPath}/function_compositions`,
-  deployments: `${serverPath}/deployments`,
-  metrics: `${serverPath}/metrics`,  
-}
+  functionApps: functionApps,
+  functionCompositions: functionCompositions,
+  deployments: deployments,
+  metrics: metrics,
+
+  functionAppsBulkCreate: `${functionApps}/bulk`,
+};
 
 export default paths;

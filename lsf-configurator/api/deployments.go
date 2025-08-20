@@ -35,12 +35,7 @@ func (h *HandlerDeployments) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HandlerDeployments) create(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		FunctionCompositionId string            `json:"function_composition_id"`
-		Node                  string            `json:"node"`
-		Namespace             string            `json:"namespace"`
-		RoutingTable          core.RoutingTable `json:"routing_table"`
-	}
+	var req DeploymentCreateDto
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

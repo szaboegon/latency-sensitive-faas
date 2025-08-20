@@ -11,6 +11,7 @@ import RoutingTableEditor from "./RoutingTableEditor";
 import type { Component, Deployment, RoutingTable } from "../models/models";
 import { useForm, Controller } from "react-hook-form";
 import { useCreateDeployment } from "../hooks/deploymentHooks";
+import type { DeploymentCreateDto } from "../models/dto";
 
 interface Props {
   open: boolean;
@@ -49,7 +50,7 @@ const CreateDeploymentModal: React.FC<Props> = ({
     namespace: string;
     routingTable: RoutingTable;
   }) => {
-    const newDeployment: Deployment = {
+    const newDeployment: DeploymentCreateDto = {
       functionCompositionId: compositionId,
       node: data.node,
       namespace: data.namespace,

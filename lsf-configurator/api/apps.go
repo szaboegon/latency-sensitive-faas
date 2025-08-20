@@ -27,6 +27,7 @@ func NewHandlerApps(mux *http.ServeMux, composer *core.Composer, conf config.Con
 	h.mux.HandleFunc("GET "+AppsPath, h.list)
 	h.mux.HandleFunc("GET "+AppsPath+"/{id}", h.get)
 	h.mux.HandleFunc("POST "+AppsPath, h.create)
+	h.mux.HandleFunc("POST "+AppsPath+"/bulk_create", h.bulkCreate)
 	h.mux.HandleFunc("DELETE "+AppsPath+"/{id}", h.delete)
 
 	return h
@@ -61,11 +62,7 @@ func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(10 << 20) // 10MB limit
 
 	jsonStr := r.FormValue("json")
-	var payload struct {
-		Name         string                     `json:"name"`
-		Compositions []core.FunctionComposition `json:"compositions"`
-		Runtime      string                     `json:"runtime"`
-	}
+	var payload FunctionAppCreateDto
 	if err := json.Unmarshal([]byte(jsonStr), &payload); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
@@ -78,13 +75,56 @@ func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.composer.CreateFunctionApp(h.conf.UploadDir, files, payload.Compositions, payload.Name, payload.Runtime)
+	_, err := h.composer.CreateFunctionApp(h.conf.UploadDir, files, payload.Name, payload.Runtime)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *HandlerApps) bulkCreate(w http.ResponseWriter, r *http.Request) {
+	jsonStr := r.FormValue("json")
+
+	var payload BulkCreateRequest
+	if err := json.Unmarshal([]byte(jsonStr), &payload); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	files := r.MultipartForm.File["files"]
+
+	if len(files) == 0 {
+		http.Error(w, "No files were uploaded", http.StatusBadRequest)
+		return
+	}
+
+	// function app creation
+	app, err := h.composer.CreateFunctionApp(h.conf.UploadDir, files,
+		payload.FunctionApp.Name, payload.FunctionApp.Runtime)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// function composition creation
+	for _, comp := range payload.FunctionCompositions {
+		fc, err := h.composer.AddFunctionComposition(app.Id, comp.Components, comp.Files)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		for _, dep := range comp.Deployments {
+			_, err := h.composer.CreateFcDeployment(fc.Id,
+				dep.Namespace, dep.Node, dep.RoutingTable)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+	}
 }
 
 func (h *HandlerApps) delete(w http.ResponseWriter, r *http.Request) {

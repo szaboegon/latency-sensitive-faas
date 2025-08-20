@@ -65,7 +65,6 @@ func (c *Composer) ListFunctionApps() ([]*FunctionApp, error) {
 func (c *Composer) CreateFunctionApp(
 	uploadDir string,
 	files []*multipart.FileHeader,
-	fcs []FunctionComposition,
 	appName string,
 	runtime string,
 ) (*FunctionApp, error) {
@@ -105,14 +104,6 @@ func (c *Composer) CreateFunctionApp(
 		return nil, fmt.Errorf("could not persist function app: %w", err)
 	}
 
-	// if there are any function compositions provided at creation, process them
-	for _, fc := range fcs {
-		err := c.AddFunctionComposition(fcApp.Id, &fc)
-		if err != nil {
-			return nil, fmt.Errorf("error while adding function compositions to app: %s", err.Error())
-		}
-	}
-
 	return &fcApp, nil
 }
 
@@ -121,24 +112,34 @@ func isComponent(fileName string, runtime string) bool {
 	return runtimeExtensions[runtime] == extension
 }
 
-func (c *Composer) AddFunctionComposition(appId string, fc *FunctionComposition) error {
-	id := uuid.New()
-	fc.Id = "fc-" + id
-	fc.Status = BuildStatusPending
-
+func (c *Composer) AddFunctionComposition(appId string, components []string, files []string) (*FunctionComposition, error) {
 	fcApp, err := c.functionAppRepo.GetByID(appId)
 	if err != nil || fcApp == nil {
 		log.Errorf("function app with id %s does not exist", appId)
-		return fmt.Errorf("function app with id %s does not exist", appId)
+		return nil, fmt.Errorf("function app with id %s does not exist", appId)
 	}
-	fc.FunctionAppId = appId
+
+	id := uuid.New()
+	convertedComps := make([]Component, 0)
+	for _, comp := range components {
+		c := Component(comp)
+		convertedComps = append(convertedComps, c)
+	}
+
+	fc := &FunctionComposition{
+		Id:            "fc-" + id,
+		FunctionAppId: appId,
+		Components:    convertedComps,
+		Files:         files,
+		Status:        BuildStatusPending,
+	}
 
 	if err := c.fcRepo.Save(fc); err != nil {
-		return fmt.Errorf("failed to update function app: %w", err)
+		return nil, fmt.Errorf("failed to update function app: %w", err)
 	}
 
 	c.scheduler.AddTask(c.buildTask(*fc, fcApp.Runtime, fcApp.SourcePath), MaxRetries)
-	return nil
+	return fc, nil
 }
 
 func (c *Composer) CreateFcDeployment(fcId, namespace, node string, routingTable RoutingTable) (*Deployment, error) {

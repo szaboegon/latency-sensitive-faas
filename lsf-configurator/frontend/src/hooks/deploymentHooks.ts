@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import DeploymentService from "../services/DeploymentService";
-import type { Deployment, RoutingTable } from "../models/models";
+import type {  RoutingTable } from "../models/models";
+import type {  DeploymentCreateDto } from "../models/dto";
 
 export const useCreateDeployment = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (deployment: Deployment) => DeploymentService.createDeployment(deployment),
+    mutationFn: (deployment: DeploymentCreateDto) => DeploymentService.createDeployment(deployment),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["functionApps"] });
     },

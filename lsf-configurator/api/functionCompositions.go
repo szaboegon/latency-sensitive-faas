@@ -36,19 +36,13 @@ func (h *HandlerFunctionCompositions) ServeHTTP(w http.ResponseWriter, r *http.R
 }
 
 func (h *HandlerFunctionCompositions) create(w http.ResponseWriter, r *http.Request) {
-	appId := r.URL.Query().Get("app_id")
-	if appId == "" {
-		http.Error(w, "Missing app_id", http.StatusBadRequest)
-		return
-	}
-
-	var fc core.FunctionComposition
-	if err := json.NewDecoder(r.Body).Decode(&fc); err != nil {
+	var payload FunctionCompositionCreateDto
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
-	err := h.composer.AddFunctionComposition(appId, &fc)
+	_, err := h.composer.AddFunctionComposition(payload.FunctionAppId, payload.Components, payload.Files)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

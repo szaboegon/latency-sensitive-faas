@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import { useForm } from "react-hook-form"
 import {
   Modal,
@@ -11,9 +11,12 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Tabs,
+  Tab,
 } from "@mui/material"
 import { useCreateFunctionApp } from "../hooks/functionAppsHooks"
-import type { FunctionApp } from "../models/models"
+import FunctionAppJsonForm from "./FunctionAppJsonForm"
+import type { FunctionAppCreateDto } from "../models/dto"
 
 interface AddFunctionAppModalProps {
   open: boolean
@@ -32,15 +35,22 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
 }) => {
   const { register, handleSubmit } = useForm<FormData>()
   const { mutate: createFunctionApp } = useCreateFunctionApp()
+  const [tabValue, setTabValue] = useState<"form" | "json">("form")
 
   const onSubmit = (data: FormData) => {
-    const fcApp: FunctionApp = {
+    const fcApp: FunctionAppCreateDto = {
       name: data.name,
       runtime: data.runtime,
-      files: Array.from(data.files).map((file) => file.name),
     }
     createFunctionApp({ functionApp: fcApp, files: data.files })
     onClose()
+  }
+
+  const handleTabChange = (
+    _: React.SyntheticEvent,
+    newValue: "form" | "json"
+  ) => {
+    setTabValue(newValue)
   }
 
   return (
@@ -51,7 +61,7 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: 400,
+          width: 600,
           bgcolor: "background.paper",
           boxShadow: 24,
           p: 4,
@@ -61,41 +71,48 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
         <Typography variant="h6" component="h2" mb={2} color="#000">
           Add New Function App
         </Typography>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <TextField
-            label="Function App Name"
-            fullWidth
-            margin="normal"
-            {...register("name", { required: true })}
-          />
-          <FormControl fullWidth margin="normal">
-            <InputLabel id="runtime-label">Runtime</InputLabel>
-            <Select
-              {...register("runtime", { required: true })}
-              labelId="runtime-label"
-              label="Runtime"
-              defaultValue=""
-            >
-              <MenuItem value="Node.js">Node.js</MenuItem>
-              <MenuItem value="Python">Python</MenuItem>
-              <MenuItem value="Go">Go</MenuItem>
-            </Select>
-          </FormControl>
-          <Input
-            type="file"
-            fullWidth
-            {...register("files", { required: true })}
-            inputProps={{ multiple: true }}
-          />
-          <Box mt={2} display="flex" justifyContent="flex-end">
-            <Button onClick={onClose} sx={{ mr: 1 }}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="contained" color="primary">
-              Add
-            </Button>
-          </Box>
-        </form>
+        <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2 }}>
+          <Tab label="Form" value="form" />
+          <Tab label="JSON" value="json" />
+        </Tabs>
+        {tabValue === "form" && (
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <TextField
+              label="Function App Name"
+              fullWidth
+              margin="normal"
+              {...register("name", { required: true })}
+            />
+            <FormControl fullWidth margin="normal">
+              <InputLabel id="runtime-label">Runtime</InputLabel>
+              <Select
+                {...register("runtime", { required: true })}
+                labelId="runtime-label"
+                label="Runtime"
+                defaultValue=""
+              >
+                <MenuItem value="Node.js">Node.js</MenuItem>
+                <MenuItem value="Python">Python</MenuItem>
+                <MenuItem value="Go">Go</MenuItem>
+              </Select>
+            </FormControl>
+            <Input
+              type="file"
+              fullWidth
+              {...register("files", { required: true })}
+              inputProps={{ multiple: true }}
+            />
+            <Box mt={2} display="flex" justifyContent="flex-end">
+              <Button onClick={onClose} sx={{ mr: 1 }}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="contained" color="primary">
+                Add
+              </Button>
+            </Box>
+          </form>
+        )}
+        {tabValue === "json" && <FunctionAppJsonForm onClose={onClose} />}
       </Box>
     </Modal>
   )

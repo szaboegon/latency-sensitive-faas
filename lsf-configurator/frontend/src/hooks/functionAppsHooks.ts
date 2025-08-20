@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import FunctionAppService from "../services/FunctionAppService";
 import { functionAppsMock } from "../mocks/functionAppsMock";
 import type { FunctionApp } from "../models/models";
+import type { BulkCreateRequest, FunctionAppCreateDto } from "../models/dto";
 
 const useMockData = import.meta.env.VITE_USE_MOCK_DATA === "true";
 
@@ -26,13 +27,27 @@ export const useFunctionAppById = (id: string) => {
 export const useCreateFunctionApp = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { functionApp: FunctionApp; files: FileList }) =>
+    mutationFn: (vars: { functionApp: FunctionAppCreateDto; files: FileList }) =>
       FunctionAppService.createFunctionApp(vars.functionApp, vars.files),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["functionApps"] });
     },
     meta: {
       successMessage: "Function app created successfully!",
+    },
+  });
+};
+
+export const useBulkCreateFunctionApp = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { req: BulkCreateRequest; files: FileList }) =>
+      FunctionAppService.bulkCreateFunctionApp(vars.req, vars.files),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["functionApps"] });
+    },
+    meta: {
+      successMessage: "Function apps created successfully!",
     },
   });
 };

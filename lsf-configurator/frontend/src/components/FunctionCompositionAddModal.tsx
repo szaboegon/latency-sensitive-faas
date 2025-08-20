@@ -12,8 +12,8 @@ import {
   FormControl,
 } from "@mui/material";
 import { useForm, Controller } from "react-hook-form";
-import type { Build, FunctionComposition } from "../models/models";
 import { useCreateFunctionComposition } from "../hooks/functionCompositionHooks";
+import type { FunctionCompositionCreateDto } from "../models/dto";
 
 interface FunctionCompositionAddModalProps {
   open: boolean;
@@ -30,18 +30,16 @@ const FunctionCompositionAddModal: React.FC<FunctionCompositionAddModalProps> = 
   appFiles,
   appComponents,
 }) => {
-  const { control, handleSubmit } = useForm<FunctionComposition>({
+  const { control, handleSubmit } = useForm<FunctionCompositionCreateDto>({
     defaultValues: {
       files: [],
       components: [],
-      build: {} as Build,
     },
   });
 
   const { mutate: createComposition } = useCreateFunctionComposition();
 
-  const onSubmit = (data: FunctionComposition) => {
-    console.log("Saving composition:", data);
+  const onSubmit = (data: FunctionCompositionCreateDto) => {
     createComposition({ appId, functionComposition: data });
     onClose();
   };
