@@ -85,8 +85,9 @@ func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HandlerApps) bulkCreate(w http.ResponseWriter, r *http.Request) {
-	jsonStr := r.FormValue("json")
+	r.ParseMultipartForm(10 << 20) // 10MB limit
 
+	jsonStr := r.FormValue("json")
 	var payload BulkCreateRequest
 	if err := json.Unmarshal([]byte(jsonStr), &payload); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
@@ -94,37 +95,81 @@ func (h *HandlerApps) bulkCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	files := r.MultipartForm.File["files"]
-
 	if len(files) == 0 {
 		http.Error(w, "No files were uploaded", http.StatusBadRequest)
 		return
 	}
 
-	// function app creation
-	app, err := h.composer.CreateFunctionApp(h.conf.UploadDir, files,
-		payload.FunctionApp.Name, payload.FunctionApp.Runtime)
+	// Create the function app
+	app, err := h.composer.CreateFunctionApp(h.conf.UploadDir, files, payload.FunctionApp.Name, payload.FunctionApp.Runtime)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// function composition creation
-	for _, comp := range payload.FunctionCompositions {
-		fc, err := h.composer.AddFunctionComposition(app.Id, comp.Components, comp.Files)
+	// Map temporary IDs to real IDs for function compositions
+	compositionIdMap := make(map[string]string)
+
+	for _, composition := range payload.FunctionCompositions {
+		fc, err := h.composer.AddFunctionComposition(app.Id, composition.Components, composition.Files)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		compositionIdMap[composition.TempId] = fc.Id
+	}
 
-		for _, dep := range comp.Deployments {
-			_, err := h.composer.CreateFcDeployment(fc.Id,
-				dep.Namespace, dep.Node, dep.RoutingTable)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+	// Map temporary deployment IDs to real deployment IDs
+	deploymentIdMap := make(map[string]string)
+
+	for _, deployment := range payload.Deployments {
+		realCompositionId, exists := compositionIdMap[deployment.TempFunctionCompositionId]
+		if !exists {
+			http.Error(w, "Invalid FunctionCompositionId in deployment", http.StatusBadRequest)
+			return
+		}
+
+		// Create deployment with an empty routing table
+		dep, err := h.composer.CreateFcDeployment(realCompositionId, deployment.Namespace, deployment.Node, core.RoutingTable{})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		deploymentIdMap[deployment.TempId] = dep.Id
+	}
+
+	// Translate routing tables and set them
+	for _, deployment := range payload.Deployments {
+		realDeploymentId, exists := deploymentIdMap[deployment.TempId]
+		if !exists {
+			http.Error(w, "Invalid deployment ID", http.StatusBadRequest)
+			return
+		}
+
+		translatedRoutingTable := core.RoutingTable{}
+		for component, routes := range deployment.RoutingTable {
+			var translatedRoutes []core.Route
+			for _, route := range routes {
+				translatedDeploymentId, exists := deploymentIdMap[route.Function]
+				if !exists {
+					http.Error(w, "Invalid function reference in routing table", http.StatusBadRequest)
+					return
+				}
+				translatedRoutes = append(translatedRoutes, core.Route{
+					To:       route.To,
+					Function: translatedDeploymentId,
+				})
 			}
+			translatedRoutingTable[component] = translatedRoutes
+		}
+
+		if err := h.composer.SetRoutingTable(realDeploymentId, translatedRoutingTable); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *HandlerApps) delete(w http.ResponseWriter, r *http.Request) {

@@ -19,15 +19,18 @@ export interface DeploymentCreateDto {
 export interface BulkCreateRequest {
     functionApp: FunctionAppCreateDto;
     functionCompositions: FunctionCompositionBulkCreateDto[];
+    deployments: DeploymentBulkCreateDto[];
 }
 
 export interface FunctionCompositionBulkCreateDto {
+    id: string; // here ID is a temporary ID, given by the user for finding matching objects in bulk requests
     components: string[];
     files: string[];
-    deployments: DeploymentCreateDto[];
 }
 
 export interface DeploymentBulkCreateDto {
+    id: string; // here ID is a temporary ID, given by the user for finding matching objects in bulk requests
+    functionCompositionId: string;
     node: string;
     namespace: string;
     routingTable: Record<string, Array<{ to: string; function: string }>>;

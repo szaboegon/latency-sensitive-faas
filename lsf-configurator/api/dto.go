@@ -23,16 +23,19 @@ type DeploymentCreateDto struct {
 type BulkCreateRequest struct {
 	FunctionApp          FunctionAppCreateDto               `json:"function_app"`
 	FunctionCompositions []FunctionCompositionBulkCreateDto `json:"function_compositions"`
+	Deployments          []DeploymentBulkCreateDto          `json:"deployments"`
 }
 
 type FunctionCompositionBulkCreateDto struct {
-	Components  []string              `json:"components"`
-	Files       []string              `json:"files"`
-	Deployments []DeploymentCreateDto `json:"deployments"`
+	TempId     string   `json:"id"`
+	Components []string `json:"components"`
+	Files      []string `json:"files"`
 }
 
 type DeploymentBulkCreateDto struct {
-	Node         string            `json:"node"`
-	Namespace    string            `json:"namespace"`
-	RoutingTable core.RoutingTable `json:"routing_table"`
+	TempId                    string            `json:"id"`
+	TempFunctionCompositionId string            `json:"function_composition_id"`
+	Node                      string            `json:"node"`
+	Namespace                 string            `json:"namespace"`
+	RoutingTable              core.RoutingTable `json:"routing_table"`
 }
