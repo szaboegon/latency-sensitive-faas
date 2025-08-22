@@ -27,7 +27,7 @@ func NewHandlerApps(mux *http.ServeMux, composer *core.Composer, conf config.Con
 	h.mux.HandleFunc("GET "+AppsPath, h.list)
 	h.mux.HandleFunc("GET "+AppsPath+"/{id}", h.get)
 	h.mux.HandleFunc("POST "+AppsPath, h.create)
-	h.mux.HandleFunc("POST "+AppsPath+"/bulk_create", h.bulkCreate)
+	h.mux.HandleFunc("POST "+AppsPath+"/bulk", h.bulkCreate)
 	h.mux.HandleFunc("DELETE "+AppsPath+"/{id}", h.delete)
 
 	return h

@@ -42,13 +42,16 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, allDeployments,
           boxShadow: 4,
           background: "linear-gradient(135deg, #e0f7fa 0%, #fff 100%)",
           border: "1px solid #b2ebf2",
+          height: "600px",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         <CardHeader
           title={<Typography variant="h6">{composition.id || "Unnamed Composition"}</Typography>}
         />
 
-        <CardContent>
+        <CardContent sx={{ flex: 1, overflowY: "auto" }}>
           {/* Status Indicator */}
           <Box mb={2}>
             <Typography variant="subtitle2" gutterBottom>
@@ -144,17 +147,18 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, allDeployments,
               </Stack>
             </Box>
           )}
-
-          <Divider sx={{ my: 2 }} />
-          <Stack direction="row" spacing={2}>
-            <Button variant="contained" color="primary" onClick={handleOpenAddDeploymentModal}>
-              New Deployment
-            </Button>
-            <Button variant="outlined" color="error" onClick={handleDelete}>
-              Delete
-            </Button>
-          </Stack>
         </CardContent>
+
+        <Divider />
+
+        <Stack direction={"row"} spacing={1} sx={{ padding: 2 }}>
+          <Button variant="contained" color="primary" onClick={handleOpenAddDeploymentModal}>
+            New Deployment
+          </Button>
+          <Button variant="outlined" color="error" onClick={handleDelete}>
+            Delete
+          </Button>
+        </Stack>
       </Card>
 
       {/* Drawer for Deployment Details */}

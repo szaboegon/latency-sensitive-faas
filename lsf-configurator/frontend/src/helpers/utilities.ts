@@ -15,3 +15,20 @@ export const generateComponentColor = (component: string) => {
 
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 };
+
+export function toSnakeCase(str: string) {
+  return str
+    .replace(/([A-Z])/g, "_$1") // insert _ before capitals
+    .toLowerCase();
+}
+
+export function keysToSnakeCase(obj: object): object {
+  if (Array.isArray(obj)) {
+    return obj.map(keysToSnakeCase);
+  } else if (obj !== null && typeof obj === "object") {
+    return Object.fromEntries(
+      Object.entries(obj).map(([k, v]) => [toSnakeCase(k), keysToSnakeCase(v)])
+    );
+  }
+  return obj;
+}

@@ -2,6 +2,7 @@ import axiosInstance from "./axios";
 import type { FunctionApp } from "../models/models";
 import paths from "../helpers/paths";
 import type { BulkCreateRequest, FunctionAppCreateDto } from "../models/dto";
+import { keysToSnakeCase } from "../helpers/utilities";
 
 const FunctionAppService = {
   async fetchFunctionApps(): Promise<FunctionApp[]> {
@@ -30,7 +31,7 @@ const FunctionAppService = {
 
   async bulkCreateFunctionApp(req: BulkCreateRequest, files: FileList): Promise<void> {
     const formData = new FormData();
-    formData.append("json", JSON.stringify(req));
+    formData.append("json", JSON.stringify(keysToSnakeCase(req)));
     Array.from(files).forEach((file) => {
       formData.append("files", file);
     });
