@@ -17,24 +17,24 @@ type HandlerApps struct {
 	mux      *http.ServeMux
 }
 
-func NewHandlerApps(mux *http.ServeMux, composer *core.Composer, conf config.Configuration) *HandlerApps {
+func NewHandlerApps(composer *core.Composer, conf config.Configuration) *HandlerApps {
 	h := &HandlerApps{
 		composer: composer,
 		conf:     conf,
-		mux:      mux,
+		mux:      http.NewServeMux(),
 	}
 
-	h.mux.HandleFunc("GET "+AppsPath, h.list)
-	h.mux.HandleFunc("GET "+AppsPath+"/{id}", h.get)
-	h.mux.HandleFunc("POST "+AppsPath, h.create)
-	h.mux.HandleFunc("POST "+AppsPath+"/bulk", h.bulkCreate)
-	h.mux.HandleFunc("DELETE "+AppsPath+"/{id}", h.delete)
+	h.mux.HandleFunc("GET /", h.list)
+	h.mux.HandleFunc("GET /{id}", h.get)
+	h.mux.HandleFunc("POST /", h.create)
+	h.mux.HandleFunc("POST /bulk", h.bulkCreate)
+	h.mux.HandleFunc("DELETE /{id}", h.delete)
 
 	return h
 }
 
 func (h *HandlerApps) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.mux.ServeHTTP(w, r)
+	LoggingMiddleware(h.mux).ServeHTTP(w, r)
 }
 
 func (h *HandlerApps) list(w http.ResponseWriter, r *http.Request) {

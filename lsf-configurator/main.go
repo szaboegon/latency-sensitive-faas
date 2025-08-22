@@ -81,7 +81,7 @@ func main() {
 
 func startHttpServer() *http.Server {
 	mux := http.NewServeMux()
-	s := &http.Server{Addr: "0.0.0.0:8080", Handler: loggingMiddleware(corsMiddleware(mux))}
+	s := &http.Server{Addr: "0.0.0.0:8080", Handler: api.CorsMiddleware(mux)}
 	registerHandlers(mux)
 
 	go func() {
@@ -94,32 +94,12 @@ func startHttpServer() *http.Server {
 	return s
 }
 
-func corsMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
-func loggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("[%p] %s %s", r, r.Method, r.URL)
-		next.ServeHTTP(w, r)
-	})
-}
-
 func registerHandlers(mux *http.ServeMux) {
-	http.HandleFunc(api.HealthzPath, api.HealthCheckHandler)
-	http.Handle(api.AppsPath, api.NewHandlerApps(mux, composer, conf))
-	http.Handle(api.FunctionCompositionsPath, api.NewHandlerFunctionCompositions(mux, composer, conf))
-	http.Handle(api.DeploymentsPath, api.NewHandlerDeployments(mux, composer, conf))
-	http.Handle(api.MetricsPath, api.NewHandlerMetrics(mux, metricsReader, conf))
+	mux.HandleFunc(api.HealthzPath, api.HealthCheckHandler)
+	mux.Handle(api.AppsPath+"/", http.StripPrefix(api.AppsPath, api.NewHandlerApps(composer, conf)))
+	mux.Handle(api.DeploymentsPath+"/", http.StripPrefix(api.DeploymentsPath, api.NewHandlerDeployments(composer, conf)))
+	mux.Handle(api.FunctionCompositionsPath+"/", http.StripPrefix(api.FunctionCompositionsPath, api.NewHandlerFunctionCompositions(composer, conf)))
+	mux.Handle(api.MetricsPath+"/", http.StripPrefix(api.MetricsPath, api.NewHandlerMetrics(metricsReader, conf)))
 
 	fs := http.FileServer(http.Dir("./public"))
 	http.Handle("/", fs)

@@ -17,21 +17,21 @@ type HandlerDeployments struct {
 	mux      *http.ServeMux
 }
 
-func NewHandlerDeployments(mux *http.ServeMux, composer *core.Composer, conf config.Configuration) *HandlerDeployments {
+func NewHandlerDeployments(composer *core.Composer, conf config.Configuration) *HandlerDeployments {
 	h := &HandlerDeployments{
 		composer: composer,
 		conf:     conf,
-		mux:      mux,
+		mux:      http.NewServeMux(),
 	}
 
-	h.mux.HandleFunc("POST "+DeploymentsPath, h.create)
-	h.mux.HandleFunc("PUT "+DeploymentsPath+"/{deployment_id}/routing_table", h.putRoutingTable)
+	h.mux.HandleFunc("POST /", h.create)
+	h.mux.HandleFunc("PUT /{deployment_id}/routing_table", h.putRoutingTable)
 
 	return h
 }
 
 func (h *HandlerDeployments) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.mux.ServeHTTP(w, r)
+	LoggingMiddleware(h.mux).ServeHTTP(w, r)
 }
 
 func (h *HandlerDeployments) create(w http.ResponseWriter, r *http.Request) {

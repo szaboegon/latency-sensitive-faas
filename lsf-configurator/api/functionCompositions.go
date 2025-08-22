@@ -17,22 +17,22 @@ type HandlerFunctionCompositions struct {
 	mux      *http.ServeMux
 }
 
-func NewHandlerFunctionCompositions(mux *http.ServeMux, composer *core.Composer, conf config.Configuration) *HandlerFunctionCompositions {
+func NewHandlerFunctionCompositions(composer *core.Composer, conf config.Configuration) *HandlerFunctionCompositions {
 	h := &HandlerFunctionCompositions{
 		composer: composer,
 		conf:     conf,
-		mux:      mux,
+		mux:      http.NewServeMux(),
 	}
 
-	h.mux.HandleFunc("POST "+FunctionCompositionsPath+"/build_notify", h.buildNotify)
-	h.mux.HandleFunc("POST "+FunctionCompositionsPath, h.create)
-	h.mux.HandleFunc("DELETE "+FunctionCompositionsPath+"/{id}", h.delete)
+	h.mux.HandleFunc("POST /build_notify", h.buildNotify)
+	h.mux.HandleFunc("POST /", h.create)
+	h.mux.HandleFunc("DELETE /{id}", h.delete)
 
 	return h
 }
 
 func (h *HandlerFunctionCompositions) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.mux.ServeHTTP(w, r)
+	LoggingMiddleware(h.mux).ServeHTTP(w, r)
 }
 
 func (h *HandlerFunctionCompositions) create(w http.ResponseWriter, r *http.Request) {

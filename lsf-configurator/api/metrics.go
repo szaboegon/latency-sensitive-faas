@@ -18,20 +18,20 @@ type HandlerMetrics struct {
 	mux           *http.ServeMux
 }
 
-func NewHandlerMetrics(mux *http.ServeMux, metricsClient metrics.MetricsReader, conf config.Configuration) *HandlerMetrics {
+func NewHandlerMetrics(metricsClient metrics.MetricsReader, conf config.Configuration) *HandlerMetrics {
 	h := &HandlerMetrics{
 		metricsClient: metricsClient,
 		conf:          conf,
-		mux:           mux,
+		mux:           http.NewServeMux(),
 	}
 
-	h.mux.HandleFunc("GET "+MetricsPath+"/apps/{app_id}", h.getAppMetrics)
+	h.mux.HandleFunc("GET /apps/{app_id}", h.getAppMetrics)
 
 	return h
 }
 
 func (h *HandlerMetrics) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.mux.ServeHTTP(w, r)
+	LoggingMiddleware(h.mux).ServeHTTP(w, r)
 }
 
 func (h *HandlerMetrics) getAppMetrics(w http.ResponseWriter, r *http.Request) {
