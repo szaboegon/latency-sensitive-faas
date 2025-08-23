@@ -314,7 +314,10 @@ func (c *Composer) startDeployment(deployment *Deployment, fc *FunctionCompositi
 func (c *Composer) buildTask(fc FunctionComposition, runtime, sourcePath string) func() (interface{}, error) {
 	return func() (interface{}, error) {
 		buildDir, err := c.knClient.Init(context.TODO(), fc, runtime, sourcePath)
-		c.builder.Build(context.TODO(), fc, buildDir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to init build: %v", err)
+		}
+		err = c.builder.Build(context.TODO(), fc, buildDir)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build image: %v", err)
 		}

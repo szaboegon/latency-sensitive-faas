@@ -102,7 +102,7 @@ func registerHandlers(mux *http.ServeMux) {
 	mux.Handle(api.MetricsPath+"/", http.StripPrefix(api.MetricsPath, api.NewHandlerMetrics(metricsReader, conf)))
 
 	fs := http.FileServer(http.Dir("./public"))
-	http.Handle("/", fs)
+	mux.Handle("/", fs)
 }
 
 func configureLogging() *os.File {

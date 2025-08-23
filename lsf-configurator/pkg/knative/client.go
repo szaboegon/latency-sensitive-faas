@@ -3,7 +3,6 @@ package knative
 import (
 	"context"
 	"fmt"
-	"log"
 	"lsf-configurator/pkg/bootstrapping"
 	"lsf-configurator/pkg/config"
 	"lsf-configurator/pkg/core"
@@ -40,7 +39,10 @@ func NewClient(conf config.Configuration) *Client {
 }
 
 func (c *Client) Init(ctx context.Context, fc core.FunctionComposition, runtime, sourcePath string) (string, error) {
-	buildDir := createBuildDir(sourcePath)
+	buildDir, err := createBuildDir(sourcePath)
+	if err != nil {
+		return "", fmt.Errorf("could not create build directory: %v", err)
+	}
 
 	f := fn.Function{
 		Name:     fc.Id,
@@ -51,20 +53,24 @@ func (c *Client) Init(ctx context.Context, fc core.FunctionComposition, runtime,
 		Template: CompositionTemplateName,
 	}
 
-	_, err := c.fnClient.Init(f)
+	_, err = c.fnClient.Init(f)
 	if err != nil {
-		log.Fatalf("Could not initialize function based on config: %v", err)
+		return "", fmt.Errorf("could not initialize function based on config: %v", err)
 	}
 
-	copyNonSourceFiles(sourcePath, buildDir, fc.Files)
+	err = copyNonSourceFiles(sourcePath, buildDir, fc.Files)
+	if err != nil {
+		return "", fmt.Errorf("failed to copy non-source files: %v", err)
+	}
+
 	bootstrapper, err := bootstrapping.NewBootstrapper(runtime, fc, buildDir, sourcePath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create bootstrapper: %v", err)
 	}
 
 	err = bootstrapper.Setup()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to setup bootstrapper: %v", err)
 	}
 
 	return buildDir, nil
@@ -111,11 +117,13 @@ func (c *Client) Delete(ctx context.Context, deployment core.Deployment) error {
 	return nil
 }
 
-func createBuildDir(sourcePath string) string {
+func createBuildDir(sourcePath string) (string, error) {
 	tempDir := path.Join(sourcePath, "temp", uuid.New())
-	filesystem.CreateDir(tempDir)
-
-	return tempDir
+	err := filesystem.CreateDir(tempDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to create build directory: %v", err)
+	}
+	return tempDir, nil
 }
 
 func copyNonSourceFiles(sourcePath, buildDir string, fileNames []string) error {
