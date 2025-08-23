@@ -149,7 +149,7 @@ func (c *Composer) CreateFcDeployment(fcId, namespace, node string, routingTable
 	}
 
 	deployment := Deployment{
-		Id:                    fcId + "-deployment-" + uuid.New(),
+		Id:                    "d-" + uuid.New(),
 		FunctionCompositionId: fcId,
 		Namespace:             namespace,
 		Node:                  node,
@@ -236,7 +236,12 @@ func (c *Composer) SetRoutingTable(deploymentId string, table RoutingTable) erro
 		return fmt.Errorf("deployment with id %s does not exist", deploymentId)
 	}
 
-	return c.setRoutingTable(deployment, table)
+	err = c.setRoutingTable(deployment, table)
+	if err != nil {
+		log.Errorf("failed to set routing table for deployment %s: %v", deploymentId, err)
+		return err
+	}
+	return nil
 }
 
 func (c *Composer) NotifyBuildReady(fcId, imageURL string, status string) {
@@ -279,6 +284,30 @@ func (c *Composer) NotifyBuildReady(fcId, imageURL string, status string) {
 	for _, deployment := range deployments {
 		if deployment.Status == DeploymentStatusWaitingForBuild {
 			c.startDeployment(deployment, fc)
+		}
+	}
+}
+
+func (c *Composer) RollbackBulk(
+	app *FunctionApp,
+	compositions []*FunctionComposition,
+	deployments []*Deployment,
+) {
+	for _, dep := range deployments {
+		if err := c.deploymentRepo.Delete(dep.Id); err != nil {
+			log.Errorf("Failed to rollback deployment %s: %v", dep.Id, err)
+		}
+	}
+
+	for _, fc := range compositions {
+		if err := c.fcRepo.Delete(fc.Id); err != nil {
+			log.Errorf("Failed to rollback function composition %s: %v", fc.Id, err)
+		}
+	}
+
+	if app != nil {
+		if err := c.functionAppRepo.Delete(app.Id); err != nil {
+			log.Errorf("Failed to rollback function app %s: %v", app.Id, err)
 		}
 	}
 }

@@ -55,7 +55,21 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({ onClose }) =>
           { "to": "resize", "function": "local" }
         ],
         "resize": [
-          { "to": "grayscale", "function": "func-2" }
+          { "to": "grayscale", "function": "deployment-2" }
+        ]
+      }
+    },
+        {
+      "id": "deployment-2",
+      "functionCompositionId": "composition-2",
+      "node": "knative-m02",
+      "namespace": "application",
+      "routingTable":{
+        "grayscale": [
+          { "to": "objectdetect", "function": "deployment-3" }
+        ],
+        "cut": [
+          { "to": "objectdetect2", "function": "deployment-3" }
         ]
       }
     },
@@ -66,10 +80,10 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({ onClose }) =>
       "namespace": "application",
       "routingTable":{
         "objectdetect": [
-          { "to": "cut", "function": "func-2" }
+          { "to": "cut", "function": "deployment-2" }
         ],
         "objectdetect2": [
-          { "to": "tag", "function": "func-4" }
+          { "to": "tag", "function": "deployment-4" }
         ]
       }
     },
