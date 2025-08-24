@@ -17,10 +17,34 @@ if errorlevel 1 (
 
 echo Configuring addons for elasticsearch to work properly...
 minikube addons disable storage-provisioner -p knative
+if errorlevel 1 (
+    echo Failed to disable storage-provisioner addon.
+    exit /b 1
+)
+
 minikube addons disable default-storageclass -p knative
+if errorlevel 1 (
+    echo Failed to disable default-storageclass addon.
+    exit /b 1
+)
+
 minikube addons enable volumesnapshots -p knative
+if errorlevel 1 (
+    echo Failed to enable volumesnapshots addon.
+    exit /b 1
+)
+
 minikube addons enable csi-hostpath-driver -p knative
+if errorlevel 1 (
+    echo Failed to enable csi-hostpath-driver addon.
+    exit /b 1
+)
+
 kubectl patch storageclass csi-hostpath-sc --patch-file storageclass_patch.json
+if errorlevel 1 (
+    echo Failed to patch storageclass csi-hostpath-sc.
+    exit /b 1
+)
 
 echo Installing knative operator...
 kubectl apply -f https://github.com/knative/operator/releases/download/knative-v1.15.4/operator.yaml
