@@ -25,7 +25,7 @@ func (b *PythonBootstrapper) Setup() error {
 	componentNames := []string{}
 	filesToCopy := []string{}
 
-	for comp := range b.fc.Components {
+	for _, comp := range b.fc.Components {
 		componentNames = append(componentNames, string(comp))
 		filesToCopy = append(filesToCopy, string(comp)+Extension)
 	}

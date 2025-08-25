@@ -31,17 +31,17 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({ onClose }) =>
     {
       "id": "composition-2",
       "components": ["objectdetect", "objectdetect2"],
-      "files": []
+      "files":["MobileNetSSD_deploy.caffemodel", "MobileNetSSD_deploy.prototxt.txt"]
     },
     {
       "id": "composition-3",
       "components": ["cut", "tag"],
-      "files":["MobileNetSSD_deploy.caffemodel", "MobileNetSSD_deploy.prototxt.txt"]
+      "files": []
     },
     {
       "id": "composition-4",
       "components": ["tag"],
-      "files":["MobileNetSSD_deploy.caffemodel", "MobileNetSSD_deploy.prototxt.txt"]
+      "files": []
     }
   ],
   "deployments": [

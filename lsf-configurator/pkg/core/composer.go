@@ -335,12 +335,16 @@ func (c *Composer) startDeployment(deployment *Deployment, fc *FunctionCompositi
 	if r.Err != nil {
 		log.Errorf("Deploying of function composition with id %v and deploymentId %v failed: %v, ", fc.Id, deployment.Id, r.Err)
 		deployment.Status = DeploymentStatusError
-		c.deploymentRepo.Save(deployment)
+		if err := c.deploymentRepo.Save(deployment); err != nil {
+			log.Errorf("Failed to save deployment with id %s: %v", deployment.Id, err)
+		}
 		return
 	}
 	log.Infof("Successfully deployed function composition with id %v, deploymentId %v", fc.Id, deployment.Id)
 	deployment.Status = DeploymentStatusDeployed
-	c.deploymentRepo.Save(deployment)
+	if err := c.deploymentRepo.Save(deployment); err != nil {
+		log.Errorf("Failed to save deployment with id %s: %v", deployment.Id, err)
+	}
 }
 
 func (c *Composer) buildTask(fc FunctionComposition, runtime, sourcePath string) func() (interface{}, error) {
