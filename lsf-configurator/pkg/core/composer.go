@@ -258,10 +258,13 @@ func (c *Composer) NotifyBuildReady(fcId, imageURL string, status string) {
 		return
 	}
 
-	// If the build failed, requeue the build task, do not deploy
+	// If the build failed, set status to failed
 	if strings.ToLower(status) == "failed" {
-		log.Errorf("Build for function composition %s failed, requeuing...", fcId)
-		c.scheduler.AddTask(c.buildTask(*fc, fcApp.Runtime, fcApp.SourcePath), MaxRetries)
+		log.Errorf("Build for function composition %s failed", fcId)
+		fc.Status = BuildStatusError
+		if err := c.fcRepo.Save(fc); err != nil {
+			log.Errorf("Failed to save function composition with id %s: %v", fc.Id, err)
+		}
 		return
 	}
 
