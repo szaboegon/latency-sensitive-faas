@@ -50,7 +50,7 @@ const DeploymentDetailsDrawer: React.FC<Props> = ({ deployment, onClose, allDepl
                     <Typography variant="body2" fontWeight="bold" sx={{ color: "#388e3c" }}>
                       {component}
                     </Typography>
-                    {routes.map((route, rIdx) => (
+                    {routes && routes.map((route, rIdx) => (
                       <Stack
                         key={`${component}-${rIdx}`}
                         direction="row"
@@ -64,7 +64,7 @@ const DeploymentDetailsDrawer: React.FC<Props> = ({ deployment, onClose, allDepl
                         </Typography>
                       </Stack>
                     ))}
-                    {routes.length === 0 && (
+                    {(!routes || routes.length === 0) && (
                       <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 0.5 }}>
                         <ArrowForwardIcon fontSize="small" color="action" />
                         <Typography variant="body2" sx={{ fontStyle: "italic" }}>
