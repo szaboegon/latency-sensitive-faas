@@ -10,8 +10,7 @@ set UPLOADS_PVC_YAML_PATH="..\lsf-configurator\deploy\uploads-pvc.yaml"
 set CREATE_REGISTRY_SECRET_PATH=".\create_registry_secret.bat"
 set LSF_CONFIGURATOR_YAML_PATH="..\lsf-configurator\deploy\lsf-configurator.yaml"
 set REDIS_NAMESPACE_YAML_PATH="redis\redis-namespace.yaml"
-set REDIS_MASTER_YAML_PATH="redis\redis-master.yaml"
-set REDIS_REPLICA_YAML_PATH="redis\redis-replica.yaml"
+set REDIS_YAML_PATH="redis\redis-master-replica.yaml"
 set TEKTON_PIPELINES_YAML_PATH="tekton\pipelines.yaml"
 set TEKTON_DASHBOARD_YAML_PATH="tekton\dashboard.yaml"
 set TEKTON_BUILD_PIPELINE_YAML_PATH="tekton\function-build-pipeline.yaml"
@@ -119,14 +118,9 @@ if errorlevel 1 (
     echo Error creating Redis namespace
     exit /b 1
 )
-kubectl apply -f %REDIS_MASTER_YAML_PATH%
+kubectl apply -f %REDIS_YAML_PATH%
 if errorlevel 1 (
-    echo Error creating Redis master
-    exit /b 1
-)
-kubectl apply -f %REDIS_REPLICA_YAML_PATH%
-if errorlevel 1 (
-    echo Error creating Redis replica
+    echo Error creating Redis
     exit /b 1
 )
 

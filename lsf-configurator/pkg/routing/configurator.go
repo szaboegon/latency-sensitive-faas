@@ -32,7 +32,7 @@ func (rc *RouteConfigurator) SetRoutingTable(deployment core.Deployment) error {
 			if r.Function == LocalRoute {
 				url = LocalRoute
 			} else {
-				url = getFunctionUrl(deployment.Id, deployment.Namespace)
+				url = getFunctionUrl(r.Function, deployment.Namespace)
 			}
 
 			routeDto := Route{

@@ -10,8 +10,9 @@ spec:
     count: 1
     podTemplate:
       spec:
-        nodeSelector:
-          kubernetes.io/hostname: knative
+        # TODO Sometimes volume scheduling bugs, maybe this is why
+        # nodeSelector:
+        #   kubernetes.io/hostname: knative
         initContainers:
         - name: sysctl
           securityContext:

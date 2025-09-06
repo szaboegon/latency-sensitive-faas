@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Drawer, Box, Typography, Divider, Stack, Button, Card, CardContent, IconButton, Tooltip } from "@mui/material";
+import { Drawer, Box, Typography, Divider, Stack, Button, Card, IconButton, Tooltip } from "@mui/material";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import RoutingTableModal from "./RoutingTableModal";
