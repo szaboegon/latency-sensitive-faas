@@ -25,23 +25,23 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({ onClose }) =>
   "functionCompositions": [
     {
       "id": "composition-1",
-      "components": ["resize", "grayscale"],
+      "components": ["imagegrab", "resize"],
       "files": []
     },
     {
       "id": "composition-2",
+      "components": ["grayscale", "cut"],
+      "files": []
+    },
+    {
+      "id": "composition-3",
       "components": ["objectdetect", "objectdetect2"],
       "files":["MobileNetSSD_deploy.caffemodel", "MobileNetSSD_deploy.prototxt.txt"]
     },
     {
-      "id": "composition-3",
-      "components": ["cut", "tag"],
-      "files": []
-    },
-    {
       "id": "composition-4",
-      "components": ["tag"],
-      "files": []
+      "components": ["objectdetect2", "tag"],
+      "files":["MobileNetSSD_deploy.caffemodel", "MobileNetSSD_deploy.prototxt.txt"]
     }
   ],
   "deployments": [
