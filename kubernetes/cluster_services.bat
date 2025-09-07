@@ -33,12 +33,6 @@ if errorlevel 1 (
     exit /b 1
 )
 
-
-if errorlevel 1 (
-    echo Error creating otel operator
-    exit /b 1
-)
-
 echo Installing Otel Operator...
 set MAX_RETRIES=50
 set RETRY_COUNT=0
@@ -51,7 +45,7 @@ if errorlevel 1 (
         timeout /t 10 >nul
         goto RETRY_OTEL_OPERATOR
     ) else (
-        echo Failed to deploy Jaeger instance after %MAX_RETRIES% retries
+        echo Failed to deploy Otel operator instance after %MAX_RETRIES% retries
         exit /b 1
     )
 )
@@ -67,7 +61,7 @@ if errorlevel 1 (
         timeout /t 10 >nul
         goto RETRY_OTEL_COLLECTOR
     ) else (
-        echo Failed to deploy Jaeger instance after %MAX_RETRIES% retries
+        echo Failed to deploy Otel collector instance after %MAX_RETRIES% retries
         exit /b 1
     )
 )

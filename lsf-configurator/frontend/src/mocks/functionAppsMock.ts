@@ -25,10 +25,12 @@ export const functionAppsMock: FunctionApp[] = [
             namespace: 'Namespace 1',
             routingTable: {
               'Component A1': [
-                { to: 'Component B1', function: 'deployment1b' },
+                { to: 'Component B1', function: 'local' },
                 { to: 'Component C1', function: 'deployment1b' },
               ],
-              'Component B1': [],
+              'Component B1': [
+                { to: 'Component C1', function: 'deployment1b' }
+              ],
               'Component C1': [],
             },
           },
@@ -43,7 +45,7 @@ export const functionAppsMock: FunctionApp[] = [
           timestamp: '2023-01-02T00:00:00Z',
         },
         status: 'built',
-        components: ['Component B1', 'Component C1'],
+        components: ['Component C1'],
         deployments: [
           {
             id: 'deployment1b',
@@ -51,7 +53,6 @@ export const functionAppsMock: FunctionApp[] = [
             node: 'Node 1',
             namespace: 'Namespace 1',
             routingTable: {
-              'Component B1': [{ to: 'Component C1', function: 'deployment1a' }],
               'Component C1': [],
             },
           },
@@ -83,10 +84,12 @@ export const functionAppsMock: FunctionApp[] = [
             namespace: 'Namespace 2',
             routingTable: {
               'Component X2': [
-                { to: 'Component Y2', function: 'deployment2b' },
+                { to: 'Component Y2', function: 'local' },
                 { to: 'Component Z2', function: 'deployment2b' },
               ],
-              'Component Y2': [],
+              'Component Y2': [
+                { to: 'Component Z2', function: 'deployment2b' }
+              ],
               'Component Z2': [],
             },
           },
@@ -101,7 +104,7 @@ export const functionAppsMock: FunctionApp[] = [
           timestamp: '2023-02-02T00:00:00Z',
         },
         status: 'error',
-        components: ['Component Y2', 'Component Z2'],
+        components: ['Component Z2'],
         deployments: [
           {
             id: 'deployment2b',
@@ -109,7 +112,6 @@ export const functionAppsMock: FunctionApp[] = [
             node: 'Node 2',
             namespace: 'Namespace 2',
             routingTable: {
-              'Component Y2': [{ to: 'Component Z2', function: 'deployment2a' }],
               'Component Z2': [],
             },
           },
@@ -141,10 +143,12 @@ export const functionAppsMock: FunctionApp[] = [
             namespace: 'Namespace 3',
             routingTable: {
               'Component M3': [
-                { to: 'Component N3', function: 'deployment3b' },
-                { to: 'Component O3', function: 'deployment3c' },
+                { to: 'Component N3', function: 'local' },
+                { to: 'Component O3', function: 'deployment3b' },
               ],
-              'Component N3': [],
+              'Component N3': [
+                { to: 'Component O3', function: 'deployment3b' }
+              ],
               'Component O3': [],
             },
           },
@@ -159,34 +163,11 @@ export const functionAppsMock: FunctionApp[] = [
           timestamp: '2023-03-02T00:00:00Z',
         },
         status: 'built',
-        components: ['Component N3', 'Component O3'],
+        components: ['Component O3'],
         deployments: [
           {
             id: 'deployment3b',
             functionCompositionId: 'composition3b',
-            node: 'Node 3',
-            namespace: 'Namespace 3',
-            routingTable: {
-              'Component N3': [{ to: 'Component O3', function: 'deployment3c' }],
-              'Component O3': [],
-            },
-          },
-        ],
-      },
-      {
-        id: 'composition3c',
-        functionAppId: '3',
-        files: ['file9.go', 'file10.go'],
-        build: {
-          image: 'image3c',
-          timestamp: '2023-03-03T00:00:00Z',
-        },
-        status: 'built',
-        components: ['Component O3'],
-        deployments: [
-          {
-            id: 'deployment3c',
-            functionCompositionId: 'composition3c',
             node: 'Node 3',
             namespace: 'Namespace 3',
             routingTable: {
@@ -220,7 +201,9 @@ export const functionAppsMock: FunctionApp[] = [
             node: 'Node 4',
             namespace: 'Namespace 4',
             routingTable: {
-              'Component P4': [{ to: 'Component Q4', function: 'composition4b' }],
+              'Component P4': [
+                { to: 'Component Q4', function: 'deployment4b' }
+              ],
               'Component Q4': [],
             },
           },
@@ -244,28 +227,6 @@ export const functionAppsMock: FunctionApp[] = [
             namespace: 'Namespace 4',
             routingTable: {
               'Component Q4': [],
-            },
-          },
-        ],
-      },
-      {
-        id: 'composition4c',
-        functionAppId: '4',
-        files: ['file13.rb', 'file14.rb'],
-        build: {
-          image: 'image4c',
-          timestamp: '2023-04-03T00:00:00Z',
-        },
-        status: 'built',
-        components: ['Component P4'],
-        deployments: [
-          {
-            id: 'deployment4c',
-            functionCompositionId: 'composition4c',
-            node: 'Node 4',
-            namespace: 'Namespace 4',
-            routingTable: {
-              'Component P4': [],
             },
           },
         ],
@@ -295,7 +256,9 @@ export const functionAppsMock: FunctionApp[] = [
             node: 'Node 5',
             namespace: 'Namespace 5',
             routingTable: {
-              'Component R5': [{ to: 'Component S5', function: 'composition5b' }],
+              'Component R5': [
+                { to: 'Component S5', function: 'deployment5b' }
+              ],
               'Component S5': [],
             },
           },
@@ -318,7 +281,9 @@ export const functionAppsMock: FunctionApp[] = [
             node: 'Node 5',
             namespace: 'Namespace 5',
             routingTable: {
-              'Component S5': [{ to: 'Component T5', function: 'composition5c' }],
+              'Component S5': [
+                { to: 'Component T5', function: 'deployment5c' }
+              ],
               'Component T5': [],
             },
           },
@@ -341,7 +306,9 @@ export const functionAppsMock: FunctionApp[] = [
             node: 'Node 5',
             namespace: 'Namespace 5',
             routingTable: {
-              'Component T5': [{ to: 'Component U5', function: 'composition5d' }],
+              'Component T5': [
+                { to: 'Component U5', function: 'deployment5d' }
+              ],
               'Component U5': [],
             },
           },
