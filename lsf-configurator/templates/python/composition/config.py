@@ -1,8 +1,9 @@
 from redis import Redis
 import os
 import json
-from typing import Dict, List, TypedDict, cast, Any, Callable
+from typing import Dict, cast, Any, Callable
 from parliament import Context #type: ignore
+from route import RoutingTable
 
 REDIS_URL = os.environ["NODE_IP"]
 APP_NAME = os.environ["APP_NAME"]
@@ -12,15 +13,6 @@ redis_client = Redis(host=REDIS_URL, port=6379)
 HANDLERS: Dict[str, Callable[[Context], Any]] = {
     # REGISTER COMPONENT HANDLERS HERE
 }
-
-class Route(TypedDict):
-    """
-    Represents a route in the routing table.
-    """
-    component: str
-    url: str
-    
-RoutingTable = Dict[str, List[Route]]
 
 def read_config() -> RoutingTable:
     """

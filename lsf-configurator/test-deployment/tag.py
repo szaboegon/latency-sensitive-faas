@@ -38,4 +38,7 @@ COLORS = np.random.uniform(0, 255, size=(len(CLASSES), 3))
 def base64_to_image(text):
     image = base64.b64decode(text)
     image = np.frombuffer(image, dtype=np.uint8)
-    return cv2.imdecode(image, flags=1)
+    decoded = cv2.imdecode(image, flags=1)
+    if decoded is None:
+        raise ValueError("Decoded image is None. Base64 data may be invalid.")
+    return decoded

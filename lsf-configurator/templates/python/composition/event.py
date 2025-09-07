@@ -1,11 +1,11 @@
-from typing import Optional, NamedTuple
+from typing import Any, Optional, NamedTuple, Dict
 from parliament import Context  # type: ignore
 
 class Event(NamedTuple):
     """
     Represents an event to pass to components.
     """
-    json: Optional[str]
+    json: Optional[Dict[str, Any]]
     data: Optional[bytes]
       
 def extract_event(context: Context) -> Event:
@@ -22,7 +22,7 @@ def extract_event(context: Context) -> Event:
 
     return Event(json=json_data, data=byte_data)
 
-def create_event(data: bytes | dict) -> Event:
+def create_event(data: bytes | Dict[str, Any]) -> Event:
     """
     Creates an event from the context.
     """

@@ -1,9 +1,8 @@
 import pytest
 from unittest.mock import MagicMock
-from event import Event, extract_event, create_event
-from parliament import Context  # type: ignore
+from event import extract_event, create_event
 
-def test_extract_event_with_json():
+def test_extract_event_with_json() -> None:
     # Mocking the Context and its request
     mock_context = MagicMock()
     mock_context.request.json = {"key": "value"}
@@ -15,7 +14,7 @@ def test_extract_event_with_json():
     assert event.data is None
 
 
-def test_extract_event_with_data():
+def test_extract_event_with_data() -> None:
     # Mocking the Context and its request
     mock_context = MagicMock()
     mock_context.request.json = None
@@ -27,7 +26,7 @@ def test_extract_event_with_data():
     assert event.data == b"binary data"
 
 
-def test_extract_event_with_both_none():
+def test_extract_event_with_both_none() -> None:
     # Mocking the Context and its request
     mock_context = MagicMock()
     mock_context.request.json = None
@@ -38,22 +37,22 @@ def test_extract_event_with_both_none():
     assert event.data is None
 
 
-def test_create_event_with_dict():
+def test_create_event_with_dict() -> None:
     data = {"key": "value"}
     event = create_event(data)
     assert event.json == data
     assert event.data is None
 
 
-def test_create_event_with_bytes():
+def test_create_event_with_bytes() -> None:
     data = b"binary data"
     event = create_event(data)
     assert event.json is None
     assert event.data == data
 
 
-def test_create_event_with_invalid_type():
+def test_create_event_with_invalid_type() -> None:
     data = 12345  # Invalid type
-    event = create_event(data)
+    event = create_event(data) # type: ignore
     assert event.json is None
     assert event.data is None
