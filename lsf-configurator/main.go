@@ -50,10 +50,12 @@ func main() {
 
 	functionAppRepo := repos.NewFunctionAppRepository(db)
 	fcRepo := repos.NewFunctionCompositionRepository(db)
+	deploymentRepo := repos.NewDeploymentRepository(db)
+
 	if err != nil {
 		log.Fatalf("failed to initialize database: %v", err)
 	}
-	composer = core.NewComposer(functionAppRepo, fcRepo, routingClient, knClient, tektonBuilder)
+	composer = core.NewComposer(functionAppRepo, fcRepo, deploymentRepo, routingClient, knClient, tektonBuilder)
 
 	metricsReader, err = metrics.NewMetricsReader(conf.MetricsBackendAddress)
 	if err != nil {
@@ -78,8 +80,9 @@ func main() {
 }
 
 func startHttpServer() *http.Server {
-	s := &http.Server{Addr: "0.0.0.0:8080"}
-	registerHandlers()
+	mux := http.NewServeMux()
+	s := &http.Server{Addr: "0.0.0.0:8080", Handler: api.CorsMiddleware(mux)}
+	registerHandlers(mux)
 
 	go func() {
 		log.Printf("Server listening on port 8080")
@@ -91,14 +94,14 @@ func startHttpServer() *http.Server {
 	return s
 }
 
-func registerHandlers() {
-	http.HandleFunc(api.HealthzPath, api.HealthCheckHandler)
-	http.Handle(api.AppsPath, api.NewHandlerApps(composer, conf))
-	http.Handle(api.FunctionCompositionsPath, api.NewHandlerFunctionCompositions(composer, conf))
-	http.Handle(api.MetricsPath, api.NewHandlerMetrics(metricsReader, conf))
+func registerHandlers(mux *http.ServeMux) {
+	mux.HandleFunc(api.HealthzPath, api.HealthCheckHandler)
+	mux.Handle(api.AppsPath+"/", http.StripPrefix(api.AppsPath, api.NewHandlerApps(composer, conf)))
+	mux.Handle(api.DeploymentsPath+"/", http.StripPrefix(api.DeploymentsPath, api.NewHandlerDeployments(composer, conf)))
+	mux.Handle(api.FunctionCompositionsPath+"/", http.StripPrefix(api.FunctionCompositionsPath, api.NewHandlerFunctionCompositions(composer, conf)))
+	mux.Handle(api.MetricsPath+"/", http.StripPrefix(api.MetricsPath, api.NewHandlerMetrics(metricsReader, conf)))
 
-	fs := http.FileServer(http.Dir("./public"))
-	http.Handle("/", fs)
+	mux.Handle("/", api.SpaHandler("./public"))
 }
 
 func configureLogging() *os.File {

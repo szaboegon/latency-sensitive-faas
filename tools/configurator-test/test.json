@@ -1,0 +1,84 @@
+{
+  "functionApp": {
+    "name": "object-detection",
+    "runtime": "python"
+  },
+  "functionCompositions": [
+    {
+      "id": "composition-1",
+      "components": ["imagegrab", "resize"],
+      "files": []
+    },
+    {
+      "id": "composition-2",
+      "components": ["grayscale", "cut"],
+      "files": []
+    },
+    {
+      "id": "composition-3",
+      "components": ["objectdetect", "objectdetect2"],
+      "files":["MobileNetSSD_deploy.caffemodel", "MobileNetSSD_deploy.prototxt.txt"]
+    },
+    {
+      "id": "composition-4",
+      "components": ["objectdetect2", "tag"],
+      "files":["MobileNetSSD_deploy.caffemodel", "MobileNetSSD_deploy.prototxt.txt"]
+    }
+  ],
+  "deployments": [
+    {
+      "id": "deployment-1",
+      "functionCompositionId": "composition-1",
+      "node": "knative",
+      "namespace": "application",
+      "routingTable":{
+        "imagegrab": [
+          { "to": "resize", "function": "local" }
+        ],
+        "resize": [
+          { "to": "grayscale", "function": "deployment-2" }
+        ]
+      }
+    },
+        {
+      "id": "deployment-2",
+      "functionCompositionId": "composition-2",
+      "node": "knative-m02",
+      "namespace": "application",
+      "routingTable":{
+        "grayscale": [
+          { "to": "objectdetect", "function": "deployment-3" }
+        ],
+        "cut": [
+          { "to": "objectdetect2", "function": "deployment-3" }
+        ]
+      }
+    },
+    {
+      "id": "deployment-3",
+      "functionCompositionId": "composition-3",
+      "node": "knative-m02",
+      "namespace": "application",
+      "routingTable":{
+        "objectdetect": [
+          { "to": "cut", "function": "deployment-2" }
+        ],
+        "objectdetect2": [
+          { "to": "tag", "function": "deployment-4" }
+        ]
+      }
+    },
+    {
+      "id": "deployment-4",
+      "functionCompositionId": "composition-4",
+      "node": "knative-m03",
+      "namespace": "application",
+      "routingTable":{
+        "objectdetect2": [
+          { "to": "tag", "function": "local" }
+        ],
+        "tag": []
+      }
+    }
+  ]
+}

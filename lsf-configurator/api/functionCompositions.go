@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	FunctionCompositionsPath = "/function_compositions/"
+	FunctionCompositionsPath = "/function_compositions"
 )
 
 type HandlerFunctionCompositions struct {
@@ -24,43 +24,34 @@ func NewHandlerFunctionCompositions(composer *core.Composer, conf config.Configu
 		mux:      http.NewServeMux(),
 	}
 
-	h.mux.HandleFunc("PUT "+FunctionCompositionsPath+"{fc_id}/routing_table", h.putRoutingTable)
-	h.mux.HandleFunc("POST "+FunctionCompositionsPath+"build_notify", h.buildNotify)
+	h.mux.HandleFunc("POST /build_notify", h.buildNotify)
+	h.mux.HandleFunc("POST /", h.create)
+	h.mux.HandleFunc("DELETE /{id}", h.delete)
 
 	return h
 }
 
 func (h *HandlerFunctionCompositions) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.mux.ServeHTTP(w, r)
+	LoggingMiddleware(h.mux).ServeHTTP(w, r)
 }
 
-func (h *HandlerFunctionCompositions) putRoutingTable(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPut {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-	fcId := r.PathValue("fc_id")
-
-	var rt core.RoutingTable
-	if err := json.NewDecoder(r.Body).Decode(&rt); err != nil {
+func (h *HandlerFunctionCompositions) create(w http.ResponseWriter, r *http.Request) {
+	var payload FunctionCompositionCreateDto
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
-	err := h.composer.SetRoutingTable(fcId, rt)
+	_, err := h.composer.AddFunctionComposition(payload.FunctionAppId, payload.Components, payload.Files)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (h *HandlerFunctionCompositions) buildNotify(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
 	var req struct {
 		FcId     string `json:"fc_id"`
 		ImageURL string `json:"image_url"`
@@ -72,4 +63,20 @@ func (h *HandlerFunctionCompositions) buildNotify(w http.ResponseWriter, r *http
 	}
 	go h.composer.NotifyBuildReady(req.FcId, req.ImageURL, req.Status)
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *HandlerFunctionCompositions) delete(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		http.Error(w, "Missing id", http.StatusBadRequest)
+		return
+	}
+
+	err := h.composer.DeleteFunctionComposition(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

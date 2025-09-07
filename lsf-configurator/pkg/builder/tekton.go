@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"lsf-configurator/pkg/core"
+	"lsf-configurator/pkg/uuid"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -78,7 +79,7 @@ func (b *TektonBuilder) Build(ctx context.Context, fc core.FunctionComposition, 
 	}
 
 	image := fmt.Sprintf("%s/%s:latest", b.ImageRepo, fc.Id)
-	prName := fmt.Sprintf("build-%s", fc.Id)
+	prName := fmt.Sprintf("build-%s", uuid.New())
 
 	uploadsFolder := getEnv("UPLOAD_DIR", "/uploads")
 	relContextDir, err := filepath.Rel(uploadsFolder, buildDir)

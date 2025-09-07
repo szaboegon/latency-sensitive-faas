@@ -12,10 +12,9 @@ import (
 )
 
 type KnClient interface {
-	Init(ctx context.Context, fc FunctionComposition) (string, error)
-	//Build(ctx context.Context, fc FunctionComposition) (FunctionComposition, error)
-	Deploy(ctx context.Context, appId string, fc FunctionComposition) error
-	Delete(ctx context.Context, fc FunctionComposition) error
+	Init(ctx context.Context, fc FunctionComposition, runtime, sourcePath string) (string, error)
+	Deploy(ctx context.Context, deployment Deployment, image, appId string) error
+	Delete(ctx context.Context, deployment Deployment) error
 }
 
 type FunctionAppStore interface {
@@ -25,7 +24,7 @@ type FunctionAppStore interface {
 }
 
 type RoutingClient interface {
-	SetRoutingTable(fc FunctionComposition) error
+	SetRoutingTable(deployment Deployment) error
 }
 
 type Builder interface {

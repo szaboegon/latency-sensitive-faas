@@ -176,6 +176,13 @@ spec:
         - name: db-sqlite
           persistentVolumeClaim:
             claimName: sqlite-pvc
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: lsf-configurator
+              topologyKey: "kubernetes.io/hostname"
 ---
 apiVersion: v1
 kind: Service

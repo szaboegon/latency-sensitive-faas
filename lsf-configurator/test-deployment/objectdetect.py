@@ -32,6 +32,7 @@ CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
 print("[INFO] loading model...")
 net = cv2.dnn.readNetFromCaffe("./MobileNetSSD_deploy.prototxt.txt",
                                "./MobileNetSSD_deploy.caffemodel")
+assert not net.empty(), "Failed to load Caffe model!"
 
 def image_to_base64(image):
     retval, buffer = cv2.imencode('.jpg', image)
@@ -40,7 +41,10 @@ def image_to_base64(image):
 def base64_to_image(text):
     image = base64.b64decode(text)
     image = np.frombuffer(image, dtype=np.uint8)
-    return cv2.imdecode(image, flags=1)
+    decoded = cv2.imdecode(image, flags=1)
+    if decoded is None:
+        raise ValueError("Decoded image is None. Base64 data may be invalid.")
+    return decoded
 
 def detect_objects(image, origin_h, origin_w, confidence_min):
     (h, w) = image.shape[:2]

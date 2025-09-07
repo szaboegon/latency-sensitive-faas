@@ -23,16 +23,16 @@ func NewRouteConfigurator(redisUrl string) core.RoutingClient {
 	}
 }
 
-func (rc *RouteConfigurator) SetRoutingTable(fc core.FunctionComposition) error {
+func (rc *RouteConfigurator) SetRoutingTable(deployment core.Deployment) error {
 	rtDto := make(RoutingTable)
 
-	for component, routes := range fc.Components {
+	for component, routes := range deployment.RoutingTable {
 		for _, r := range routes {
 			var url string
 			if r.Function == LocalRoute {
 				url = LocalRoute
 			} else {
-				url = getFunctionUrl(fc.Id, fc.NameSpace)
+				url = getFunctionUrl(r.Function, deployment.Namespace)
 			}
 
 			routeDto := Route{
@@ -48,12 +48,12 @@ func (rc *RouteConfigurator) SetRoutingTable(fc core.FunctionComposition) error 
 		return err
 	}
 
-	err = rc.RedisCli.Set(fc.Id, data, 0).Err()
+	err = rc.RedisCli.Set(deployment.Id, data, 0).Err()
 	if err != nil {
 		return err
 	}
 
-	log.Printf("Routing table for %s set successfully, rt: %s", fc.Id, data)
+	log.Printf("Routing table for %s set successfully, rt: %s", deployment.Id, data)
 	return nil
 }
 

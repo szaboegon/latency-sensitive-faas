@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	MetricsPath = "/metrics/"
+	MetricsPath = "/metrics"
 )
 
 type HandlerMetrics struct {
@@ -25,22 +25,16 @@ func NewHandlerMetrics(metricsClient metrics.MetricsReader, conf config.Configur
 		mux:           http.NewServeMux(),
 	}
 
-	h.mux.HandleFunc("GET "+MetricsPath+"apps/{app_id}", h.getAppMetrics)
+	h.mux.HandleFunc("GET /apps/{app_id}", h.getAppMetrics)
 
 	return h
 }
 
 func (h *HandlerMetrics) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	h.mux.ServeHTTP(w, r)
+	LoggingMiddleware(h.mux).ServeHTTP(w, r)
 }
 
 func (h *HandlerMetrics) getAppMetrics(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-	log.Printf("[%p] %s %s", r, r.Method, r.URL)
-
 	appId := r.PathValue("app_id")
 
 	metrics, err := h.metricsClient.QueryAverageAppRuntime(appId)

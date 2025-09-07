@@ -1,6 +1,6 @@
 @echo off
 
-docker build -t szaboegon/lsf-configurator -f Dockerfile ..\
+docker build -t szaboegon/lsf-configurator -f ..\Dockerfile ..\
 if errorlevel 1 (
     echo Failed to build image with minikube
     exit /b 1
