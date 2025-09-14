@@ -21,6 +21,7 @@ type FunctionApp struct {
 	Files        []string               `json:"files"`
 	Compositions []*FunctionComposition `json:"compositions"`
 	SourcePath   string                 `json:"source_path"`
+	LatencyLimit int                    `json:"latency_limit"` // in milliseconds
 }
 
 type BuildStatus string

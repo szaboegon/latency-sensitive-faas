@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"lsf-configurator/pkg/config"
-	"lsf-configurator/pkg/metrics"
+	"lsf-configurator/pkg/core"
 	"net/http"
 )
 
@@ -13,12 +13,12 @@ const (
 )
 
 type HandlerMetrics struct {
-	metricsClient metrics.MetricsReader
+	metricsClient core.MetricsReader
 	conf          config.Configuration
 	mux           *http.ServeMux
 }
 
-func NewHandlerMetrics(metricsClient metrics.MetricsReader, conf config.Configuration) *HandlerMetrics {
+func NewHandlerMetrics(metricsClient core.MetricsReader, conf config.Configuration) *HandlerMetrics {
 	h := &HandlerMetrics{
 		metricsClient: metricsClient,
 		conf:          conf,

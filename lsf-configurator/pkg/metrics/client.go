@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"lsf-configurator/pkg/core"
 	"math/big"
 
 	"github.com/elastic/go-elasticsearch/v8"
@@ -32,7 +33,7 @@ type metricsClient struct {
 	client *elasticsearch.TypedClient
 }
 
-func NewMetricsReader(backendAddr string) (MetricsReader, error) {
+func NewMetricsReader(backendAddr string) (core.MetricsReader, error) {
 	cfg := elasticsearch.Config{
 		Addresses: []string{
 			backendAddr,
@@ -84,7 +85,7 @@ func (c *metricsClient) EnsureIndex(ctx context.Context, indexName string) error
 	return nil
 }
 
-func (c metricsClient) QueryNodeMetrics() ([]NodeMetrics, error) {
+func (c metricsClient) QueryNodeMetrics() ([]core.NodeMetrics, error) {
 	size := 1
 	nameField := "kubernetes.node.name"
 	cpuUtilField := "k8s.node.cpu.utilization"
@@ -150,7 +151,7 @@ func (c metricsClient) QueryNodeMetrics() ([]NodeMetrics, error) {
 	if !ok {
 		return nil, errors.New("incorrect bucket type")
 	}
-	ret := []NodeMetrics{}
+	ret := []core.NodeMetrics{}
 	for _, bucket := range buckets {
 		aggregation = bucket.Aggregations[metricsAggName]
 		bucketAgg := aggregation.(*types.TopHitsAggregate)
@@ -160,7 +161,7 @@ func (c metricsClient) QueryNodeMetrics() ([]NodeMetrics, error) {
 		if err != nil {
 			return nil, err
 		}
-		nodeMetrics.Node = Node(bucket.Key.(string))
+		nodeMetrics.Node = core.Node(bucket.Key.(string))
 		ret = append(ret, nodeMetrics)
 	}
 
@@ -352,20 +353,20 @@ func unmarshalSpanDuration(jsonMessage json.RawMessage) (float64, error) {
 	return spanDuration, nil
 }
 
-func unmarshalSource(source json.RawMessage) (NodeMetrics, error) {
+func unmarshalSource(source json.RawMessage) (core.NodeMetrics, error) {
 	var sourceMap map[string]json.RawMessage
 	err := json.Unmarshal(source, &sourceMap)
 	if err != nil {
-		return NodeMetrics{}, err
+		return core.NodeMetrics{}, err
 	}
 
 	var k8s map[string]json.RawMessage
 	err = json.Unmarshal(sourceMap["k8s"], &k8s)
 	if err != nil {
-		return NodeMetrics{}, err
+		return core.NodeMetrics{}, err
 	}
 
-	var nodeMetrics NodeMetrics
+	var nodeMetrics core.NodeMetrics
 	err = json.Unmarshal(k8s["node"], &nodeMetrics)
 	if err != nil {
 		return nodeMetrics, err

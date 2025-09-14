@@ -25,8 +25,8 @@ import (
 
 var composer *core.Composer
 var conf config.Configuration
-var metricsReader metrics.MetricsReader
-var alertClient alerts.AlertClient
+var metricsReader core.MetricsReader
+var alertClient core.AlertClient
 
 func main() {
 	logFile := configureLogging()
@@ -57,7 +57,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to initialize database: %v", err)
 	}
-	composer = core.NewComposer(functionAppRepo, fcRepo, deploymentRepo, routingClient, knClient, tektonBuilder)
 
 	metricsReader, err = metrics.NewMetricsReader(conf.MetricsBackendAddress)
 	if err != nil {
@@ -73,6 +72,8 @@ func main() {
 		log.Fatalf("failed to ensure alert connector: %v", err)
 	}
 
+	composer = core.NewComposer(functionAppRepo, fcRepo, deploymentRepo, routingClient,
+		knClient, tektonBuilder, alertClient, metricsReader)
 	err = filesystem.CreateDir(conf.UploadDir)
 	if err != nil {
 		log.Fatalf("Could not create uploads directory: %v", err)

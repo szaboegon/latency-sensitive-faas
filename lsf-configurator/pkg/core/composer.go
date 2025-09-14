@@ -32,6 +32,8 @@ type Composer struct {
 	functionAppRepo FunctionAppRepository
 	fcRepo          FunctionCompositionRepository
 	deploymentRepo  DeploymentRepository
+	alertClient     AlertClient
+	metricsReader   MetricsReader
 }
 
 func NewComposer(
@@ -41,6 +43,8 @@ func NewComposer(
 	routingClient RoutingClient,
 	knClient KnClient,
 	builder Builder,
+	alertClient AlertClient,
+	metricsReader MetricsReader,
 ) *Composer {
 	scheduler := NewScheduler(WorkerPoolSize, QueueSize)
 	return &Composer{
@@ -51,6 +55,8 @@ func NewComposer(
 		functionAppRepo: functionAppRepo,
 		fcRepo:          fcRepo,
 		deploymentRepo:  deploymentRepo,
+		alertClient:     alertClient,
+		metricsReader:   metricsReader,
 	}
 }
 
@@ -69,6 +75,7 @@ func (c *Composer) CreateFunctionApp(
 	files []*multipart.FileHeader,
 	appName string,
 	runtime string,
+	latencyLimit int,
 ) (*FunctionApp, error) {
 	id := uuid.New()
 	fcApp := FunctionApp{
@@ -80,6 +87,7 @@ func (c *Composer) CreateFunctionApp(
 		Components:   components,
 		Links:        links,
 		Runtime:      strings.ToLower(runtime),
+		LatencyLimit: latencyLimit,
 	}
 
 	appDir := filepath.Join(uploadDir, fcApp.Id)
@@ -103,6 +111,11 @@ func (c *Composer) CreateFunctionApp(
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	_, err = c.alertClient.CreateOrUpdateRule(context.TODO(), fcApp.Name, fcApp.LatencyLimit)
+	if err != nil {
+		return nil, fmt.Errorf("could not create alert rule: %s", err.Error())
 	}
 
 	if err := c.functionAppRepo.Save(&fcApp); err != nil {

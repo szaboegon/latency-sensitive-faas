@@ -76,7 +76,7 @@ func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err := h.composer.CreateFunctionApp(payload.Components, payload.Links,
-		h.conf.UploadDir, files, payload.Name, payload.Runtime)
+		h.conf.UploadDir, files, payload.Name, payload.Runtime, payload.LatencyLimit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -108,7 +108,7 @@ func (h *HandlerApps) bulkCreate(w http.ResponseWriter, r *http.Request) {
 
 	// Create the function app
 	app, err := h.composer.CreateFunctionApp(payload.FunctionApp.Components, payload.FunctionApp.Links,
-		h.conf.UploadDir, files, payload.FunctionApp.Name, payload.FunctionApp.Runtime)
+		h.conf.UploadDir, files, payload.FunctionApp.Name, payload.FunctionApp.Runtime, payload.FunctionApp.LatencyLimit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

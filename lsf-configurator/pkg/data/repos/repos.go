@@ -41,8 +41,10 @@ func (r *functionAppRepo) Save(app *core.FunctionApp) error {
 	}
 
 	_, err = tx.Exec(`
-		INSERT OR REPLACE INTO function_apps (id, name, runtime, components, links, files, source_path) 
-		VALUES (?, ?, ?, ?, ?, ?, ?)`, app.Id, app.Name, app.Runtime, string(componentsJSON), string(linksJSON), string(filesJSON), app.SourcePath)
+		INSERT OR REPLACE INTO function_apps (id, name, runtime, components, links, files, source_path, latency_limit) 
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		app.Id, app.Name, app.Runtime, string(componentsJSON), string(linksJSON),
+		string(filesJSON), app.SourcePath, app.LatencyLimit)
 	if err != nil {
 		return err
 	}
@@ -61,11 +63,16 @@ func (r *functionAppRepo) Save(app *core.FunctionApp) error {
 }
 
 func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
-	row := r.db.QueryRow(`SELECT id, name, runtime, components, links, files, source_path FROM function_apps WHERE id = ?`, id)
+	row := r.db.QueryRow(`
+	SELECT id, name, runtime, components, links, files, source_path, latency_limit
+	FROM function_apps WHERE id = ?`, id)
 
 	var app core.FunctionApp
 	var componentsJSON, linksJSON, filesJSON, sourcePath string
-	if err := row.Scan(&app.Id, &app.Name, &app.Runtime, &componentsJSON, &linksJSON, &filesJSON, &sourcePath); err != nil {
+	var latencyLimit int
+
+	if err := row.Scan(&app.Id, &app.Name, &app.Runtime, &componentsJSON,
+		&linksJSON, &filesJSON, &sourcePath, &latencyLimit); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -107,7 +114,9 @@ func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
 }
 
 func (r *functionAppRepo) GetAll() ([]*core.FunctionApp, error) {
-	rows, err := r.db.Query(`SELECT id, name, runtime, components, links, files, source_path FROM function_apps`)
+	rows, err := r.db.Query(`
+	SELECT id, name, runtime, components, links, files, source_path, latency_limit 
+	FROM function_apps`)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +126,8 @@ func (r *functionAppRepo) GetAll() ([]*core.FunctionApp, error) {
 	for rows.Next() {
 		var app core.FunctionApp
 		var componentsJSON, linksJSON, filesJSON, sourcePath string
-		if err := rows.Scan(&app.Id, &app.Name, &app.Runtime, &componentsJSON, &linksJSON, &filesJSON, &sourcePath); err != nil {
+		var latencyLimit int
+		if err := rows.Scan(&app.Id, &app.Name, &app.Runtime, &componentsJSON, &linksJSON, &filesJSON, &sourcePath, &latencyLimit); err != nil {
 			return nil, err
 		}
 

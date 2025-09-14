@@ -17,12 +17,6 @@ type KnClient interface {
 	Delete(ctx context.Context, deployment Deployment) error
 }
 
-type FunctionAppStore interface {
-	Set(id string, app FunctionApp)
-	Get(id string) (FunctionApp, error)
-	Delete(id string)
-}
-
 type RoutingClient interface {
 	SetRoutingTable(deployment Deployment) error
 }
@@ -30,4 +24,15 @@ type RoutingClient interface {
 type Builder interface {
 	Build(ctx context.Context, fc FunctionComposition, buildDir string) error
 	NotifyBuildFinished()
+}
+
+type AlertClient interface {
+	EnsureAlertConnector(ctx context.Context, connectorName, indexName string) (string, error)
+	CreateOrUpdateRule(ctx context.Context, serviceName string, latencyThresholdMs int) (string, error)
+}
+
+type MetricsReader interface {
+	QueryNodeMetrics() ([]NodeMetrics, error)
+	QueryAverageAppRuntime(appId string) (float64, error)
+	EnsureIndex(ctx context.Context, indexName string) error
 }

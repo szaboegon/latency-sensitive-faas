@@ -3,10 +3,11 @@ package api
 import "lsf-configurator/pkg/core"
 
 type FunctionAppCreateDto struct {
-	Name       string               `json:"name"`
-	Runtime    string               `json:"runtime"`
-	Components []core.Component     `json:"components"`
-	Links      []core.ComponentLink `json:"links"`
+	Name         string               `json:"name"`
+	Runtime      string               `json:"runtime"`
+	Components   []core.Component     `json:"components"`
+	Links        []core.ComponentLink `json:"links"`
+	LatencyLimit int                  `json:"latency_limit"`
 }
 
 type FunctionCompositionCreateDto struct {
