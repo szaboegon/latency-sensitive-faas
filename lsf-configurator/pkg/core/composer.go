@@ -63,6 +63,8 @@ func (c *Composer) ListFunctionApps() ([]*FunctionApp, error) {
 }
 
 func (c *Composer) CreateFunctionApp(
+	components []Component,
+	links []ComponentLink,
 	uploadDir string,
 	files []*multipart.FileHeader,
 	appName string,
@@ -75,7 +77,8 @@ func (c *Composer) CreateFunctionApp(
 		Compositions: make([]*FunctionComposition, 0),
 		Files:        make([]string, 0),
 		SourcePath:   "",
-		Components:   make([]Component, 0),
+		Components:   components,
+		Links:        links,
 		Runtime:      strings.ToLower(runtime),
 	}
 
@@ -90,7 +93,9 @@ func (c *Composer) CreateFunctionApp(
 		fileName := fileHeader.Filename
 		if isComponent(fileName, fcApp.Runtime) {
 			componentName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
-			fcApp.Components = append(fcApp.Components, Component(componentName))
+			if !containsComponent(components, componentName) {
+				return nil, fmt.Errorf("component file %s does not match any declared component", fileName)
+			}
 		} else {
 			fcApp.Files = append(fcApp.Files, fileName)
 		}
@@ -107,6 +112,15 @@ func (c *Composer) CreateFunctionApp(
 	return &fcApp, nil
 }
 
+func containsComponent(components []Component, name string) bool {
+	for _, c := range components {
+		if c.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
 func isComponent(fileName string, runtime string) bool {
 	extension := filepath.Ext(fileName)
 	return runtimeExtensions[runtime] == extension
@@ -120,16 +134,11 @@ func (c *Composer) AddFunctionComposition(appId string, components []string, fil
 	}
 
 	id := uuid.New()
-	convertedComps := make([]Component, 0)
-	for _, comp := range components {
-		c := Component(comp)
-		convertedComps = append(convertedComps, c)
-	}
 
 	fc := &FunctionComposition{
 		Id:            "fc-" + id,
 		FunctionAppId: appId,
-		Components:    convertedComps,
+		Components:    components,
 		Files:         files,
 		Status:        BuildStatusPending,
 	}

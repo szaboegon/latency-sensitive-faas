@@ -24,6 +24,11 @@ type Configuration struct {
 	TektonServiceAccount   string `env:"TEKTON_SERVICE_ACCOUNT"`
 	TektonConcurrencyLimit int    `env:"TEKTON_CONCURRENCY_LIMIT"`
 	DatabasePath           string `env:"DATABASE_PATH"`
+	AlertingApiUrl         string `env:"ALERTING_API_URL"`
+	AlertingUsername       string `env:"ALERTING_USERNAME"`
+	AlertingPassword       string `env:"ALERTING_PASSWORD"`
+	AlertsIndex            string `env:"ALERTS_INDEX" default:"latency-alerts"`
+	AlertingConnector      string `env:"ALERTING_CONNECTOR" default:"lsf-alerts-connector"`
 }
 
 func Init() Configuration {
@@ -45,7 +50,11 @@ func Init() Configuration {
 
 		envValue := os.Getenv(envVar)
 		if envValue == "" {
-			continue // Skip empty environment variables
+			envValue = field.Tag.Get("default")
+		}
+
+		if envValue == "" {
+			continue
 		}
 
 		fieldVal := confVal.Field(i)

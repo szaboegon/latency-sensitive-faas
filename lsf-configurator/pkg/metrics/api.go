@@ -1,5 +1,7 @@
 package metrics
 
+import "context"
+
 type Node string
 
 type NodeMetrics struct {
@@ -19,4 +21,5 @@ type memory struct {
 type MetricsReader interface {
 	QueryNodeMetrics() ([]NodeMetrics, error)
 	QueryAverageAppRuntime(appId string) (float64, error)
+	EnsureIndex(ctx context.Context, indexName string) error
 }

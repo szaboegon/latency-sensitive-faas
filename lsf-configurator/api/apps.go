@@ -75,7 +75,8 @@ func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.composer.CreateFunctionApp(h.conf.UploadDir, files, payload.Name, payload.Runtime)
+	_, err := h.composer.CreateFunctionApp(payload.Components, payload.Links,
+		h.conf.UploadDir, files, payload.Name, payload.Runtime)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -106,7 +107,8 @@ func (h *HandlerApps) bulkCreate(w http.ResponseWriter, r *http.Request) {
 	var createdDeployments []*core.Deployment
 
 	// Create the function app
-	app, err := h.composer.CreateFunctionApp(h.conf.UploadDir, files, payload.FunctionApp.Name, payload.FunctionApp.Runtime)
+	app, err := h.composer.CreateFunctionApp(payload.FunctionApp.Components, payload.FunctionApp.Links,
+		h.conf.UploadDir, files, payload.FunctionApp.Name, payload.FunctionApp.Runtime)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

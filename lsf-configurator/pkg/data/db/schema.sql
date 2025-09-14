@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS function_apps (
     name TEXT NOT NULL,
     runtime TEXT NOT NULL,
     components TEXT,
+    links TEXT,
     files TEXT,
     source_path TEXT
 );

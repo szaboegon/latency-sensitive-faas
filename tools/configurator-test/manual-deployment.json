@@ -1,7 +1,24 @@
 {
   "functionApp": {
     "name": "object-detection",
-    "runtime": "python"
+    "runtime": "python",
+    "components": [
+      {"name": "imagegrab", "memory": 128, "runtime": "100"},
+      {"name": "resize", "memory": 128, "runtime": "200"},
+      {"name": "grayscale", "memory": 128, "runtime": "150"},
+      {"name": "objectdetect", "memory": 512, "runtime": "800"},
+      {"name": "objectdetect2", "memory": 512, "runtime": "700"},
+      {"name": "cut", "memory": 256, "runtime": "300"},
+      {"name": "tag", "memory": 128, "runtime": "100"}
+    ],
+    "links": [
+      {"from": "imagegrab", "to": "resize", "invocation_rate": 1.0},
+      {"from": "resize", "to": "grayscale", "invocation_rate": 1.0},
+      {"from": "grayscale", "to": "objectdetect", "invocation_rate": 1.0},
+      {"from": "grayscale", "to": "cut", "invocation_rate": 1.0},
+      {"from": "objectdetect", "to": "cut", "invocation_rate": 1.0},
+      {"from": "objectdetect2", "to": "tag", "invocation_rate": 1.0}
+    ]
   },
   "functionCompositions": [
     {

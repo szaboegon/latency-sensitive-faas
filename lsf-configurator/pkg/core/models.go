@@ -1,12 +1,23 @@
 package core
 
-type Component string
+type Component struct {
+	Name    string `json:"name"`
+	Memory  int    `json:"memory"`  // in MB
+	Runtime string `json:"runtime"` // The execution time of the component in milliseconds
+}
+
+type ComponentLink struct {
+	From           string  `json:"from"`
+	To             string  `json:"to"`
+	InvocationRate float64 `json:"invocation_rate"` // Relative invocation rate between components
+}
 
 type FunctionApp struct {
 	Id           string                 `json:"id"`
 	Name         string                 `json:"name"`
 	Runtime      string                 `json:"runtime"`
 	Components   []Component            `json:"components"`
+	Links        []ComponentLink        `json:"links"`
 	Files        []string               `json:"files"`
 	Compositions []*FunctionComposition `json:"compositions"`
 	SourcePath   string                 `json:"source_path"`
@@ -23,7 +34,7 @@ const (
 type FunctionComposition struct {
 	Id            string      `json:"id"`
 	FunctionAppId string      `json:"function_app_id"`
-	Components    []Component `json:"components"`
+	Components    []string    `json:"components"`
 	Files         []string    `json:"files"`
 	Status        BuildStatus `json:"status"`
 	Build         `json:"build"`
@@ -49,11 +60,11 @@ type Deployment struct {
 }
 
 type Route struct {
-	To       string `json:"to"`
-	Function string `json:"function"`
+	To       string `json:"to"`       // Component name
+	Function string `json:"function"` // Deployment of a function composition
 }
 
-type RoutingTable map[Component][]Route
+type RoutingTable map[string][]Route // Key: Component name
 
 type Build struct {
 	Image     string `json:"image"`

@@ -1,45 +1,52 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-
-        {
-            "name": "Load balancer",
-            "type": "go",
-            "request": "launch",
-            "mode": "auto",
-            "program": "faas-loadbalancer/main.go"
-        },
-        {
-            "name": "Configurator",
-            "type": "go",
-            "request": "launch",
-            "mode": "auto",
-            "program": "lsf-configurator",
-            "env": {
-                "CGO_ENABLED": "1"
-            }
-        },
-        {
-            "name": "Configurator Remote",
-            "type": "go",
-            "request": "attach",
-            "mode": "remote",
-            "port": 2345,
-            "host": "127.0.0.1",
-            "remotePath": "/",
-            "showLog": true
-        },
-        {
-            "name": "Frontend",
-            "type": "pwa-chrome",
-            "request": "launch",
-            "url": "http://localhost:5173",
-            "webRoot": "${workspaceFolder}/lsf-configurator/frontend",
-            "breakOnLoad": true,
-            "sourceMaps": true
-        }
-    ]
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python Debugger: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+       "cwd": "${fileDirname}"
+    },
+    {
+      "name": "Load balancer",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "faas-loadbalancer/main.go"
+    },
+    {
+      "name": "Configurator",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "lsf-configurator",
+      "env": {
+        "CGO_ENABLED": "1"
+      }
+    },
+    {
+      "name": "Configurator Remote",
+      "type": "go",
+      "request": "attach",
+      "mode": "remote",
+      "port": 2345,
+      "host": "127.0.0.1",
+      "remotePath": "/",
+      "showLog": true
+    },
+    {
+      "name": "Frontend",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/lsf-configurator/frontend",
+      "breakOnLoad": true,
+      "sourceMaps": true
+    }
+  ]
 }

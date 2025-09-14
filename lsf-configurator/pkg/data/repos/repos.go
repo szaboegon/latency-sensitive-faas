@@ -31,14 +31,18 @@ func (r *functionAppRepo) Save(app *core.FunctionApp) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal components: %w", err)
 	}
+	linksJSON, err := json.Marshal(app.Links)
+	if err != nil {
+		return fmt.Errorf("failed to marshal links: %w", err)
+	}
 	filesJSON, err := json.Marshal(app.Files)
 	if err != nil {
 		return fmt.Errorf("failed to marshal files: %w", err)
 	}
 
 	_, err = tx.Exec(`
-		INSERT OR REPLACE INTO function_apps (id, name, runtime, components, files, source_path) 
-		VALUES (?, ?, ?, ?, ?, ?)`, app.Id, app.Name, app.Runtime, string(componentsJSON), string(filesJSON), app.SourcePath)
+		INSERT OR REPLACE INTO function_apps (id, name, runtime, components, links, files, source_path) 
+		VALUES (?, ?, ?, ?, ?, ?, ?)`, app.Id, app.Name, app.Runtime, string(componentsJSON), string(linksJSON), string(filesJSON), app.SourcePath)
 	if err != nil {
 		return err
 	}
@@ -57,11 +61,11 @@ func (r *functionAppRepo) Save(app *core.FunctionApp) error {
 }
 
 func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
-	row := r.db.QueryRow(`SELECT id, name, runtime, components, files, source_path FROM function_apps WHERE id = ?`, id)
+	row := r.db.QueryRow(`SELECT id, name, runtime, components, links, files, source_path FROM function_apps WHERE id = ?`, id)
 
 	var app core.FunctionApp
-	var componentsJSON, filesJSON, sourcePath string
-	if err := row.Scan(&app.Id, &app.Name, &app.Runtime, &componentsJSON, &filesJSON, &sourcePath); err != nil {
+	var componentsJSON, linksJSON, filesJSON, sourcePath string
+	if err := row.Scan(&app.Id, &app.Name, &app.Runtime, &componentsJSON, &linksJSON, &filesJSON, &sourcePath); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -70,6 +74,9 @@ func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
 
 	if err := json.Unmarshal([]byte(componentsJSON), &app.Components); err != nil {
 		return nil, fmt.Errorf("failed to parse components: %w", err)
+	}
+	if err := json.Unmarshal([]byte(linksJSON), &app.Links); err != nil {
+		return nil, fmt.Errorf("failed to parse links: %w", err)
 	}
 	if err := json.Unmarshal([]byte(filesJSON), &app.Files); err != nil {
 		return nil, fmt.Errorf("failed to parse files: %w", err)
@@ -100,7 +107,7 @@ func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
 }
 
 func (r *functionAppRepo) GetAll() ([]*core.FunctionApp, error) {
-	rows, err := r.db.Query(`SELECT id, name, runtime, components, files, source_path FROM function_apps`)
+	rows, err := r.db.Query(`SELECT id, name, runtime, components, links, files, source_path FROM function_apps`)
 	if err != nil {
 		return nil, err
 	}
@@ -109,13 +116,16 @@ func (r *functionAppRepo) GetAll() ([]*core.FunctionApp, error) {
 	var apps []*core.FunctionApp
 	for rows.Next() {
 		var app core.FunctionApp
-		var componentsJSON, filesJSON, sourcePath string
-		if err := rows.Scan(&app.Id, &app.Name, &app.Runtime, &componentsJSON, &filesJSON, &sourcePath); err != nil {
+		var componentsJSON, linksJSON, filesJSON, sourcePath string
+		if err := rows.Scan(&app.Id, &app.Name, &app.Runtime, &componentsJSON, &linksJSON, &filesJSON, &sourcePath); err != nil {
 			return nil, err
 		}
 
 		if err := json.Unmarshal([]byte(componentsJSON), &app.Components); err != nil {
 			return nil, fmt.Errorf("failed to parse components: %w", err)
+		}
+		if err := json.Unmarshal([]byte(linksJSON), &app.Links); err != nil {
+			return nil, fmt.Errorf("failed to parse links: %w", err)
 		}
 		if err := json.Unmarshal([]byte(filesJSON), &app.Files); err != nil {
 			return nil, fmt.Errorf("failed to parse files: %w", err)

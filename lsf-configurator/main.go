@@ -14,6 +14,7 @@ import (
 	"lsf-configurator/pkg/filesystem"
 	"lsf-configurator/pkg/knative"
 	"lsf-configurator/pkg/metrics"
+	"lsf-configurator/pkg/metrics/alerts"
 	"lsf-configurator/pkg/routing"
 	"net/http"
 	"os"
@@ -25,6 +26,7 @@ import (
 var composer *core.Composer
 var conf config.Configuration
 var metricsReader metrics.MetricsReader
+var alertClient alerts.AlertClient
 
 func main() {
 	logFile := configureLogging()
@@ -61,6 +63,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create metrics reader: %v", err)
 	}
+	alertClient = alerts.NewAlertClient(conf.AlertingApiUrl, conf.AlertingUsername, conf.AlertingPassword)
+	err = metricsReader.EnsureIndex(context.Background(), conf.AlertsIndex)
+	if err != nil {
+		log.Fatalf("failed to ensure alerts index: %v", err)
+	}
+	_, err = alertClient.EnsureAlertConnector(context.Background(), conf.AlertingConnector, conf.AlertsIndex)
+	if err != nil {
+		log.Fatalf("failed to ensure alert connector: %v", err)
+	}
+
 	err = filesystem.CreateDir(conf.UploadDir)
 	if err != nil {
 		log.Fatalf("Could not create uploads directory: %v", err)

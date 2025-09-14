@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"math/big"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/create"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/sortorder"
 )
@@ -45,6 +47,41 @@ func NewMetricsReader(backendAddr string) (MetricsReader, error) {
 	return &metricsClient{
 		client: es,
 	}, nil
+}
+
+func (c *metricsClient) EnsureIndex(ctx context.Context, indexName string) error {
+	// Check if index exists
+	exists, err := c.client.Indices.Exists(indexName).Do(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to check index existence: %w", err)
+	}
+	if exists {
+		log.Printf("Index %s already exists", indexName)
+		return nil
+	}
+
+	// Create index with mapping
+	mapping := types.TypeMapping{
+		Properties: map[string]types.Property{
+			"rule":       types.NewKeywordProperty(),
+			"status":     types.NewKeywordProperty(),
+			"service":    types.NewKeywordProperty(),
+			"latency":    types.NewFloatNumberProperty(),
+			"@timestamp": types.NewDateProperty(),
+		},
+	}
+
+	req := create.Request{
+		Mappings: &mapping,
+	}
+
+	_, err = c.client.Indices.Create(indexName).Request(&req).Do(ctx)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Index %s created successfully", indexName)
+	return nil
 }
 
 func (c metricsClient) QueryNodeMetrics() ([]NodeMetrics, error) {
