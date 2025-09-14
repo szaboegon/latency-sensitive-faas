@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS function_apps (
     components TEXT,
     links TEXT,
     files TEXT,
-    source_path TEXT
+    source_path TEXT,
+    latency_limit INTEGER
 );
 
 CREATE TABLE IF NOT EXISTS function_compositions (
