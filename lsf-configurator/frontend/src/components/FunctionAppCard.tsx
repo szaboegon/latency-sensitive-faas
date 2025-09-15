@@ -56,7 +56,7 @@ const FunctionAppCard: React.FC<FunctionAppCardProps> = ({ app }) => {
       <List dense disablePadding sx={{ flexGrow: 1 }}>
         {app.components?.map((component) => (
           <ListItem
-            key={component}
+            key={component.name}
             sx={{
               px: 0,
               py: 0.5,
@@ -72,7 +72,7 @@ const FunctionAppCard: React.FC<FunctionAppCardProps> = ({ app }) => {
                 color: "text.primary",
                 textAlign: "center",
               }}
-              primary={component}
+              primary={component.name}
             />
           </ListItem>
         ))}

@@ -8,7 +8,7 @@ import {
   Stack,
 } from "@mui/material";
 import RoutingTableEditor from "./RoutingTableEditor";
-import type { Component, Deployment, RoutingTable } from "../models/models";
+import type { Deployment, RoutingTable } from "../models/models";
 import { useForm, Controller } from "react-hook-form";
 import { useCreateDeployment } from "../hooks/deploymentHooks";
 import type { DeploymentCreateDto } from "../models/dto";
@@ -17,7 +17,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   compositionId: string;
-  components: Component[];
+  components: string[];
   allDeployments: Deployment[];
 }
 

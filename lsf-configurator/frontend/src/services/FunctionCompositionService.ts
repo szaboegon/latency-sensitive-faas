@@ -8,7 +8,7 @@ const FunctionCompositionService = {
   },
   async createFunctionComposition(appId: string, fc: FunctionCompositionCreateDto): Promise<void> {
     fc.functionAppId = appId;
-    await axiosInstance.post(`${paths.functionCompositions}`, fc);
+    await axiosInstance.post(`${paths.functionCompositions}/`, fc);
   },
 };
 

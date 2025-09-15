@@ -3,7 +3,7 @@ package core
 type Component struct {
 	Name    string `json:"name"`
 	Memory  int    `json:"memory"`  // in MB
-	Runtime string `json:"runtime"` // The execution time of the component in milliseconds
+	Runtime int    `json:"runtime"` // The execution time of the component in milliseconds
 }
 
 type ComponentLink struct {

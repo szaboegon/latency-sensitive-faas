@@ -6,7 +6,7 @@ import { keysToSnakeCase } from "../helpers/utilities";
 
 const FunctionAppService = {
   async fetchFunctionApps(): Promise<FunctionApp[]> {
-    const response = await axiosInstance.get(paths.functionApps);
+    const response = await axiosInstance.get(`${paths.functionApps}/`);
     return response.data;
   },
 
@@ -17,12 +17,12 @@ const FunctionAppService = {
 
   async createFunctionApp(newApp: FunctionAppCreateDto, files: FileList): Promise<void> {
     const formData = new FormData();
-    formData.append("json", JSON.stringify(newApp));
+    formData.append("json", JSON.stringify(keysToSnakeCase(newApp)));
     Array.from(files).forEach((file) => {
       formData.append("files", file);
     });
 
-    await axiosInstance.post(`${paths.functionApps}`, formData, {
+    await axiosInstance.post(`${paths.functionApps}/`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },

@@ -103,17 +103,17 @@ const FunctionAppDetails: React.FC = () => {
         </Typography>
         <Grid container spacing={2} mb={4}>
           {app.components?.map((component) => (
-            <Grid key={component} size={{ xs: 12, sm: 6, md: 4 }}>
+            <Grid key={component.name} size={{ xs: 12, sm: 6, md: 4 }}>
               <Box
                 sx={{
-                  backgroundColor: generateComponentColor(component),
+                  backgroundColor: generateComponentColor(component.name),
                   borderRadius: 2,
                   padding: 2,
                   textAlign: "center",
                   boxShadow: 2,
                 }}
               >
-                <Typography variant="h6">{component}</Typography>
+                <Typography variant="h6">{component.name}</Typography>
               </Box>
             </Grid>
           ))}
@@ -172,7 +172,7 @@ const FunctionAppDetails: React.FC = () => {
         onClose={handleCloseAddModal}
         appId={app.id ?? ""}
         appFiles={app.files ?? []}
-        appComponents={app.components ?? []}
+        appComponents={app.components?.map(comp => comp.name) ?? []}
       />
     </>
   );

@@ -62,14 +62,17 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to create metrics reader: %v", err)
 	}
+
 	alertClient = alerts.NewAlertClient(conf.AlertingApiUrl, conf.AlertingUsername, conf.AlertingPassword)
-	err = metricsReader.EnsureIndex(context.Background(), conf.AlertsIndex)
-	if err != nil {
-		log.Fatalf("failed to ensure alerts index: %v", err)
-	}
-	_, err = alertClient.EnsureAlertConnector(context.Background(), conf.AlertingConnector, conf.AlertsIndex)
-	if err != nil {
-		log.Fatalf("failed to ensure alert connector: %v", err)
+	if !conf.LocalMode {
+		err = metricsReader.EnsureIndex(context.Background(), conf.AlertsIndex)
+		if err != nil {
+			log.Fatalf("failed to ensure alerts index: %v", err)
+		}
+		_, err = alertClient.EnsureAlertConnector(context.Background(), conf.AlertingConnector, conf.AlertsIndex)
+		if err != nil {
+			log.Fatalf("failed to ensure alert connector: %v", err)
+		}
 	}
 
 	composer = core.NewComposer(functionAppRepo, fcRepo, deploymentRepo, routingClient,

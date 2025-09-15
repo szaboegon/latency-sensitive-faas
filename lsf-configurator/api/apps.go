@@ -59,7 +59,11 @@ func (h *HandlerApps) get(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {
-	r.ParseMultipartForm(10 << 20) // 10MB limit
+	err := r.ParseMultipartForm(10 << 20) // 10MB limit
+	if err != nil {
+		http.Error(w, "Error parsing multipart form", http.StatusBadRequest)
+		return
+	}
 
 	jsonStr := r.FormValue("json")
 	var payload FunctionAppCreateDto
@@ -75,7 +79,7 @@ func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.composer.CreateFunctionApp(payload.Components, payload.Links,
+	_, err = h.composer.CreateFunctionApp(payload.Components, payload.Links,
 		h.conf.UploadDir, files, payload.Name, payload.Runtime, payload.LatencyLimit)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

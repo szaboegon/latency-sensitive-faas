@@ -120,6 +120,15 @@ spec:
               value: "1"  
             - name: DATABASE_PATH
               value: "/db/db.sqlite3"
+            - name: ALERTING_API_URL
+              value: "http://kibana-kb-http.observability.svc.cluster.local:5601"
+            - name: ALERTING_USERNAME
+              value: "elastic"
+              # only for testing purposes
+            - name: ALERTING_PASSWORD
+              value: "elastic"
+            - name: LOCAL_MODE
+              value: "false"
           volumeMounts:
             - name: uploads-pvc
               mountPath: /uploads
@@ -146,56 +155,56 @@ spec:
   - port: 80
     targetPort: 8080
     nodePort: 30001
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: sqlite-web
-  namespace: configurator
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: sqlite-web
-  template:
-    metadata:
-      labels:
-        app: sqlite-web
-    spec:
-      containers:
-        - name: sqlite-web
-          image: coleifer/sqlite-web:latest
-          command: ["sqlite_web"]
-          args: ["--host", "0.0.0.0", "--port", "8080", "/db/db.sqlite3"]
-          ports:
-            - containerPort: 8080
-          volumeMounts:
-            - name: db-sqlite
-              mountPath: /db
-      volumes:
-        - name: db-sqlite
-          persistentVolumeClaim:
-            claimName: sqlite-pvc
-      affinity:
-        podAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchLabels:
-                  app: lsf-configurator
-              topologyKey: "kubernetes.io/hostname"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: sqlite-web
-  namespace: configurator
-spec:
-  selector:
-    app: sqlite-web
-  ports:
-    - port: 8080
-      targetPort: 8080
-      protocol: TCP
-  type: NodePort
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: sqlite-web
+#   namespace: configurator
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: sqlite-web
+#   template:
+#     metadata:
+#       labels:
+#         app: sqlite-web
+#     spec:
+#       containers:
+#         - name: sqlite-web
+#           image: coleifer/sqlite-web:latest
+#           command: ["sqlite_web"]
+#           args: ["--host", "0.0.0.0", "--port", "8080", "/db/db.sqlite3"]
+#           ports:
+#             - containerPort: 8080
+#           volumeMounts:
+#             - name: db-sqlite
+#               mountPath: /db
+#       volumes:
+#         - name: db-sqlite
+#           persistentVolumeClaim:
+#             claimName: sqlite-pvc
+#       affinity:
+#         podAffinity:
+#           requiredDuringSchedulingIgnoredDuringExecution:
+#             - labelSelector:
+#                 matchLabels:
+#                   app: lsf-configurator
+#               topologyKey: "kubernetes.io/hostname"
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: sqlite-web
+#   namespace: configurator
+# spec:
+#   selector:
+#     app: sqlite-web
+#   ports:
+#     - port: 8080
+#       targetPort: 8080
+#       protocol: TCP
+#   type: NodePort
 
 

@@ -1,13 +1,25 @@
-export type Component = string;
+export interface Component {
+    name: string;
+    memory: number;
+    runtime: number; 
+}
+
+export interface ComponentLink {
+    from: string;
+    to: string;
+    invocationRate: number;
+}
 
 export interface FunctionApp {
     id?: string;
     name: string;
     runtime: string;
-    sourcePath?: string;
-    compositions?: FunctionComposition[];
     components?: Component[];
+    links?: ComponentLink[];
     files?: string[];
+    compositions?: FunctionComposition[];
+    sourcePath?: string;
+    latencyLimit: number;
 }
 
 export interface FunctionComposition {
@@ -33,7 +45,7 @@ export interface Route {
     function: string;
 }
 
-export type RoutingTable = Record<Component, Route[]>;
+export type RoutingTable = Record<string, Route[]>;
 
 export interface Build {
     image?: string;

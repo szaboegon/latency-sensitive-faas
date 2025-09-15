@@ -5,7 +5,7 @@ import type { DeploymentCreateDto } from "../models/dto";
 
 const DeploymentService = {
   async createDeployment(deployment: DeploymentCreateDto): Promise<void> {
-    await axiosInstance.post(paths.deployments, deployment);
+    await axiosInstance.post(`${paths.deployments}/`, deployment);
   },
   async modifyRoutingTable(deploymentId: string, routingTable: RoutingTable): Promise<void> {
     await axiosInstance.put(`${paths.deployments}/${deploymentId}/routing-table`, routingTable);
