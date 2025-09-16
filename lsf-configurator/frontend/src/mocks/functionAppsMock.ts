@@ -5,7 +5,17 @@ export const functionAppsMock: FunctionApp[] = [
     id: '1',
     name: 'Function App 1',
     runtime: 'Node.js',
-    components: ['Component A1', 'Component B1', 'Component C1'],
+    latencyLimit: 1000,
+    components: [
+      { name: 'Component A1', memory: 128, runtime: 100 },
+      { name: 'Component B1', memory: 128, runtime: 100 },
+      { name: 'Component C1', memory: 128, runtime: 100 },
+    ],
+    links: [
+      { from: 'Component A1', to: 'Component B1', invocationRate: 1.0 },
+      { from: 'Component A1', to: 'Component C1', invocationRate: 1.0 },
+      { from: 'Component B1', to: 'Component C1', invocationRate: 1.0 },
+    ],
     compositions: [
       {
         id: 'composition1a',
@@ -64,7 +74,17 @@ export const functionAppsMock: FunctionApp[] = [
     id: '2',
     name: 'Function App 2',
     runtime: 'Python',
-    components: ['Component X2', 'Component Y2', 'Component Z2'],
+    latencyLimit: 1200,
+    components: [
+      { name: 'Component X2', memory: 128, runtime: 100 },
+      { name: 'Component Y2', memory: 128, runtime: 100 },
+      { name: 'Component Z2', memory: 128, runtime: 100 },
+    ],
+    links: [
+      { from: 'Component X2', to: 'Component Y2', invocationRate: 1.0 },
+      { from: 'Component X2', to: 'Component Z2', invocationRate: 1.0 },
+      { from: 'Component Y2', to: 'Component Z2', invocationRate: 1.0 },
+    ],
     compositions: [
       {
         id: 'composition2a',
@@ -123,7 +143,17 @@ export const functionAppsMock: FunctionApp[] = [
     id: '3',
     name: 'Function App 3',
     runtime: 'Go',
-    components: ['Component M3', 'Component N3', 'Component O3'],
+    latencyLimit: 900,
+    components: [
+      { name: 'Component M3', memory: 128, runtime: 100 },
+      { name: 'Component N3', memory: 128, runtime: 100 },
+      { name: 'Component O3', memory: 128, runtime: 100 },
+    ],
+    links: [
+      { from: 'Component M3', to: 'Component N3', invocationRate: 1.0 },
+      { from: 'Component M3', to: 'Component O3', invocationRate: 1.0 },
+      { from: 'Component N3', to: 'Component O3', invocationRate: 1.0 },
+    ],
     compositions: [
       {
         id: 'composition3a',
@@ -182,7 +212,14 @@ export const functionAppsMock: FunctionApp[] = [
     id: '4',
     name: 'Function App 4',
     runtime: 'Ruby',
-    components: ['Component P4', 'Component Q4'],
+    latencyLimit: 1100,
+    components: [
+      { name: 'Component P4', memory: 128, runtime: 100 },
+      { name: 'Component Q4', memory: 128, runtime: 100 },
+    ],
+    links: [
+      { from: 'Component P4', to: 'Component Q4', invocationRate: 1.0 },
+    ],
     compositions: [
       {
         id: 'composition4a',
@@ -237,7 +274,18 @@ export const functionAppsMock: FunctionApp[] = [
     id: '5',
     name: 'Function App 5',
     runtime: 'Java',
-    components: ['Component R5', 'Component S5', 'Component T5', 'Component U5'],
+    latencyLimit: 1500,
+    components: [
+      { name: 'Component R5', memory: 128, runtime: 100 },
+      { name: 'Component S5', memory: 128, runtime: 100 },
+      { name: 'Component T5', memory: 128, runtime: 100 },
+      { name: 'Component U5', memory: 128, runtime: 100 },
+    ],
+    links: [
+      { from: 'Component R5', to: 'Component S5', invocationRate: 1.0 },
+      { from: 'Component S5', to: 'Component T5', invocationRate: 1.0 },
+      { from: 'Component T5', to: 'Component U5', invocationRate: 1.0 },
+    ],
     compositions: [
       {
         id: 'composition5a',
