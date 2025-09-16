@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-func
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-func
+  template:
+    metadata:
+      labels:
+        app: my-func
+    spec:
+      containers:
+        - name: my-func
+          image: szaboegon/my-func:latest
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "1"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-func
+spec:
+  selector:
+    app: my-func
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: NodePort   # or LoadBalancer if your cluster supports it
