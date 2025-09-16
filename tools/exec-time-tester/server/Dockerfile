@@ -8,7 +8,9 @@ COPY server.py /app/server.py
 # Copy function code
 COPY main.py /app/main.py
 
-RUN pip install flask numpy opencv-python-headless parliament
+# Install dependencies
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 8080
 CMD ["python", "server.py"]

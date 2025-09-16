@@ -7,7 +7,7 @@ handler = getattr(module, "handler")
 
 app = Flask(__name__)
 
-@app.route("/function", methods=["POST"])
+@app.route("/", methods=["POST"])
 def handle():
     event = request  # you can wrap this in a custom Context if needed
     result = handler(event)
