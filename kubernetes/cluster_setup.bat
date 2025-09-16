@@ -6,6 +6,7 @@ set CPUS=4
 set SERVING_YAML_PATH="knative\serving.yaml"
 set SCALE_CONFIG_PATH="knative\disable_scale_to_zero.yaml"
 set APP_NAMESPACE_PATH="otel\application_namespace.yaml"
+set METRICS_SERVER_PATH="metrics-server\metrics-server.yaml"
 
 echo %cd%
 echo Starting minikube cluster with %NUM_NODES% nodes...
@@ -95,6 +96,12 @@ if errorlevel 1 (
 kubectl apply -f %APP_NAMESPACE_PATH%
 if errorlevel 1 (
     echo Failed to create namespace 'application'.
+    exit /b 1
+)
+
+kubectl apply -f %METRICS_SERVER_PATH%
+if errorlevel 1 (
+    echo Failed to install metrics-server.
     exit /b 1
 )
 
