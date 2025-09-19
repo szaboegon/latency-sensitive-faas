@@ -18,7 +18,8 @@
       {"from": "grayscale", "to": "cut", "invocation_rate": 1.0},
       {"from": "objectdetect", "to": "cut", "invocation_rate": 1.0},
       {"from": "objectdetect2", "to": "tag", "invocation_rate": 1.0}
-    ]
+    ],
+    "latency_limit": 2000
   },
   "functionCompositions": [
     {
