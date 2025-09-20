@@ -5,7 +5,7 @@ import json
 import sys
 import subprocess
 from kubernetes import client, config
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Tuple
 import psutil
 from pathlib import Path
 import os
@@ -70,6 +70,12 @@ def get_pod_name(deployment_name: str, namespace: str) -> str:
     return str(pods.items[0].metadata.name)
 
 
+def delete_deployment(function_name: str) -> None:
+    print(f"Deleting deployment and service for {function_name}...")
+    subprocess.run(["kubectl", "delete", "deployment", function_name], check=False)
+    subprocess.run(["kubectl", "delete", "service", function_name], check=False)
+
+
 # ------------------------ Port Forward ----------------------------
 def kill_existing_port_forwards() -> None:
     for proc in psutil.process_iter(["pid", "name", "cmdline"]):
@@ -82,26 +88,35 @@ def kill_existing_port_forwards() -> None:
             pass
 
 
-def port_forward(function_name: str, max_retries: int = 5, delay: int = 3) -> subprocess.Popen[Any]:
+def get_free_port() -> int:
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('', 0))
+        return int(s.getsockname()[1])
+
+
+def port_forward(function_name: str, max_retries: int = 5, delay: int = 3) -> Tuple[subprocess.Popen[Any], int]:
     kill_existing_port_forwards()
+    local_port = get_free_port()
 
     for attempt in range(1, max_retries + 1):
-        print(f"Port-forward attempt {attempt}/{max_retries} for {function_name}...")
+        print(f"Port-forward attempt {attempt}/{max_retries} for {function_name} on port {local_port}...")
         pf: subprocess.Popen[Any] = subprocess.Popen(
-            ["kubectl", "port-forward", f"svc/{function_name}", f"{LOCAL_PORT}:{SVC_PORT}"],
+            ["kubectl", "port-forward", f"svc/{function_name}", f"{local_port}:{SVC_PORT}"],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
         time.sleep(delay)
 
         if pf.poll() is None:
-            print(f"Port-forward established at localhost:{LOCAL_PORT}")
-            return pf
+            print(f"Port-forward established at localhost:{local_port}")
+            return pf, local_port
         else:
             print(f"Port-forward failed, retrying in {delay} seconds...")
             pf.terminate()
             pf.wait()
             time.sleep(delay)
+            local_port = get_free_port()
 
     raise RuntimeError(f"Failed to port-forward {function_name} after {max_retries} attempts")
 
@@ -213,27 +228,30 @@ def main() -> None:
     except Exception:
         config.load_incluster_config()
 
+    # Build all images first
+    for handler in HANDLERS:
+        docker_image = DOCKER_IMAGE_TEMPLATE.format(handler=handler)
+        build_docker_image(docker_image, handler)
+
+    # Then deploy and test each handler
     for handler in HANDLERS:
         function_name = f"{handler}-func"
         docker_image = DOCKER_IMAGE_TEMPLATE.format(handler=handler)
-        # Load and format the deploy YAML template with the current handler
         with open(DEPLOY_YAML_TEMPLATE, "r") as f:
             deploy_yaml_content = f.read().format(handler=handler)
         deploy_yaml_path = "./server/deploy.yaml"
         with open(deploy_yaml_path, "w") as f:
             f.write(deploy_yaml_content)
 
-        # Always use the payload that matches the handler name
         json_file = f"./inputs/{handler}.json"
 
         print(f"\n=== Testing handler: {handler} ===")
 
         try:
-            build_docker_image(docker_image, handler)
             deploy_to_k8s(deploy_yaml_path, function_name)
 
-            pf = port_forward(function_name)
-            url = f"http://localhost:{LOCAL_PORT}"
+            pf, local_port = port_forward(function_name)
+            url = f"http://localhost:{local_port}"
 
             try:
                 pod_name = get_pod_name(function_name, NAMESPACE)
@@ -245,9 +263,10 @@ def main() -> None:
                 pf.terminate()
                 pf.wait()
         finally:
-            # Clean up deploy.yaml
             if os.path.exists(deploy_yaml_path):
                 os.remove(deploy_yaml_path)
+            # Delete deployment and service after test
+            delete_deployment(function_name)
 
 
 if __name__ == "__main__":
