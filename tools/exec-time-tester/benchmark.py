@@ -122,7 +122,7 @@ def port_forward(function_name: str, max_retries: int = 5, delay: int = 3) -> Tu
 
 
 # ------------------------ Kubernetes Memory -----------------------
-def get_mem_usage(pod_name: str, namespace: str, retries: int = 10, delay: float = 1.0) -> float:
+def get_mem_usage(pod_name: str, namespace: str, retries: int = 10, delay: float = 5.0) -> float:
     metrics_api: client.CustomObjectsApi = client.CustomObjectsApi()
     for attempt in range(retries):
         metrics: Any = metrics_api.list_namespaced_custom_object(
