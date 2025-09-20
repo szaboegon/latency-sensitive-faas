@@ -8,13 +8,14 @@ from kubernetes import client, config
 from typing import Any, List, Dict
 import psutil
 from pathlib import Path
+import os
 
 # -------------------------------------------------------------------
 # Config
 # -------------------------------------------------------------------
-HANDLERS: List[str] = ["main", "foo", "bar"]      # handler file names (without .py)
-DOCKER_IMAGE_TEMPLATE: str = "szaboegon/{handler}:latest"
-DEPLOY_YAML_TEMPLATE: str = "./server/{handler}_deploy.yaml"
+HANDLERS: List[str] = ["resize", "grayscale", "objectdetect", "cut", "objectdetect2", "tag"]      # handler file names (without .py)
+DOCKER_IMAGE_TEMPLATE: str = "szaboegon/{handler}_benchmark:latest"
+DEPLOY_YAML_TEMPLATE: str = "./server/deploy.tmpl"
 LOCAL_PORT: int = 8080
 SVC_PORT: int = 80
 NAMESPACE: str = "default"
@@ -26,16 +27,28 @@ RESULTS_FILE: Path = Path("./results.json")       # where benchmark results are 
 # ------------------------- Docker Build ----------------------------
 def build_docker_image(image: str, handler: str) -> None:
     print(f"Building Docker image {image} for handler {handler}...")
-    subprocess.run(
-        [
-            "docker", "build",
-            "-t", image,
-            "--build-arg", f"HANDLER={handler}",
-            "./server"
-        ],
-        check=True,
-    )
-    subprocess.run(["docker", "push", image], check=True)
+    # Use Dockerfile template and format it for the current handler
+    dockerfile_template = "./server/Dockerfile.tmpl"
+    dockerfile_path = "./server/Dockerfile"
+    with open(dockerfile_template, "r") as f:
+        dockerfile_content = f.read().format(handler=handler)
+    with open(dockerfile_path, "w") as f:
+        f.write(dockerfile_content)
+    try:
+        subprocess.run(
+            [
+                "docker", "build",
+                "-t", image,
+                "--build-arg", f"HANDLER={handler}",
+                "./server"
+            ],
+            check=True,
+        )
+        subprocess.run(["docker", "push", image], check=True)
+    finally:
+        # Clean up Dockerfile
+        if os.path.exists(dockerfile_path):
+            os.remove(dockerfile_path)
 
 
 # ------------------------ Kubernetes Deploy -----------------------
@@ -94,27 +107,30 @@ def port_forward(function_name: str, max_retries: int = 5, delay: int = 3) -> su
 
 
 # ------------------------ Kubernetes Memory -----------------------
-def get_mem_usage(pod_name: str, namespace: str) -> float:
+def get_mem_usage(pod_name: str, namespace: str, retries: int = 10, delay: float = 1.0) -> float:
     metrics_api: client.CustomObjectsApi = client.CustomObjectsApi()
-    metrics: Any = metrics_api.list_namespaced_custom_object(
-        group="metrics.k8s.io",
-        version="v1beta1",
-        namespace=namespace,
-        plural="pods",
-    )
+    for attempt in range(retries):
+        metrics: Any = metrics_api.list_namespaced_custom_object(
+            group="metrics.k8s.io",
+            version="v1beta1",
+            namespace=namespace,
+            plural="pods",
+        )
 
-    for pod in metrics["items"]:
-        if pod["metadata"]["name"] == pod_name:
-            mem_str: str = pod["containers"][0]["usage"]["memory"]
-            if mem_str.endswith("Ki"):
-                return int(mem_str[:-2]) / 1024
-            elif mem_str.endswith("Mi"):
-                return int(mem_str[:-2])
-            elif mem_str.endswith("Gi"):
-                return int(mem_str[:-2]) * 1024
-            else:
-                raise ValueError(f"Unexpected memory format: {mem_str}")
-    raise RuntimeError(f"Pod {pod_name} not found in namespace {namespace}")
+        for pod in metrics["items"]:
+            if pod["metadata"]["name"] == pod_name:
+                mem_str: str = pod["containers"][0]["usage"]["memory"]
+                if mem_str.endswith("Ki"):
+                    return int(mem_str[:-2]) / 1024
+                elif mem_str.endswith("Mi"):
+                    return int(mem_str[:-2])
+                elif mem_str.endswith("Gi"):
+                    return int(mem_str[:-2]) * 1024
+                else:
+                    raise ValueError(f"Unexpected memory format: {mem_str}")
+        if attempt < retries - 1:
+            time.sleep(delay)
+    raise RuntimeError(f"Pod {pod_name} not found in namespace {namespace} after {retries} attempts")
 
 
 # ------------------------ Payload Load ----------------------------
@@ -131,8 +147,12 @@ def benchmark(url: str, pod_name: str, json_file: str, num_requests: int, delay:
 
     for i in range(num_requests):
         start: float = time.perf_counter()
-        resp: requests.Response = requests.post(url, json=payload)
-        resp.raise_for_status()
+        try:
+            resp: requests.Response = requests.post(url, json=payload)
+            resp.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            print(f"Request failed at iteration {i+1}: {e}")
+            continue
         elapsed: float = time.perf_counter() - start
         wall_times.append(elapsed)
 
@@ -143,9 +163,12 @@ def benchmark(url: str, pod_name: str, json_file: str, num_requests: int, delay:
             print(f"Completed {i+1}/{num_requests} requests")
         time.sleep(delay)
 
+    if not wall_times:
+        raise RuntimeError("No successful requests were completed.")
+
     result = {
         "mean_wall_time_sec": statistics.mean(wall_times),
-        "p95_wall_time_sec": statistics.quantiles(wall_times, n=100)[94],
+        "p95_wall_time_sec": statistics.quantiles(wall_times, n=100)[94] if len(wall_times) >= 100 else max(wall_times),
         "mean_server_memory_mib": statistics.mean(server_mems),
         "peak_server_memory_mib": max(server_mems),
     }
@@ -178,13 +201,12 @@ def save_results(handler: str, results: Dict[str, Any]) -> None:
 # ------------------------ Main -------------------------------------
 def main() -> None:
     if len(sys.argv) < 2:
-        print("Usage: python benchmarker.py payload.json [num_requests]")
+        print("Usage: python benchmarker.py [num_requests]")
         sys.exit(1)
 
-    json_file: str = sys.argv[1]
     num_requests: int = N
-    if len(sys.argv) >= 3:
-        num_requests = int(sys.argv[2])
+    if len(sys.argv) >= 2:
+        num_requests = int(sys.argv[1])
 
     try:
         config.load_kube_config()
@@ -194,25 +216,38 @@ def main() -> None:
     for handler in HANDLERS:
         function_name = f"{handler}-func"
         docker_image = DOCKER_IMAGE_TEMPLATE.format(handler=handler)
-        deploy_yaml = DEPLOY_YAML_TEMPLATE.format(handler=handler)
+        # Load and format the deploy YAML template with the current handler
+        with open(DEPLOY_YAML_TEMPLATE, "r") as f:
+            deploy_yaml_content = f.read().format(handler=handler)
+        deploy_yaml_path = "./server/deploy.yaml"
+        with open(deploy_yaml_path, "w") as f:
+            f.write(deploy_yaml_content)
+
+        # Always use the payload that matches the handler name
+        json_file = f"./inputs/{handler}.json"
 
         print(f"\n=== Testing handler: {handler} ===")
 
-        build_docker_image(docker_image, handler)
-        deploy_to_k8s(deploy_yaml, function_name)
-
-        pf = port_forward(function_name)
-        url = f"http://localhost:{LOCAL_PORT}"
-
         try:
-            pod_name = get_pod_name(function_name, NAMESPACE)
-            print(f"Target pod for memory metrics: {pod_name}")
-            results = benchmark(url, pod_name, json_file, num_requests)
-            save_results(handler, results)
+            build_docker_image(docker_image, handler)
+            deploy_to_k8s(deploy_yaml_path, function_name)
+
+            pf = port_forward(function_name)
+            url = f"http://localhost:{LOCAL_PORT}"
+
+            try:
+                pod_name = get_pod_name(function_name, NAMESPACE)
+                print(f"Target pod for memory metrics: {pod_name}")
+                results = benchmark(url, pod_name, json_file, num_requests)
+                save_results(handler, results)
+            finally:
+                print("Stopping port-forward...")
+                pf.terminate()
+                pf.wait()
         finally:
-            print("Stopping port-forward...")
-            pf.terminate()
-            pf.wait()
+            # Clean up deploy.yaml
+            if os.path.exists(deploy_yaml_path):
+                os.remove(deploy_yaml_path)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,20 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Copy universal server
+COPY server.py /app/server.py
+
+# Copy function code
+COPY {handler}.py /app/main.py   
+
+# Install dependencies
+COPY {handler}_requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+# Add other files
+COPY MobileNetSSD_deploy.caffemodel /app/MobileNetSSD_deploy.caffemodel
+COPY MobileNetSSD_deploy.prototxt.txt /app/MobileNetSSD_deploy.prototxt.txt
+
+EXPOSE 8080
+CMD ["python", "server.py"]
