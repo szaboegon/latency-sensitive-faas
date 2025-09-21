@@ -1,5 +1,7 @@
 package core
 
+import "mime/multipart"
+
 type Component struct {
 	Name    string `json:"name"`
 	Memory  int    `json:"memory"`  // in MB
@@ -70,4 +72,14 @@ type RoutingTable map[string][]Route // Key: Component name
 type Build struct {
 	Image     string `json:"image"`
 	Timestamp string `json:"timestamp"`
+}
+
+type FunctionAppCreationData struct {
+	Components   []Component
+	Links        []ComponentLink
+	UploadDir    string
+	Files        []*multipart.FileHeader
+	AppName      string
+	Runtime      string
+	LatencyLimit int
 }

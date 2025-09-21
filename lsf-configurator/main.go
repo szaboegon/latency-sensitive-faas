@@ -23,6 +23,7 @@ import (
 	"time"
 )
 
+var controller core.Controller
 var composer *core.Composer
 var conf config.Configuration
 var metricsReader core.MetricsReader
@@ -84,7 +85,7 @@ func main() {
 	}
 
 	controllerCtx, controllerCancel := context.WithCancel(context.Background())
-    controller := core.NewController(composer, metricsReader, 1*time.Second) 
+    controller = core.NewController(composer, metricsReader, 1*time.Second) 
 
     go func() {
         if err := controller.Start(controllerCtx); err != nil {
@@ -125,7 +126,7 @@ func startHttpServer() *http.Server {
 
 func registerHandlers(mux *http.ServeMux) {
 	mux.HandleFunc(api.HealthzPath, api.HealthCheckHandler)
-	mux.Handle(api.AppsPath+"/", http.StripPrefix(api.AppsPath, api.NewHandlerApps(composer, conf)))
+	mux.Handle(api.AppsPath+"/", http.StripPrefix(api.AppsPath, api.NewHandlerApps(composer, controller, conf)))
 	mux.Handle(api.DeploymentsPath+"/", http.StripPrefix(api.DeploymentsPath, api.NewHandlerDeployments(composer, conf)))
 	mux.Handle(api.FunctionCompositionsPath+"/", http.StripPrefix(api.FunctionCompositionsPath, api.NewHandlerFunctionCompositions(composer, conf)))
 	mux.Handle(api.MetricsPath+"/", http.StripPrefix(api.MetricsPath, api.NewHandlerMetrics(metricsReader, conf)))

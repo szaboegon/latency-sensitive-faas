@@ -13,13 +13,15 @@ const (
 
 type HandlerApps struct {
 	composer *core.Composer
+	controller core.Controller
 	conf     config.Configuration
 	mux      *http.ServeMux
 }
 
-func NewHandlerApps(composer *core.Composer, conf config.Configuration) *HandlerApps {
+func NewHandlerApps(composer *core.Composer, controller core.Controller, conf config.Configuration) *HandlerApps {
 	h := &HandlerApps{
 		composer: composer,
+		controller: controller,
 		conf:     conf,
 		mux:      http.NewServeMux(),
 	}
@@ -79,8 +81,17 @@ func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = h.composer.CreateFunctionApp(payload.Components, payload.Links,
-		h.conf.UploadDir, files, payload.Name, payload.Runtime, payload.LatencyLimit)
+	data := core.FunctionAppCreationData{
+		Components:   payload.Components,
+		Links:        payload.Links,
+		UploadDir:    h.conf.UploadDir,
+		Files:        files,
+		AppName:      payload.Name,
+		Runtime:      payload.Runtime,
+		LatencyLimit: payload.LatencyLimit,
+	}
+
+	err = h.controller.RegisterFunctionApp(data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -111,8 +122,16 @@ func (h *HandlerApps) bulkCreate(w http.ResponseWriter, r *http.Request) {
 	var createdDeployments []*core.Deployment
 
 	// Create the function app
-	app, err := h.composer.CreateFunctionApp(payload.FunctionApp.Components, payload.FunctionApp.Links,
-		h.conf.UploadDir, files, payload.FunctionApp.Name, payload.FunctionApp.Runtime, payload.FunctionApp.LatencyLimit)
+	data := core.FunctionAppCreationData{
+		Components:   payload.FunctionApp.Components,
+		Links:        payload.FunctionApp.Links,
+		UploadDir:    h.conf.UploadDir,
+		Files:        files,
+		AppName:      payload.FunctionApp.Name,
+		Runtime:      payload.FunctionApp.Runtime,
+		LatencyLimit: payload.FunctionApp.LatencyLimit,
+	}
+	app, err := h.composer.CreateFunctionApp(data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

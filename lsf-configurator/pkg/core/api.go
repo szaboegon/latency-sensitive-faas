@@ -40,6 +40,7 @@ type MetricsReader interface {
 
 type Controller interface{
 	Start(ctx context.Context) error
+	RegisterFunctionApp(creationData FunctionAppCreationData) error
 }
 
 type LayoutCalculator interface {

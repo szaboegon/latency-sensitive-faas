@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"lsf-configurator/pkg/filesystem"
 	"lsf-configurator/pkg/uuid"
-	"mime/multipart"
 	"path/filepath"
 	"strings"
 	"time"
@@ -68,40 +67,32 @@ func (c *Composer) ListFunctionApps() ([]*FunctionApp, error) {
 	return c.functionAppRepo.GetAll()
 }
 
-func (c *Composer) CreateFunctionApp(
-	components []Component,
-	links []ComponentLink,
-	uploadDir string,
-	files []*multipart.FileHeader,
-	appName string,
-	runtime string,
-	latencyLimit int,
-) (*FunctionApp, error) {
+func (c *Composer) CreateFunctionApp( creationData FunctionAppCreationData) (*FunctionApp, error) {
 	id := uuid.New()
 	fcApp := FunctionApp{
 		Id:           id,
-		Name:         appName,
+		Name:         creationData.AppName,
 		Compositions: make([]*FunctionComposition, 0),
 		Files:        make([]string, 0),
 		SourcePath:   "",
-		Components:   components,
-		Links:        links,
-		Runtime:      strings.ToLower(runtime),
-		LatencyLimit: latencyLimit,
+		Components:   creationData.Components,
+		Links:        creationData.Links,
+		Runtime:      strings.ToLower(creationData.Runtime),
+		LatencyLimit: creationData.LatencyLimit,
 	}
 
-	appDir := filepath.Join(uploadDir, fcApp.Id)
+	appDir := filepath.Join(creationData.UploadDir, fcApp.Id)
 	err := filesystem.CreateDir(appDir)
 	if err != nil {
 		return nil, fmt.Errorf("could not create directory for app files: %s", err.Error())
 	}
 	fcApp.SourcePath = appDir
 
-	for _, fileHeader := range files {
+	for _, fileHeader := range creationData.Files {
 		fileName := fileHeader.Filename
 		if isComponent(fileName, fcApp.Runtime) {
 			componentName := strings.TrimSuffix(fileName, filepath.Ext(fileName))
-			if !containsComponent(components, componentName) {
+			if !containsComponent(creationData.Components, componentName) {
 				return nil, fmt.Errorf("component file %s does not match any declared component", fileName)
 			}
 		} else {

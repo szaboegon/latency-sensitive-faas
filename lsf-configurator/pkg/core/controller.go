@@ -57,6 +57,22 @@ func (c *latencyController) Start(ctx context.Context) error {
     }
 }
 
+func (c *latencyController) RegisterFunctionApp(
+	creationData FunctionAppCreationData) error {
+	app, err := c.composer.CreateFunctionApp(creationData)
+	if err != nil {
+		log.Printf("Error creating function app: %v", err)
+		return err
+	}
+	layout, err := c.layout.CalculateLayout(*app)
+	if err != nil {
+		log.Printf("Error calculating layout for app %s: %v", app.Id, err)
+		return err
+	}
+	log.Printf("Calculated layout for app %s: %v", app.Id, layout)
+	return nil
+}
+
 func (c *latencyController) handleLatencyViolation(app *FunctionApp) error {
 	log.Printf("App %s exceeds latency threshold (%d ms). Triggering reconfiguration.", app.Id, app.LatencyLimit)
 	// TODO either calculate new layout here, or use one of the pre-calculated layouts
