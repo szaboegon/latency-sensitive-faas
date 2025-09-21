@@ -295,6 +295,60 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 	return averageRuntime, nil
 }
 
+//TODO
+func (c metricsClient) Query95thPercentileAppRuntimes() (map[string]float64, error) {
+	appNameField := "labels.app_name"
+	durationField := "span.duration.us" // <-- adjust if your mapping differs
+
+	res, err := c.client.Search().
+		Index(tracesIndex).
+		Request(&search.Request{
+			Size: 0, // no hits, only aggregations
+			Aggregations: map[string]types.Aggregations{
+				"by_app": {
+					Terms: &types.TermsAggregation{
+						Field: &appNameField,
+						Size:  types.IntPtr(1000), // number of apps expected
+					},
+					Aggregations: map[string]types.Aggregations{
+						"p95_latency": {
+							Percentiles: &types.PercentilesAggregation{
+								Field: &durationField,
+								Percents: []float64{95},
+							},
+						},
+					},
+				},
+			},
+		}).
+		Do(context.Background())
+
+	if err != nil {
+		return nil, err
+	}
+
+	appsAgg, ok := res.Aggregations["by_app"].(*types.StringTermsAggregate)
+	if !ok {
+		return nil, errors.New("incorrect aggregation type for by_app")
+	}
+
+	results := make(map[string]float64)
+
+	for _, bucket := range appsAgg.Buckets.([]types.StringTermsBucket) {
+		appName := bucket.Key.(string)
+		p95Agg := bucket.Aggregations["p95_latency"].(*types.PercentilesAggregate)
+
+		for _, v := range p95Agg.Values {
+			if v.Value != nil {
+				results[appName] = *v.Value / 1e6 // convert µs → seconds
+			}
+		}
+	}
+
+	return results, nil
+}
+
+
 func unmarshalSpanTimestamp(jsonMessage json.RawMessage) (float64, error) {
 	var span map[string]interface{}
 	if err := json.Unmarshal(jsonMessage, &span); err != nil {

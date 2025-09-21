@@ -34,5 +34,14 @@ type AlertClient interface {
 type MetricsReader interface {
 	QueryNodeMetrics() ([]NodeMetrics, error)
 	QueryAverageAppRuntime(appId string) (float64, error)
+	Query95thPercentileAppRuntimes() (map[string]float64, error)
 	EnsureIndex(ctx context.Context, indexName string) error
+}
+
+type Controller interface{
+	Start(ctx context.Context) error
+}
+
+type LayoutCalculator interface {
+	CalculateLayout(app FunctionApp) (map[string][]string, error)
 }

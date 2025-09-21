@@ -77,16 +77,29 @@ func main() {
 
 	composer = core.NewComposer(functionAppRepo, fcRepo, deploymentRepo, routingClient,
 		knClient, tektonBuilder, alertClient, metricsReader)
+
 	err = filesystem.CreateDir(conf.UploadDir)
 	if err != nil {
 		log.Fatalf("Could not create uploads directory: %v", err)
 	}
+
+	controllerCtx, controllerCancel := context.WithCancel(context.Background())
+    controller := core.NewController(composer, metricsReader, 1*time.Second) 
+
+    go func() {
+        if err := controller.Start(controllerCtx); err != nil {
+            log.Printf("Latency controller stopped with error: %v", err)
+        } else {
+            log.Println("Latency controller stopped gracefully")
+        }
+    }()
 
 	s := startHttpServer()
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
 
 	<-signalCh
+	controllerCancel()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
