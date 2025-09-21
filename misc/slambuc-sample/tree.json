@@ -1,0 +1,18 @@
+{
+  "params": {
+    "root": 1,
+    "M": 6,
+    "L": 450,
+    "cp_end": 3,
+    "delay": 10
+  },
+  "nodes": [
+    {"id": 1, "mem": 2, "runtime": 50},
+    {"id": 2, "mem": 1, "runtime": 30},
+    {"id": 3, "mem": 1, "runtime": 20}
+  ],
+  "edges": [
+    [1, 2, {"rate": 1, "data": 10}],
+    [2, 3, {"rate": 3, "data": 15}]
+  ]
+}
