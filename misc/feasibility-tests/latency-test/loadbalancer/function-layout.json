@@ -1,0 +1,29 @@
+{
+    "application-name": "latency-test",
+    "func-partitions" : [
+        {
+            "name" :"func-1-lb",
+            "components": [
+              "dummy1"
+            ],
+            "edgenode": "knative",
+            "namespace": "application"
+        },
+        {
+            "name" :"func-2-lb",
+            "components": [
+               "dummy2"
+            ],
+             "edgenode": "knative-m02",
+             "namespace": "application"
+        },
+        {
+            "name" :"func-3-lb",
+            "components": [
+               "dummy3"
+            ],
+             "edgenode": "knative-m03",
+             "namespace": "application"
+        }
+    ]
+}
