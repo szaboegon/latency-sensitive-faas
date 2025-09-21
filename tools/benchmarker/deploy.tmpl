@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {handler}-func
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {handler}-func
+  template:
+    metadata:
+      labels:
+        app: {handler}-func
+    spec:
+      containers:
+        - name: {handler}-func
+          image: szaboegon/{handler}_benchmark:latest
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "1"
+              memory: "1024Mi"
+            limits:
+              cpu: "1"
+              memory: "1024Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {handler}-func
+spec:
+  selector:
+    app: {handler}-func
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: NodePort

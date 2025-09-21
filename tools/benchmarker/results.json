@@ -1,0 +1,38 @@
+{
+  "resize": {
+    "mean_wall_time_sec": 0.04280120199999146,
+    "p95_wall_time_sec": 0.054203650000079054,
+    "mean_server_memory_mib": 86.7325390625,
+    "peak_server_memory_mib": 96.48828125
+  },
+  "grayscale": {
+    "mean_wall_time_sec": 0.06231311099999402,
+    "p95_wall_time_sec": 0.11077439499999855,
+    "mean_server_memory_mib": 69.7737890625,
+    "peak_server_memory_mib": 70.79296875
+  },
+  "objectdetect": {
+    "mean_wall_time_sec": 1.1571893220000085,
+    "p95_wall_time_sec": 1.3566012949998707,
+    "mean_server_memory_mib": 506.4803515625,
+    "peak_server_memory_mib": 562.16015625
+  },
+  "cut": {
+    "mean_wall_time_sec": 0.04055606099999522,
+    "p95_wall_time_sec": 0.06412737499993,
+    "mean_server_memory_mib": 70.2953125,
+    "peak_server_memory_mib": 79.0390625
+  },
+  "objectdetect2": {
+    "mean_wall_time_sec": 1.1556355890000123,
+    "p95_wall_time_sec": 1.3756396399999518,
+    "mean_server_memory_mib": 511.62,
+    "peak_server_memory_mib": 563.078125
+  },
+  "tag": {
+    "mean_wall_time_sec": 0.04318976000000248,
+    "p95_wall_time_sec": 0.05443930500017587,
+    "mean_server_memory_mib": 74.4171875,
+    "peak_server_memory_mib": 82.0546875
+  }
+}
