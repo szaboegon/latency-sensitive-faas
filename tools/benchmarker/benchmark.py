@@ -181,9 +181,12 @@ def benchmark(url: str, pod_name: str, json_file: str, num_requests: int, delay:
     if not wall_times:
         raise RuntimeError("No successful requests were completed.")
 
+    # Convert wall times to ms
+    wall_times_ms: List[int] = [int(w * 1000) for w in wall_times]
+
     result = {
-        "mean_wall_time_sec": statistics.mean(wall_times),
-        "p95_wall_time_sec": statistics.quantiles(wall_times, n=100)[94] if len(wall_times) >= 100 else max(wall_times),
+        "mean_wall_time_ms": int(statistics.mean(wall_times_ms)),
+        "p95_wall_time_ms": int(statistics.quantiles(wall_times_ms, n=100)[94]) if len(wall_times_ms) >= 100 else max(wall_times_ms),
         "mean_server_memory_mib": statistics.mean(server_mems),
         "peak_server_memory_mib": max(server_mems),
     }

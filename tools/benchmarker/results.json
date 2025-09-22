@@ -1,38 +1,38 @@
 {
   "resize": {
-    "mean_wall_time_sec": 0.027825463300105185,
-    "p95_wall_time_sec": 0.03315196007024497,
-    "mean_server_memory_mib": 42.4914375,
-    "peak_server_memory_mib": 44.1015625
+    "mean_wall_time_ms": 26,
+    "p95_wall_time_ms": 31,
+    "mean_server_memory_mib": 95.45257421875,
+    "peak_server_memory_mib": 96.7734375
   },
   "grayscale": {
-    "mean_wall_time_sec": 0.03301851880224422,
-    "p95_wall_time_sec": 0.040241049998439846,
-    "mean_server_memory_mib": 43.10992578125,
-    "peak_server_memory_mib": 44.27734375
+    "mean_wall_time_ms": 41,
+    "p95_wall_time_ms": 52,
+    "mean_server_memory_mib": 85.487796875,
+    "peak_server_memory_mib": 91.203125
   },
   "objectdetect": {
-    "mean_wall_time_sec": 1.0300454616062342,
-    "p95_wall_time_sec": 1.0853759253397584,
-    "mean_server_memory_mib": 479.50796875,
-    "peak_server_memory_mib": 529.83984375
+    "mean_wall_time_ms": 1009,
+    "p95_wall_time_ms": 1066,
+    "mean_server_memory_mib": 543.30377734375,
+    "peak_server_memory_mib": 591.8046875
   },
   "cut": {
-    "mean_wall_time_sec": 0.025345930399838835,
-    "p95_wall_time_sec": 0.0292595301521942,
-    "mean_server_memory_mib": 42.2949140625,
-    "peak_server_memory_mib": 43.29296875
+    "mean_wall_time_ms": 24,
+    "p95_wall_time_ms": 29,
+    "mean_server_memory_mib": 77.82366796875,
+    "peak_server_memory_mib": 78.73046875
   },
   "objectdetect2": {
-    "mean_wall_time_sec": 1.0140745404935443,
-    "p95_wall_time_sec": 1.0529328902019188,
-    "mean_server_memory_mib": 479.69033984375,
-    "peak_server_memory_mib": 529.828125
+    "mean_wall_time_ms": 998,
+    "p95_wall_time_ms": 1041,
+    "mean_server_memory_mib": 539.2533515625,
+    "peak_server_memory_mib": 591.64453125
   },
   "tag": {
-    "mean_wall_time_sec": 0.029394517704378814,
-    "p95_wall_time_sec": 0.03326838014181703,
-    "mean_server_memory_mib": 43.37745703125,
-    "peak_server_memory_mib": 44.26171875
+    "mean_wall_time_ms": 28,
+    "p95_wall_time_ms": 33,
+    "mean_server_memory_mib": 81.635140625,
+    "peak_server_memory_mib": 82.5546875
   }
 }

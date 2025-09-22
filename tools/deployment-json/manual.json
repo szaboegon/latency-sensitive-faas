@@ -3,28 +3,26 @@
     "name": "object-detection",
     "runtime": "python",
     "components": [
-      {"name": "imagegrab", "memory": 128, "runtime": "100"},
-      {"name": "resize", "memory": 128, "runtime": "200"},
-      {"name": "grayscale", "memory": 128, "runtime": "150"},
-      {"name": "objectdetect", "memory": 512, "runtime": "800"},
-      {"name": "objectdetect2", "memory": 512, "runtime": "700"},
-      {"name": "cut", "memory": 256, "runtime": "300"},
-      {"name": "tag", "memory": 128, "runtime": "100"}
+      { "name": "resize", "memory": 97, "runtime": "31" },
+      { "name": "grayscale", "memory": 92, "runtime": "52" },
+      { "name": "objectdetect", "memory": 592, "runtime": "1066" },
+      { "name": "cut", "memory": 79, "runtime": "29" },
+      { "name": "objectdetect2", "memory": 592, "runtime": "1041" },
+      { "name": "tag", "memory": 83, "runtime": "33" }
     ],
     "links": [
-      {"from": "imagegrab", "to": "resize", "invocation_rate": 1.0},
-      {"from": "resize", "to": "grayscale", "invocation_rate": 1.0},
-      {"from": "grayscale", "to": "objectdetect", "invocation_rate": 1.0},
-      {"from": "grayscale", "to": "cut", "invocation_rate": 1.0},
-      {"from": "objectdetect", "to": "cut", "invocation_rate": 1.0},
-      {"from": "objectdetect2", "to": "tag", "invocation_rate": 1.0}
+      { "from": "resize", "to": "grayscale", "invocation_rate": 1.0 },
+      { "from": "grayscale", "to": "objectdetect", "invocation_rate": 1.0 },
+      { "from": "objectdetect", "to": "cut", "invocation_rate": 1.0 },
+      { "from": "cut", "to": "objectdetect2", "invocation_rate": 3.0 },
+      { "from": "objectdetect2", "to": "tag", "invocation_rate": 1.0 }
     ],
-    "latency_limit": 2000
+    "latency_limit": 2252
   },
   "functionCompositions": [
     {
       "id": "composition-1",
-      "components": ["imagegrab", "resize"],
+      "components": ["resize"],
       "files": []
     },
     {
@@ -35,12 +33,18 @@
     {
       "id": "composition-3",
       "components": ["objectdetect", "objectdetect2"],
-      "files":["MobileNetSSD_deploy.caffemodel", "MobileNetSSD_deploy.prototxt.txt"]
+      "files": [
+        "MobileNetSSD_deploy.caffemodel",
+        "MobileNetSSD_deploy.prototxt.txt"
+      ]
     },
     {
       "id": "composition-4",
       "components": ["objectdetect2", "tag"],
-      "files":["MobileNetSSD_deploy.caffemodel", "MobileNetSSD_deploy.prototxt.txt"]
+      "files": [
+        "MobileNetSSD_deploy.caffemodel",
+        "MobileNetSSD_deploy.prototxt.txt"
+      ]
     }
   ],
   "deployments": [
@@ -49,27 +53,18 @@
       "functionCompositionId": "composition-1",
       "node": "knative",
       "namespace": "application",
-      "routingTable":{
-        "imagegrab": [
-          { "to": "resize", "function": "local" }
-        ],
-        "resize": [
-          { "to": "grayscale", "function": "deployment-2" }
-        ]
+      "routingTable": {
+        "resize": [{ "to": "grayscale", "function": "deployment-2" }]
       }
     },
-        {
+    {
       "id": "deployment-2",
       "functionCompositionId": "composition-2",
       "node": "knative-m02",
       "namespace": "application",
-      "routingTable":{
-        "grayscale": [
-          { "to": "objectdetect", "function": "deployment-3" }
-        ],
-        "cut": [
-          { "to": "objectdetect2", "function": "deployment-3" }
-        ]
+      "routingTable": {
+        "grayscale": [{ "to": "objectdetect", "function": "deployment-3" }],
+        "cut": [{ "to": "objectdetect2", "function": "deployment-3" }]
       }
     },
     {
@@ -77,13 +72,9 @@
       "functionCompositionId": "composition-3",
       "node": "knative-m02",
       "namespace": "application",
-      "routingTable":{
-        "objectdetect": [
-          { "to": "cut", "function": "deployment-2" }
-        ],
-        "objectdetect2": [
-          { "to": "tag", "function": "deployment-4" }
-        ]
+      "routingTable": {
+        "objectdetect": [{ "to": "cut", "function": "deployment-2" }],
+        "objectdetect2": [{ "to": "tag", "function": "deployment-4" }]
       }
     },
     {
@@ -91,10 +82,8 @@
       "functionCompositionId": "composition-4",
       "node": "knative-m03",
       "namespace": "application",
-      "routingTable":{
-        "objectdetect2": [
-          { "to": "tag", "function": "local" }
-        ],
+      "routingTable": {
+        "objectdetect2": [{ "to": "tag", "function": "local" }],
         "tag": []
       }
     }
