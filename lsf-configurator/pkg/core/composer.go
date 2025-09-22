@@ -31,7 +31,6 @@ type Composer struct {
 	functionAppRepo FunctionAppRepository
 	fcRepo          FunctionCompositionRepository
 	deploymentRepo  DeploymentRepository
-	alertClient     AlertClient
 	metricsReader   MetricsReader
 }
 
@@ -42,7 +41,6 @@ func NewComposer(
 	routingClient RoutingClient,
 	knClient KnClient,
 	builder Builder,
-	alertClient AlertClient,
 	metricsReader MetricsReader,
 ) *Composer {
 	scheduler := NewScheduler(WorkerPoolSize, QueueSize)
@@ -54,7 +52,6 @@ func NewComposer(
 		functionAppRepo: functionAppRepo,
 		fcRepo:          fcRepo,
 		deploymentRepo:  deploymentRepo,
-		alertClient:     alertClient,
 		metricsReader:   metricsReader,
 	}
 }
@@ -102,11 +99,6 @@ func (c *Composer) CreateFunctionApp( creationData FunctionAppCreationData) (*Fu
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	_, err = c.alertClient.CreateOrUpdateRule(context.TODO(), fcApp.Name, fcApp.LatencyLimit)
-	if err != nil {
-		return nil, fmt.Errorf("could not create alert rule: %s", err.Error())
 	}
 
 	if err := c.functionAppRepo.Save(&fcApp); err != nil {

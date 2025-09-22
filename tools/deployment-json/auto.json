@@ -3,22 +3,22 @@
     "name": "object-detection",
     "runtime": "python",
     "components": [
-      { "name": "resize", "memory": 97, "runtime": "31" },
-      { "name": "grayscale", "memory": 92, "runtime": "52" },
-      { "name": "objectdetect", "memory": 592, "runtime": "1066" },
-      { "name": "cut", "memory": 79, "runtime": "29" },
-      { "name": "objectdetect2", "memory": 592, "runtime": "1041" },
-      { "name": "tag", "memory": 83, "runtime": "33" }
+      { "name": "resize", "memory": 97, "runtime": 31 },
+      { "name": "grayscale", "memory": 92, "runtime": 52 },
+      { "name": "objectdetect", "memory": 592, "runtime": 1066 },
+      { "name": "cut", "memory": 79, "runtime": 29 },
+      { "name": "objectdetect2", "memory": 592, "runtime": 1041 },
+      { "name": "tag", "memory": 83, "runtime": 33 }
     ],
     "links": [
-      { "from": "resize", "to": "grayscale", "invocation_rate": 1.0 },
-      { "from": "grayscale", "to": "objectdetect", "invocation_rate": 1.0 },
-      { "from": "objectdetect", "to": "cut", "invocation_rate": 1.0 },
-      { "from": "cut", "to": "objectdetect2", "invocation_rate": 3.0 },
-      { "from": "objectdetect2", "to": "tag", "invocation_rate": 1.0 }
+      { "from": "resize", "to": "grayscale", "invocationRate": 1.0 },
+      { "from": "grayscale", "to": "objectdetect", "invocationRate": 1.0 },
+      { "from": "objectdetect", "to": "cut", "invocationRate": 1.0 },
+      { "from": "cut", "to": "objectdetect2", "invocationRate": 3.0 },
+      { "from": "objectdetect2", "to": "tag", "invocationRate": 1.0 }
     ],
-    "latency_limit": 2252,
-    "platform_managed": true
+    "latencyLimit": 2252,
+    "platformManaged": true
   },
   "functionCompositions": [],
   "deployments": []

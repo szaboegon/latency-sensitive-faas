@@ -13,8 +13,8 @@ import (
 	"lsf-configurator/pkg/data/repos"
 	"lsf-configurator/pkg/filesystem"
 	"lsf-configurator/pkg/knative"
+	"lsf-configurator/pkg/layout"
 	"lsf-configurator/pkg/metrics"
-	"lsf-configurator/pkg/metrics/alerts"
 	"lsf-configurator/pkg/routing"
 	"net/http"
 	"os"
@@ -64,36 +64,41 @@ func main() {
 		log.Fatalf("failed to create metrics reader: %v", err)
 	}
 
-	alertClient = alerts.NewAlertClient(conf.AlertingApiUrl, conf.AlertingUsername, conf.AlertingPassword)
-	if !conf.LocalMode {
-		err = metricsReader.EnsureIndex(context.Background(), conf.AlertsIndex)
-		if err != nil {
-			log.Fatalf("failed to ensure alerts index: %v", err)
-		}
-		_, err = alertClient.EnsureAlertConnector(context.Background(), conf.AlertingConnector, conf.AlertsIndex)
-		if err != nil {
-			log.Fatalf("failed to ensure alert connector: %v", err)
-		}
-	}
+	// TODO delete if not needed anymore
+	// alertClient = alerts.NewAlertClient(conf.AlertingApiUrl, conf.AlertingUsername, conf.AlertingPassword)
+	// if !conf.LocalMode {
+	// 	err = metricsReader.EnsureIndex(context.Background(), conf.AlertsIndex)
+	// 	if err != nil {
+	// 		log.Fatalf("failed to ensure alerts index: %v", err)
+	// 	}
+	// 	_, err = alertClient.EnsureAlertConnector(context.Background(), conf.AlertingConnector, conf.AlertsIndex)
+	// 	if err != nil {
+	// 		log.Fatalf("failed to ensure alert connector: %v", err)
+	// 	}
+	// }
 
 	composer = core.NewComposer(functionAppRepo, fcRepo, deploymentRepo, routingClient,
-		knClient, tektonBuilder, alertClient, metricsReader)
+		knClient, tektonBuilder, metricsReader)
 
 	err = filesystem.CreateDir(conf.UploadDir)
 	if err != nil {
 		log.Fatalf("Could not create uploads directory: %v", err)
 	}
 
-	controllerCtx, controllerCancel := context.WithCancel(context.Background())
-    controller = core.NewController(composer, metricsReader, 1*time.Second) 
+	layoutCalculator := layout.NewLayoutCalculator()
 
-    go func() {
-        if err := controller.Start(controllerCtx); err != nil {
-            log.Printf("Latency controller stopped with error: %v", err)
-        } else {
-            log.Println("Latency controller stopped gracefully")
-        }
-    }()
+	controllerCtx, controllerCancel := context.WithCancel(context.Background())
+    controller = core.NewController(composer, metricsReader, layoutCalculator, 1*time.Second)
+
+	if !conf.LocalMode{
+		go func() {
+			if err := controller.Start(controllerCtx); err != nil {
+				log.Printf("Latency controller stopped with error: %v", err)
+			} else {
+				log.Println("Latency controller stopped gracefully")
+			}
+		}()
+	}
 
 	s := startHttpServer()
 	signalCh := make(chan os.Signal, 1)

@@ -26,6 +26,7 @@ func NewHandlerMetrics(metricsClient core.MetricsReader, conf config.Configurati
 	}
 
 	h.mux.HandleFunc("GET /apps/{app_id}", h.getAppMetrics)
+	h.mux.HandleFunc("GET /apps", h.getAllAppMetrics)
 
 	return h
 }
@@ -38,6 +39,18 @@ func (h *HandlerMetrics) getAppMetrics(w http.ResponseWriter, r *http.Request) {
 	appId := r.PathValue("app_id")
 
 	metrics, err := h.metricsClient.QueryAverageAppRuntime(appId)
+	if err != nil {
+		log.Printf("Error querying metrics: %v", err)
+		http.Error(w, "Failed to query metrics", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(metrics)
+}
+
+func (h *HandlerMetrics) getAllAppMetrics(w http.ResponseWriter, r *http.Request) {
+	metrics, err := h.metricsClient.Query95thPercentileAppRuntimes()
 	if err != nil {
 		log.Printf("Error querying metrics: %v", err)
 		http.Error(w, "Failed to query metrics", http.StatusInternalServerError)
