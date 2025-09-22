@@ -57,20 +57,19 @@ func (c *latencyController) Start(ctx context.Context) error {
     }
 }
 
-func (c *latencyController) RegisterFunctionApp(
-	creationData FunctionAppCreationData) error {
+func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreationData) (*FunctionApp, error) {
 	app, err := c.composer.CreateFunctionApp(creationData)
 	if err != nil {
 		log.Printf("Error creating function app: %v", err)
-		return err
+		return nil, err
 	}
 	layout, err := c.layout.CalculateLayout(*app)
 	if err != nil {
 		log.Printf("Error calculating layout for app %s: %v", app.Id, err)
-		return err
+		return nil, err
 	}
 	log.Printf("Calculated layout for app %s: %v", app.Id, layout)
-	return nil
+	return app, nil
 }
 
 func (c *latencyController) handleLatencyViolation(app *FunctionApp) error {

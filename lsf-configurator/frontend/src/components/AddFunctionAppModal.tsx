@@ -1,5 +1,5 @@
-import React, { useState } from "react"
-import { useForm, useFieldArray } from "react-hook-form"
+import React, { useState } from "react";
+import { useForm, useFieldArray } from "react-hook-form";
 import {
   Modal,
   Box,
@@ -14,26 +14,29 @@ import {
   Tabs,
   Tab,
   IconButton,
-} from "@mui/material"
-import { useCreateFunctionApp } from "../hooks/functionAppsHooks"
-import FunctionAppJsonForm from "./FunctionAppJsonForm"
-import type { FunctionAppCreateDto } from "../models/dto"
-import type { Component, ComponentLink } from "../models/models"
-import AddIcon from "@mui/icons-material/Add"
-import DeleteIcon from "@mui/icons-material/Delete"
+  Checkbox,
+  FormControlLabel,
+} from "@mui/material";
+import { useCreateFunctionApp } from "../hooks/functionAppsHooks";
+import FunctionAppJsonForm from "./FunctionAppJsonForm";
+import type { FunctionAppCreateDto } from "../models/dto";
+import type { Component, ComponentLink } from "../models/models";
+import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 interface AddFunctionAppModalProps {
-  open: boolean
-  onClose: () => void
+  open: boolean;
+  onClose: () => void;
 }
 
 interface FormData {
-  name: string
-  files: FileList
-  runtime: string
-  latencyLimit: number
-  components: Component[]
-  links: ComponentLink[]
+  name: string;
+  files: FileList;
+  runtime: string;
+  latencyLimit: number;
+  components: Component[];
+  links: ComponentLink[];
+  platformManaged?: boolean;
 }
 
 const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
@@ -44,23 +47,24 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
     defaultValues: {
       components: [],
       links: [],
+      platformManaged: false,
     },
-  })
+  });
 
   const {
     fields: componentFields,
     append: appendComponent,
     remove: removeComponent,
-  } = useFieldArray({ control, name: "components" })
+  } = useFieldArray({ control, name: "components" });
 
   const {
     fields: linkFields,
     append: appendLink,
     remove: removeLink,
-  } = useFieldArray({ control, name: "links" })
+  } = useFieldArray({ control, name: "links" });
 
-  const { mutate: createFunctionApp } = useCreateFunctionApp()
-  const [tabValue, setTabValue] = useState<"form" | "json">("form")
+  const { mutate: createFunctionApp } = useCreateFunctionApp();
+  const [tabValue, setTabValue] = useState<"form" | "json">("form");
 
   const onSubmit = (data: FormData) => {
     const fcApp: FunctionAppCreateDto = {
@@ -69,17 +73,18 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
       latencyLimit: data.latencyLimit,
       components: data.components,
       links: data.links,
-    }
-    createFunctionApp({ functionApp: fcApp, files: data.files })
-    onClose()
-  }
+      platformManaged: data.platformManaged || false,
+    };
+    createFunctionApp({ functionApp: fcApp, files: data.files });
+    onClose();
+  };
 
   const handleTabChange = (
     _: React.SyntheticEvent,
     newValue: "form" | "json"
   ) => {
-    setTabValue(newValue)
-  }
+    setTabValue(newValue);
+  };
 
   return (
     <Modal open={open} onClose={onClose}>
@@ -130,7 +135,10 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
               type="number"
               fullWidth
               margin="normal"
-              {...register("latencyLimit", { required: true, valueAsNumber: true })}
+              {...register("latencyLimit", {
+                required: true,
+                valueAsNumber: true,
+              })}
             />
             <Input
               type="file"
@@ -138,25 +146,44 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
               {...register("files", { required: true })}
               inputProps={{ multiple: true }}
             />
+            <FormControlLabel
+              control={<Checkbox {...register("platformManaged")} />}
+              label="platform managed"
+              sx={{ mt: 1 }}
+            />
 
             {/* Components Section */}
             <Box mt={3}>
               <Typography variant="subtitle1">Components</Typography>
               {componentFields.map((field, index) => (
-                <Box key={field.id} display="flex" gap={2} alignItems="center" mt={1}>
+                <Box
+                  key={field.id}
+                  display="flex"
+                  gap={2}
+                  alignItems="center"
+                  mt={1}
+                >
                   <TextField
                     label="Name"
-                    {...register(`components.${index}.name`, { required: true })}
+                    {...register(`components.${index}.name`, {
+                      required: true,
+                    })}
                   />
                   <TextField
                     label="Memory Limit"
                     type="number"
-                    {...register(`components.${index}.memory`, { required: true, valueAsNumber: true })}
+                    {...register(`components.${index}.memory`, {
+                      required: true,
+                      valueAsNumber: true,
+                    })}
                   />
                   <TextField
                     label="Runtime (ms)"
                     type="number"
-                    {...register(`components.${index}.runtime`, { required: true, valueAsNumber: true })}
+                    {...register(`components.${index}.runtime`, {
+                      required: true,
+                      valueAsNumber: true,
+                    })}
                   />
                   <IconButton onClick={() => removeComponent(index)}>
                     <DeleteIcon />
@@ -178,7 +205,13 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
             <Box mt={3}>
               <Typography variant="subtitle1">Links</Typography>
               {linkFields.map((field, index) => (
-                <Box key={field.id} display="flex" gap={2} alignItems="center" mt={1}>
+                <Box
+                  key={field.id}
+                  display="flex"
+                  gap={2}
+                  alignItems="center"
+                  mt={1}
+                >
                   <TextField
                     label="From"
                     {...register(`links.${index}.from`, { required: true })}
@@ -224,7 +257,7 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
         {tabValue === "json" && <FunctionAppJsonForm onClose={onClose} />}
       </Box>
     </Modal>
-  )
-}
+  );
+};
 
-export default AddFunctionAppModal
+export default AddFunctionAppModal;

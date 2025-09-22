@@ -8,6 +8,7 @@ type FunctionAppCreateDto struct {
 	Components   []core.Component     `json:"components"`
 	Links        []core.ComponentLink `json:"links"`
 	LatencyLimit int                  `json:"latency_limit"`
+	PlatformManaged bool              `json:"platform_managed"`
 }
 
 type FunctionCompositionCreateDto struct {

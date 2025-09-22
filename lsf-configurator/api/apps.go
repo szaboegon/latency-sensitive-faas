@@ -91,7 +91,12 @@ func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {
 		LatencyLimit: payload.LatencyLimit,
 	}
 
-	err = h.controller.RegisterFunctionApp(data)
+	if(payload.PlatformManaged) {
+		_, err = h.controller.RegisterFunctionApp(data)
+	} else {
+		_, err = h.composer.CreateFunctionApp(data)
+	}
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -131,7 +136,14 @@ func (h *HandlerApps) bulkCreate(w http.ResponseWriter, r *http.Request) {
 		Runtime:      payload.FunctionApp.Runtime,
 		LatencyLimit: payload.FunctionApp.LatencyLimit,
 	}
-	app, err := h.composer.CreateFunctionApp(data)
+
+	var app *core.FunctionApp
+	var err error
+	if payload.FunctionApp.PlatformManaged {
+		app, err = h.controller.RegisterFunctionApp(data)
+	}else{
+		app, err = h.composer.CreateFunctionApp(data)
+	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
