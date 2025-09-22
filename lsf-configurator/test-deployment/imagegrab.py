@@ -1,4 +1,3 @@
-from parliament import Context
 import cv2
 import base64
 
