@@ -77,6 +77,8 @@ func (c *Client) Init(ctx context.Context, fc core.FunctionComposition, runtime,
 }
 
 func (c *Client) Deploy(ctx context.Context, deployment core.Deployment, image, appId string) error {
+	//TODO calculate replica count based on edge invocation rate, and add it to deployment properties
+	minReplicas := int64(1)
 	f := fn.Function{
 		Name:      deployment.Id,
 		Namespace: deployment.Namespace,
@@ -87,6 +89,12 @@ func (c *Client) Deploy(ctx context.Context, deployment core.Deployment, image, 
 				RequiredNodes: []string{deployment.Node},
 			},
 			Namespace: deployment.Namespace,
+			Options: fn.Options{
+				Scale: &fn.ScaleOptions{
+					Min: &minReplicas, 
+				},
+				//ScaleMetric: &DefaultScaleMetric,
+			},
 		},
 		Run: fn.RunSpec{
 			Envs: getDeployEnvs(appId, deployment.Id),

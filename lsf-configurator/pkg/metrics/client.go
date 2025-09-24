@@ -7,9 +7,7 @@ import (
 	"fmt"
 	"log"
 	"lsf-configurator/pkg/core"
-	"math"
 	"math/big"
-	"sort"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/search"
@@ -298,145 +296,118 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 }
 
 func (c metricsClient) Query95thPercentileAppRuntimes() (map[string]float64, error) {
-	size := 1000
-	appNameField := "labels.app_name"
-	traceIdField := "trace.id"
-	timestampField := "timestamp.us"
+    size := 1000
+    appNameField := "labels.app_name"
 
-
-	res, err := c.client.Search().
-		Index(tracesIndex).
-		Request(&search.Request{
-			Query: &types.Query{
-				Bool: &types.BoolQuery{
-					Must: []types.Query{
+    res, err := c.client.Search().
+        Index(tracesIndex).
+        Request(&search.Request{
+            Size: intPtr(size), // No hits are needed, only aggregations
+            Query: &types.Query{
+                Bool: &types.BoolQuery{
+                    Filter: []types.Query{
+                        {
+                            Range: map[string]types.RangeQuery{
+                                "@timestamp": &types.DateRangeQuery{
+                                    Gte: strPtr("now-160m"),
+                                    Lte: strPtr("now"),
+                                },
+                            },
+                        },
 						{
-							Range: map[string]types.RangeQuery{
-								timestampField: &types.DateRangeQuery{
-									Gte:  strPtr("now-5m"),
-									Lte: strPtr("now"),
-								},
-							},
-						},
-					},
-				},
-			},
-			Aggregations: map[string]types.Aggregations{
-				"apps": {
-					Terms: &types.TermsAggregation{
-						Field: &appNameField,
-						Size:  &size,
-					},
-					Aggregations: map[string]types.Aggregations{
-						"traces": {
-							Terms: &types.TermsAggregation{
-								Field: &traceIdField,
-								Size:  &size,
-							},
-							Aggregations: map[string]types.Aggregations{
-								"first_span": {
-									TopHits: &types.TopHitsAggregation{
-										Sort: []types.SortCombinations{
-											types.SortOptions{
-												SortOptions: map[string]types.FieldSort{
-													timestampField: {
-														Order: &sortorder.Asc,
-													},
-												},
-											},
-										},
-										Size: intPtr(1),
-									},
-								},
-								"all_spans": {
-									TopHits: &types.TopHitsAggregation{
-										Sort: []types.SortCombinations{
-											types.SortOptions{
-												SortOptions: map[string]types.FieldSort{
-													timestampField: {
-														Order: &sortorder.Desc,
-													},
-												},
-											},
-										},
-										Size: &size,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}).
-		Do(context.Background())
+                            Term: map[string]types.TermQuery{
+                                "processor.event": {
+                                    Value: "span",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+            Aggregations: map[string]types.Aggregations{
+                "apps": {
+                    Terms: &types.TermsAggregation{
+                        Field: &appNameField,
+                        Size:  &size,
+                    },
+                    Aggregations: map[string]types.Aggregations{
+                        "traces": {
+                            Terms: &types.TermsAggregation{
+                                Field: strPtr("trace.id"),
+                                Size:  &size,
+                            },
+                            Aggregations: map[string]types.Aggregations{
+                                "min_start": {
+                                    Min: &types.MinAggregation{
+                                        Field: strPtr("@timestamp"),
+                                    },
+                                },
+                                "max_end": {
+                                    Max: &types.MaxAggregation{
+                                        // Calculate the end time of each span using a script
+                                        Script: &types.Script{
+                                            Source: strPtr("doc['@timestamp'].value.toInstant().toEpochMilli() + doc['span.duration.us'].value / 1000"),
+                                        },
+                                    },
+                                },
+                                "trace_duration_ms": {
+                                    BucketScript: &types.BucketScriptAggregation{
+                                        BucketsPath: map[string]string{
+                                            "min_start": "min_start.value",
+                                            "max_end":   "max_end.value",
+                                        },
+                                        Script: &types.Script{
+                                            Source: strPtr("params.max_end - params.min_start"),
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                        "p95_trace_duration": {
+                            Percentiles: &types.PercentilesAggregation{
+                                // The field here refers to the output of the "trace_duration_ms" bucket script
+                                Field:    strPtr("trace_duration_ms"),
+                                Percents: []types.Float64{95.0},
+                            },
+                        },
+                    },
+                },
+            },
+        }).
+        Do(context.Background())
 
-	if err != nil {
-		return nil, err
-	}
+    if err != nil {
+        return nil, fmt.Errorf("error querying metrics: %w", err)
+    }
 
-	appsAgg, ok := res.Aggregations["apps"].(*types.StringTermsAggregate)
-	if !ok {
-		return nil, errors.New("incorrect aggregation type for apps")
-	}
+    appsAgg, ok := res.Aggregations["apps"].(*types.StringTermsAggregate)
+    if !ok {
+        return nil, errors.New("incorrect aggregation type for apps")
+    }
 
-	result := make(map[string]float64)
+    result := make(map[string]float64)
 
-	for _, appBucket := range appsAgg.Buckets.([]types.StringTermsBucket) {
-		var durations []float64
+    for _, appBucket := range appsAgg.Buckets.([]types.StringTermsBucket) {
+        percentileAgg, ok := appBucket.Aggregations["p95_trace_duration"].(*types.TDigestPercentilesAggregate)
+        if !ok {
+            continue
+        }
 
-		tracesAgg := appBucket.Aggregations["traces"].(*types.StringTermsAggregate)
-		for _, traceBucket := range tracesAgg.Buckets.([]types.StringTermsBucket) {
-			firstSpanAgg := traceBucket.Aggregations["first_span"].(*types.TopHitsAggregate)
-			allSpansAgg := traceBucket.Aggregations["all_spans"].(*types.TopHitsAggregate)
+        values, ok := percentileAgg.Values.(map[string]float64)
+        if !ok {
+            continue
+        }
 
-			if len(firstSpanAgg.Hits.Hits) == 0 || len(allSpansAgg.Hits.Hits) == 0 {
-				continue
-			}
+        p95, found := values["95.0"]
+        if !found {
+            continue
+        }
 
-			firstTimestampUs, err := unmarshalSpanTimestamp(firstSpanAgg.Hits.Hits[0].Source_)
-			if err != nil {
-				continue
-			}
+        // The percentile value is in milliseconds, so convert to seconds.
+        result[appBucket.Key.(string)] = p95 / 1000.0
+    }
 
-			var latestEndTimeUs float64 = 0
-			for _, hit := range allSpansAgg.Hits.Hits {
-				spanTimestampUs, err := unmarshalSpanTimestamp(hit.Source_)
-				if err != nil {
-					continue
-				}
-
-				spanDurationUs, err := unmarshalSpanDuration(hit.Source_)
-				if err != nil {
-					continue
-				}
-
-				endTimeUs := spanTimestampUs + spanDurationUs
-				if endTimeUs > latestEndTimeUs {
-					latestEndTimeUs = endTimeUs
-				}
-			}
-
-			if latestEndTimeUs == 0 || latestEndTimeUs < firstTimestampUs {
-				continue
-			}
-
-			duration := (latestEndTimeUs - firstTimestampUs) / 1e6 // seconds
-			durations = append(durations, duration)
-		}
-
-		if len(durations) == 0 {
-			continue
-		}
-
-		sort.Float64s(durations)
-		idx := int(math.Ceil(0.95*float64(len(durations)))) - 1
-		if idx < 0 {
-			idx = 0
-		}
-		result[appBucket.Key.(string)] = durations[idx]
-	}
-
-	return result, nil
+    return result, nil
 }
 
 func strPtr(s string) *string { return &s }
