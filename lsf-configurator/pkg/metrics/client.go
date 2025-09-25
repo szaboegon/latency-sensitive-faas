@@ -302,7 +302,7 @@ func (c metricsClient) Query95thPercentileAppRuntimes() (map[string]float64, err
     res, err := c.client.Search().
         Index(tracesIndex).
         Request(&search.Request{
-            Size: intPtr(size), // No hits are needed, only aggregations
+            Size: intPtr(size), 
             Query: &types.Query{
                 Bool: &types.BoolQuery{
                     Filter: []types.Query{
@@ -364,9 +364,9 @@ func (c metricsClient) Query95thPercentileAppRuntimes() (map[string]float64, err
                             },
                         },
                         "p95_trace_duration": {
-                            Percentiles: &types.PercentilesAggregation{
+                            PercentilesBucket: &types.PercentilesBucketAggregation{
                                 // The field here refers to the output of the "trace_duration_ms" bucket script
-                                Field:    strPtr("trace_duration_ms"),
+                                BucketsPath:    strPtr("traces>trace_duration_ms"),
                                 Percents: []types.Float64{95.0},
                             },
                         },
@@ -388,12 +388,12 @@ func (c metricsClient) Query95thPercentileAppRuntimes() (map[string]float64, err
     result := make(map[string]float64)
 
     for _, appBucket := range appsAgg.Buckets.([]types.StringTermsBucket) {
-        percentileAgg, ok := appBucket.Aggregations["p95_trace_duration"].(*types.TDigestPercentilesAggregate)
+        percentileAgg, ok := appBucket.Aggregations["p95_trace_duration"].(*types.PercentilesBucketAggregate)
         if !ok {
             continue
         }
 
-        values, ok := percentileAgg.Values.(map[string]float64)
+        values, ok := percentileAgg.Values.(map[string]interface{})
         if !ok {
             continue
         }
@@ -403,8 +403,7 @@ func (c metricsClient) Query95thPercentileAppRuntimes() (map[string]float64, err
             continue
         }
 
-        // The percentile value is in milliseconds, so convert to seconds.
-        result[appBucket.Key.(string)] = p95 / 1000.0
+        result[appBucket.Key.(string)] = p95.(float64)
     }
 
     return result, nil
