@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import {
   Modal,
   Box,
@@ -46,7 +46,7 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
   open,
   onClose,
 }) => {
-  const { register, handleSubmit, control, setValue } = useForm<FormData>({
+  const { register, handleSubmit, control } = useForm<FormData>({
     defaultValues: {
       components: [],
       links: [],
@@ -179,17 +179,16 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
             <Box mt={3}>
               <Typography variant="subtitle1">Components</Typography>
               {componentFields.map((field, index) => {
-                // Determine the extension for the selected runtime
-                const runtime =
-                  (
-                    document.querySelector(
-                      '[name="runtime"]'
-                    ) as HTMLInputElement
-                  )?.value || "";
+                // Get runtime from react-hook-form state
+                const runtime = control._formValues?.runtime || "";
                 const ext = getExtensionForRuntime(runtime);
-                // Only show files that do NOT end with the extension
+                // Only show files that do NOT end with the extension for files select
                 const filteredFileNames = uploadedFileNames.filter(
                   (fname) => !fname.endsWith(ext)
+                );
+                // Only show files that DO end with the extension for name select
+                const nameFileNames = uploadedFileNames.filter((fname) =>
+                  fname.endsWith(ext)
                 );
                 return (
                   <Box
@@ -199,15 +198,38 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
                     alignItems="center"
                     mt={1}
                   >
-                    <TextField
-                      label="Name"
-                      {...register(`components.${index}.name`, {
-                        required: true,
-                      })}
+                    {/* Name select: only files with matching extension, show name without extension */}
+                    <Controller
+                      control={control}
+                      name={`components.${index}.name`}
+                      rules={{ required: true }}
+                      render={({ field }) => (
+                        <FormControl sx={{ minWidth: "30%", maxWidth: "40%" }}>
+                          <InputLabel id={`component-name-label-${index}`}>
+                            Name
+                          </InputLabel>
+                          <Select
+                            labelId={`component-name-label-${index}`}
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(e.target.value)}
+                          >
+                            {nameFileNames.map((fname) => {
+                              const name = fname.replace(ext, "");
+                              return (
+                                <MenuItem key={fname} value={name}>
+                                  {name}
+                                </MenuItem>
+                              );
+                            })}
+                          </Select>
+                        </FormControl>
+                      )}
                     />
                     <TextField
                       label="Memory Limit"
                       type="number"
+                      sx={{ minWidth: "10%", maxWidth: "15%" }}
                       {...register(`components.${index}.memory`, {
                         required: true,
                         valueAsNumber: true,
@@ -216,54 +238,54 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
                     <TextField
                       label="Runtime (ms)"
                       type="number"
+                      sx={{ minWidth: "10%", maxWidth: "15%" }}
                       {...register(`components.${index}.runtime`, {
                         required: true,
                         valueAsNumber: true,
                       })}
                     />
                     {/* MultiSelect for files */}
-                    <FormControl sx={{ minWidth: 120, maxWidth: 200 }}>
-                      <InputLabel id={`component-files-label-${index}`}>
-                        Files
-                      </InputLabel>
-                      <Select
-                        labelId={`component-files-label-${index}`}
-                        multiple
-                        {...register(`components.${index}.files` as const)}
-                        input={<OutlinedInput label="Files" />}
-                        renderValue={(selected) => (
-                          <Box
-                            sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}
+                    <Controller
+                      control={control}
+                      name={`components.${index}.files`}
+                      render={({ field }) => (
+                        <FormControl sx={{ minWidth: "30%", maxWidth: "40%" }}>
+                          <InputLabel id={`component-files-label-${index}`}>
+                            Files
+                          </InputLabel>
+                          <Select
+                            labelId={`component-files-label-${index}`}
+                            multiple
+                            {...field}
+                            input={<OutlinedInput label="Files" />}
+                            renderValue={(selected) => (
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  gap: 0.5,
+                                }}
+                              >
+                                {(selected as string[]).map((value) => (
+                                  <Chip key={value} label={value} />
+                                ))}
+                              </Box>
+                            )}
                           >
-                            {(selected as string[]).map((value) => (
-                              <Chip key={value} label={value} />
+                            {filteredFileNames.map((fname) => (
+                              <MenuItem key={fname} value={fname}>
+                                <Checkbox
+                                  checked={
+                                    field.value?.includes(fname) || false
+                                  }
+                                />
+                                {fname}
+                              </MenuItem>
                             ))}
-                          </Box>
-                        )}
-                        value={componentFields[index]?.files || []}
-                        onChange={(e) => {
-                          const value =
-                            typeof e.target.value === "string"
-                              ? e.target.value.split(",")
-                              : e.target.value;
-                          setValue(`components.${index}.files`, value);
-                        }}
-                        disabled={filteredFileNames.length === 0}
-                      >
-                        {filteredFileNames.map((fname) => (
-                          <MenuItem key={fname} value={fname}>
-                            <Checkbox
-                              checked={
-                                componentFields[index]?.files?.includes(
-                                  fname
-                                ) || false
-                              }
-                            />
-                            {fname}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                          </Select>
+                        </FormControl>
+                      )}
+                    />
                     <IconButton onClick={() => removeComponent(index)}>
                       <DeleteIcon />
                     </IconButton>
@@ -289,35 +311,91 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
             {/* Links Section */}
             <Box mt={3}>
               <Typography variant="subtitle1">Links</Typography>
-              {linkFields.map((field, index) => (
-                <Box
-                  key={field.id}
-                  display="flex"
-                  gap={2}
-                  alignItems="center"
-                  mt={1}
-                >
-                  <TextField
-                    label="From"
-                    {...register(`links.${index}.from`, { required: true })}
-                  />
-                  <TextField
-                    label="To"
-                    {...register(`links.${index}.to`, { required: true })}
-                  />
-                  <TextField
-                    label="Invocation Rate"
-                    type="number"
-                    {...register(`links.${index}.invocationRate`, {
-                      required: true,
-                      valueAsNumber: true,
-                    })}
-                  />
-                  <IconButton onClick={() => removeLink(index)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </Box>
-              ))}
+              {linkFields.map((field, index) => {
+                // Get runtime from react-hook-form state
+                const runtime = control._formValues?.runtime || "";
+                const ext = getExtensionForRuntime(runtime);
+                // Only show files that DO end with the extension for from/to selects
+                const nameFileNames = uploadedFileNames.filter((fname) =>
+                  fname.endsWith(ext)
+                );
+                return (
+                  <Box
+                    key={field.id}
+                    display="flex"
+                    gap={2}
+                    alignItems="center"
+                    mt={1}
+                  >
+                    <Controller
+                      control={control}
+                      name={`links.${index}.from`}
+                      rules={{ required: true }}
+                      render={({ field }) => (
+                        <FormControl sx={{ minWidth: "30%", maxWidth: "40%" }}>
+                          <InputLabel id={`link-from-label-${index}`}>
+                            From
+                          </InputLabel>
+                          <Select
+                            labelId={`link-from-label-${index}`}
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(e.target.value)}
+                          >
+                            {nameFileNames.map((fname) => {
+                              const name = fname.replace(ext, "");
+                              return (
+                                <MenuItem key={fname} value={name}>
+                                  {name}
+                                </MenuItem>
+                              );
+                            })}
+                          </Select>
+                        </FormControl>
+                      )}
+                    />
+                    <Controller
+                      control={control}
+                      name={`links.${index}.to`}
+                      rules={{ required: true }}
+                      render={({ field }) => (
+                        <FormControl sx={{ minWidth: "30%", maxWidth: "40%" }}>
+                          <InputLabel id={`link-to-label-${index}`}>
+                            To
+                          </InputLabel>
+                          <Select
+                            labelId={`link-to-label-${index}`}
+                            {...field}
+                            value={field.value || ""}
+                            onChange={(e) => field.onChange(e.target.value)}
+                          >
+                            {nameFileNames.map((fname) => {
+                              const name = fname.replace(ext, "");
+                              return (
+                                <MenuItem key={fname} value={name}>
+                                  {name}
+                                </MenuItem>
+                              );
+                            })}
+                          </Select>
+                        </FormControl>
+                      )}
+                    />
+                    <TextField
+                      label="Invocation Rate"
+                      type="number"
+                      sx={{ minWidth: "10%", maxWidth: "15%" }}
+                      {...register(`links.${index}.invocationRate`, {
+                        required: true,
+                        valueAsNumber: true,
+                      })}
+                    />
+                    <IconButton onClick={() => removeLink(index)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                );
+              })}
               <Button
                 startIcon={<AddIcon />}
                 sx={{ mt: 1 }}
