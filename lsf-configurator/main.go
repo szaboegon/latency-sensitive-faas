@@ -27,7 +27,6 @@ var controller core.Controller
 var composer *core.Composer
 var conf config.Configuration
 var metricsReader core.MetricsReader
-var alertClient core.AlertClient
 
 func main() {
 	logFile := configureLogging()
@@ -88,9 +87,9 @@ func main() {
 	layoutCalculator := layout.NewLayoutCalculator()
 
 	controllerCtx, controllerCancel := context.WithCancel(context.Background())
-    controller = core.NewController(composer, metricsReader, layoutCalculator, 1*time.Second)
+	controller = core.NewController(composer, metricsReader, layoutCalculator, 1*time.Second, conf.DeployNamespace)
 
-	if !conf.LocalMode{
+	if !conf.LocalMode {
 		go func() {
 			if err := controller.Start(controllerCtx); err != nil {
 				log.Printf("Latency controller stopped with error: %v", err)

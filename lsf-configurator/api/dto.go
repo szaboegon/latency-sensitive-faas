@@ -14,7 +14,6 @@ type FunctionAppCreateDto struct {
 type FunctionCompositionCreateDto struct {
 	FunctionAppId string   `json:"function_app_id"`
 	Components    []string `json:"components"`
-	Files         []string `json:"files"`
 }
 
 type DeploymentCreateDto struct {

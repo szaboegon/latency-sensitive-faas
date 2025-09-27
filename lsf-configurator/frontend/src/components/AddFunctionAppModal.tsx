@@ -16,6 +16,8 @@ import {
   IconButton,
   Checkbox,
   FormControlLabel,
+  OutlinedInput,
+  Chip,
 } from "@mui/material";
 import { useCreateFunctionApp } from "../hooks/functionAppsHooks";
 import FunctionAppJsonForm from "./FunctionAppJsonForm";
@@ -23,6 +25,7 @@ import type { FunctionAppCreateDto } from "../models/dto";
 import type { Component, ComponentLink } from "../models/models";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { fileExtensions } from "../helpers/constants";
 
 interface AddFunctionAppModalProps {
   open: boolean;
@@ -34,7 +37,7 @@ interface FormData {
   files: FileList;
   runtime: string;
   latencyLimit: number;
-  components: Component[];
+  components: (Component & { files?: string[] })[]; // add files field
   links: ComponentLink[];
   platformManaged?: boolean;
 }
@@ -43,7 +46,7 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
   open,
   onClose,
 }) => {
-  const { register, handleSubmit, control } = useForm<FormData>({
+  const { register, handleSubmit, control, setValue } = useForm<FormData>({
     defaultValues: {
       components: [],
       links: [],
@@ -65,6 +68,7 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
 
   const { mutate: createFunctionApp } = useCreateFunctionApp();
   const [tabValue, setTabValue] = useState<"form" | "json">("form");
+  const [uploadedFileNames, setUploadedFileNames] = useState<string[]>([]);
 
   const onSubmit = (data: FormData) => {
     const fcApp: FunctionAppCreateDto = {
@@ -79,11 +83,34 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
     onClose();
   };
 
+  // Handle file input change to update uploadedFileNames
+  const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      setUploadedFileNames(Array.from(files).map((f) => f.name));
+    } else {
+      setUploadedFileNames([]);
+    }
+  };
+
   const handleTabChange = (
     _: React.SyntheticEvent,
     newValue: "form" | "json"
   ) => {
     setTabValue(newValue);
+  };
+
+  const getExtensionForRuntime = (runtime: string) => {
+    switch (runtime) {
+      case "Python":
+        return fileExtensions.python;
+      case "Node.js":
+        return fileExtensions.nodeJs;
+      case "Go":
+        return fileExtensions.go;
+      default:
+        return "";
+    }
   };
 
   return (
@@ -94,7 +121,7 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: 600,
+          width: 700,
           maxHeight: "90vh",
           overflowY: "auto",
           bgcolor: "background.paper",
@@ -145,56 +172,114 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
               fullWidth
               {...register("files", { required: true })}
               inputProps={{ multiple: true }}
-            />
-            <FormControlLabel
-              control={<Checkbox {...register("platformManaged")} />}
-              label="platform managed"
-              sx={{ mt: 1 }}
+              onChange={handleFilesChange}
             />
 
             {/* Components Section */}
             <Box mt={3}>
               <Typography variant="subtitle1">Components</Typography>
-              {componentFields.map((field, index) => (
-                <Box
-                  key={field.id}
-                  display="flex"
-                  gap={2}
-                  alignItems="center"
-                  mt={1}
-                >
-                  <TextField
-                    label="Name"
-                    {...register(`components.${index}.name`, {
-                      required: true,
-                    })}
-                  />
-                  <TextField
-                    label="Memory Limit"
-                    type="number"
-                    {...register(`components.${index}.memory`, {
-                      required: true,
-                      valueAsNumber: true,
-                    })}
-                  />
-                  <TextField
-                    label="Runtime (ms)"
-                    type="number"
-                    {...register(`components.${index}.runtime`, {
-                      required: true,
-                      valueAsNumber: true,
-                    })}
-                  />
-                  <IconButton onClick={() => removeComponent(index)}>
-                    <DeleteIcon />
-                  </IconButton>
-                </Box>
-              ))}
+              {componentFields.map((field, index) => {
+                // Determine the extension for the selected runtime
+                const runtime =
+                  (
+                    document.querySelector(
+                      '[name="runtime"]'
+                    ) as HTMLInputElement
+                  )?.value || "";
+                const ext = getExtensionForRuntime(runtime);
+                // Only show files that do NOT end with the extension
+                const filteredFileNames = uploadedFileNames.filter(
+                  (fname) => !fname.endsWith(ext)
+                );
+                return (
+                  <Box
+                    key={field.id}
+                    display="flex"
+                    gap={2}
+                    alignItems="center"
+                    mt={1}
+                  >
+                    <TextField
+                      label="Name"
+                      {...register(`components.${index}.name`, {
+                        required: true,
+                      })}
+                    />
+                    <TextField
+                      label="Memory Limit"
+                      type="number"
+                      {...register(`components.${index}.memory`, {
+                        required: true,
+                        valueAsNumber: true,
+                      })}
+                    />
+                    <TextField
+                      label="Runtime (ms)"
+                      type="number"
+                      {...register(`components.${index}.runtime`, {
+                        required: true,
+                        valueAsNumber: true,
+                      })}
+                    />
+                    {/* MultiSelect for files */}
+                    <FormControl sx={{ minWidth: 120, maxWidth: 200 }}>
+                      <InputLabel id={`component-files-label-${index}`}>
+                        Files
+                      </InputLabel>
+                      <Select
+                        labelId={`component-files-label-${index}`}
+                        multiple
+                        {...register(`components.${index}.files` as const)}
+                        input={<OutlinedInput label="Files" />}
+                        renderValue={(selected) => (
+                          <Box
+                            sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}
+                          >
+                            {(selected as string[]).map((value) => (
+                              <Chip key={value} label={value} />
+                            ))}
+                          </Box>
+                        )}
+                        value={componentFields[index]?.files || []}
+                        onChange={(e) => {
+                          const value =
+                            typeof e.target.value === "string"
+                              ? e.target.value.split(",")
+                              : e.target.value;
+                          setValue(`components.${index}.files`, value);
+                        }}
+                        disabled={filteredFileNames.length === 0}
+                      >
+                        {filteredFileNames.map((fname) => (
+                          <MenuItem key={fname} value={fname}>
+                            <Checkbox
+                              checked={
+                                componentFields[index]?.files?.includes(
+                                  fname
+                                ) || false
+                              }
+                            />
+                            {fname}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <IconButton onClick={() => removeComponent(index)}>
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                );
+              })}
               <Button
                 startIcon={<AddIcon />}
                 sx={{ mt: 1 }}
                 onClick={() =>
-                  appendComponent({ name: "", memory: 0, runtime: 0 })
+                  appendComponent({
+                    name: "",
+                    memory: 0,
+                    runtime: 0,
+                    files: [],
+                  })
                 }
               >
                 Add Component
@@ -243,6 +328,11 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
                 Add Link
               </Button>
             </Box>
+            <FormControlLabel
+              control={<Checkbox {...register("platformManaged")} />}
+              label="Platform managed"
+              sx={{ mt: 1 }}
+            />
 
             <Box mt={3} display="flex" justifyContent="flex-end">
               <Button onClick={onClose} sx={{ mr: 1 }}>

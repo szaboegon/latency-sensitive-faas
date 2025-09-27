@@ -23,12 +23,28 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
     "name": "object-detection",
     "runtime": "python",
     "components": [
-      { "name": "resize", "memory": 97, "runtime": 31 },
-      { "name": "grayscale", "memory": 92, "runtime": 52 },
-      { "name": "objectdetect", "memory": 592, "runtime": 1066 },
-      { "name": "cut", "memory": 79, "runtime": 29 },
-      { "name": "objectdetect2", "memory": 592, "runtime": 1041 },
-      { "name": "tag", "memory": 83, "runtime": 33 }
+      { "name": "resize", "memory": 97, "runtime": 31, "files": [] },
+      { "name": "grayscale", "memory": 92, "runtime": 52, "files": [] },
+      {
+        "name": "objectdetect",
+        "memory": 592,
+        "runtime": 1066,
+        "files": [
+          "MobileNetSSD_deploy.caffemodel",
+          "MobileNetSSD_deploy.prototxt.txt"
+        ]
+      },
+      { "name": "cut", "memory": 79, "runtime": 29, "files": [] },
+      {
+        "name": "objectdetect2",
+        "memory": 592,
+        "runtime": 1041,
+        "files": [
+          "MobileNetSSD_deploy.caffemodel",
+          "MobileNetSSD_deploy.prototxt.txt"
+        ]
+      },
+      { "name": "tag", "memory": 83, "runtime": 33, "files": [] }
     ],
     "links": [
       { "from": "resize", "to": "grayscale", "invocationRate": 1.0 },
@@ -43,29 +59,19 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
   "functionCompositions": [
     {
       "id": "composition-1",
-      "components": ["resize"],
-      "files": []
+      "components": ["resize"]
     },
     {
       "id": "composition-2",
-      "components": ["grayscale", "cut"],
-      "files": []
+      "components": ["grayscale", "cut"]
     },
     {
       "id": "composition-3",
-      "components": ["objectdetect", "objectdetect2"],
-      "files": [
-        "MobileNetSSD_deploy.caffemodel",
-        "MobileNetSSD_deploy.prototxt.txt"
-      ]
+      "components": ["objectdetect", "objectdetect2"]
     },
     {
       "id": "composition-4",
-      "components": ["objectdetect2", "tag"],
-      "files": [
-        "MobileNetSSD_deploy.caffemodel",
-        "MobileNetSSD_deploy.prototxt.txt"
-      ]
+      "components": ["objectdetect2", "tag"]
     }
   ],
   "deployments": [

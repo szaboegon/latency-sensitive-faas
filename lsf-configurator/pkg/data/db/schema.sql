@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS function_apps (
     links TEXT,
     files TEXT,
     source_path TEXT,
-    latency_limit INTEGER
+    latency_limit INTEGER,
+    layout_candidates TEXT
 );
 
 CREATE TABLE IF NOT EXISTS function_compositions (
@@ -27,5 +28,7 @@ CREATE TABLE IF NOT EXISTS deployments (
     namespace TEXT NOT NULL,
     routing_table TEXT NOT NULL,
     status TEXT DEFAULT 'pending',
+    scale_min_replicas INTEGER DEFAULT 0,
+    scale_max_replicas INTEGER DEFAULT 0,
     FOREIGN KEY (function_composition_id) REFERENCES function_compositions(id) ON DELETE CASCADE
 );

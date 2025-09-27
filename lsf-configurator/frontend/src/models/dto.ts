@@ -1,7 +1,12 @@
 export interface FunctionAppCreateDto {
   name: string;
   runtime: string;
-  components: { name: string; memory: number; runtime: number }[];
+  components: {
+    name: string;
+    memory: number;
+    runtime: number;
+    files: string[];
+  }[];
   links: { from: string; to: string; invocationRate: number }[];
   sourcePath?: string;
   latencyLimit: number;
@@ -11,7 +16,6 @@ export interface FunctionAppCreateDto {
 export interface FunctionCompositionCreateDto {
   functionAppId: string;
   components: string[];
-  files: string[];
 }
 
 export interface DeploymentCreateDto {

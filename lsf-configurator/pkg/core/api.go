@@ -19,6 +19,7 @@ type KnClient interface {
 
 type RoutingClient interface {
 	SetRoutingTable(deployment Deployment) error
+	DeleteRoutingTable(deploymentId string) error
 }
 
 type Builder interface {
@@ -44,5 +45,5 @@ type Controller interface{
 }
 
 type LayoutCalculator interface {
-	CalculateLayout(app FunctionApp) (map[string][]string, error)
+	CalculateLayouts(app FunctionApp) ([]Layout, error)
 }

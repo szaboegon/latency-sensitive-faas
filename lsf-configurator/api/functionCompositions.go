@@ -42,7 +42,7 @@ func (h *HandlerFunctionCompositions) create(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	_, err := h.composer.AddFunctionComposition(payload.FunctionAppId, payload.Components, payload.Files)
+	_, err := h.composer.AddFunctionComposition(payload.FunctionAppId, payload.Components)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

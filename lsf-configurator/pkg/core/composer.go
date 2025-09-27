@@ -7,6 +7,7 @@ import (
 	"lsf-configurator/pkg/uuid"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/apex/log"
@@ -24,14 +25,16 @@ var runtimeExtensions = map[string]string{
 }
 
 type Composer struct {
-	knClient        KnClient
-	scheduler       Scheduler
-	routingClient   RoutingClient
-	builder         Builder
-	functionAppRepo FunctionAppRepository
-	fcRepo          FunctionCompositionRepository
-	deploymentRepo  DeploymentRepository
-	metricsReader   MetricsReader
+	knClient           KnClient
+	scheduler          Scheduler
+	routingClient      RoutingClient
+	builder            Builder
+	functionAppRepo    FunctionAppRepository
+	fcRepo             FunctionCompositionRepository
+	deploymentRepo     DeploymentRepository
+	metricsReader      MetricsReader
+	pendingDeployments map[string]chan Result // key = deploymentId
+	mu                 sync.Mutex
 }
 
 func NewComposer(
@@ -56,6 +59,8 @@ func NewComposer(
 	}
 }
 
+// --- FUNCTION APPS ---
+
 func (c *Composer) GetFunctionApp(appId string) (*FunctionApp, error) {
 	return c.functionAppRepo.GetByID(appId)
 }
@@ -64,7 +69,7 @@ func (c *Composer) ListFunctionApps() ([]*FunctionApp, error) {
 	return c.functionAppRepo.GetAll()
 }
 
-func (c *Composer) CreateFunctionApp( creationData FunctionAppCreationData) (*FunctionApp, error) {
+func (c *Composer) CreateFunctionApp(creationData FunctionAppCreationData) (*FunctionApp, error) {
 	id := uuid.New()
 	fcApp := FunctionApp{
 		Id:           id,
@@ -108,74 +113,6 @@ func (c *Composer) CreateFunctionApp( creationData FunctionAppCreationData) (*Fu
 	return &fcApp, nil
 }
 
-func containsComponent(components []Component, name string) bool {
-	for _, c := range components {
-		if c.Name == name {
-			return true
-		}
-	}
-	return false
-}
-
-func isComponent(fileName string, runtime string) bool {
-	extension := filepath.Ext(fileName)
-	return runtimeExtensions[runtime] == extension
-}
-
-func (c *Composer) AddFunctionComposition(appId string, components []string, files []string) (*FunctionComposition, error) {
-	fcApp, err := c.functionAppRepo.GetByID(appId)
-	if err != nil || fcApp == nil {
-		log.Errorf("function app with id %s does not exist", appId)
-		return nil, fmt.Errorf("function app with id %s does not exist", appId)
-	}
-
-	id := uuid.New()
-
-	fc := &FunctionComposition{
-		Id:            "fc-" + id,
-		FunctionAppId: appId,
-		Components:    components,
-		Files:         files,
-		Status:        BuildStatusPending,
-	}
-
-	if err := c.fcRepo.Save(fc); err != nil {
-		return nil, fmt.Errorf("failed to update function app: %w", err)
-	}
-
-	c.scheduler.AddTask(c.buildTask(*fc, fcApp.Runtime, fcApp.SourcePath), MaxRetries)
-	return fc, nil
-}
-
-func (c *Composer) CreateFcDeployment(fcId, namespace, node string, routingTable RoutingTable) (*Deployment, error) {
-	fc, err := c.fcRepo.GetByID(fcId)
-	if err != nil || fc == nil {
-		return nil, fmt.Errorf("function composition with id %s does not exist", fcId)
-	}
-
-	deployment := Deployment{
-		Id:                    "d-" + uuid.New(),
-		FunctionCompositionId: fcId,
-		Namespace:             namespace,
-		Node:                  node,
-		RoutingTable:          routingTable,
-	}
-
-	if fc.Status == BuildStatusBuilt {
-		deployment.Status = DeploymentStatusPending
-		c.startDeployment(&deployment, fc)
-	} else {
-		deployment.Status = DeploymentStatusWaitingForBuild
-		log.Infof("Function composition with id %s is not built yet, deployment will be started after build is ready", fcId)
-	}
-
-	err = c.deploymentRepo.Save(&deployment)
-	if err != nil {
-		return nil, fmt.Errorf("failed to save deployment: %w", err)
-	}
-	return &deployment, nil
-}
-
 func (c *Composer) DeleteFunctionApp(appId string) error {
 	app, err := c.functionAppRepo.GetByID(appId)
 	if err != nil || app == nil {
@@ -208,6 +145,73 @@ func (c *Composer) DeleteFunctionApp(appId string) error {
 	return nil
 }
 
+func (c *Composer) RollbackBulk(
+	app *FunctionApp,
+	compositions []*FunctionComposition,
+	deployments []*Deployment,
+) {
+	for _, dep := range deployments {
+		if err := c.deploymentRepo.Delete(dep.Id); err != nil {
+			log.Errorf("Failed to rollback deployment %s: %v", dep.Id, err)
+		}
+	}
+
+	for _, fc := range compositions {
+		if err := c.fcRepo.Delete(fc.Id); err != nil {
+			log.Errorf("Failed to rollback function composition %s: %v", fc.Id, err)
+		}
+	}
+
+	if app != nil {
+		if err := c.functionAppRepo.Delete(app.Id); err != nil {
+			log.Errorf("Failed to rollback function app %s: %v", app.Id, err)
+		}
+	}
+}
+
+// --- FUNCTION COMPOSITIONS ---
+
+func (c *Composer) AddFunctionComposition(appId string, components []string) (*FunctionComposition, error) {
+	fcApp, err := c.functionAppRepo.GetByID(appId)
+	if err != nil || fcApp == nil {
+		log.Errorf("function app with id %s does not exist", appId)
+		return nil, fmt.Errorf("function app with id %s does not exist", appId)
+	}
+
+	id := uuid.New()
+
+	// Collect all unique files from the selected components
+	fileSet := make(map[string]struct{})
+	for _, compName := range components {
+		for _, comp := range fcApp.Components {
+			if comp.Name == compName {
+				for _, f := range comp.Files {
+					fileSet[f] = struct{}{}
+				}
+			}
+		}
+	}
+	var files []string
+	for f := range fileSet {
+		files = append(files, f)
+	}
+
+	fc := &FunctionComposition{
+		Id:            "fc-" + id,
+		FunctionAppId: appId,
+		Components:    components,
+		Files:         files,
+		Status:        BuildStatusPending,
+	}
+
+	if err := c.fcRepo.Save(fc); err != nil {
+		return nil, fmt.Errorf("failed to update function app: %w", err)
+	}
+
+	c.scheduler.AddTask(c.buildTask(*fc, fcApp.Runtime, fcApp.SourcePath), MaxRetries)
+	return fc, nil
+}
+
 func (c *Composer) DeleteFunctionComposition(fcId string) error {
 	fc, err := c.fcRepo.GetByID(fcId)
 	if err != nil || fc == nil {
@@ -233,6 +237,75 @@ func (c *Composer) DeleteFunctionComposition(fcId string) error {
 	}()
 
 	return nil
+}
+
+// --- DEPLOYMENTS ---
+
+func (c *Composer) CreateFcDeployment(fcId, namespace, node string, routingTable RoutingTable, scale Scale) (*Deployment, <-chan Result, error) {
+	fc, err := c.fcRepo.GetByID(fcId)
+	if err != nil || fc == nil {
+		return nil, nil, fmt.Errorf("function composition with id %s does not exist", fcId)
+	}
+
+	deployment := Deployment{
+		Id:                    "d-" + uuid.New(),
+		FunctionCompositionId: fcId,
+		Namespace:             namespace,
+		Node:                  node,
+		RoutingTable:          routingTable,
+		Scale:                 scale,
+	}
+
+	var resultChan <-chan Result
+	if fc.Status == BuildStatusBuilt {
+		deployment.Status = DeploymentStatusPending
+		resultChan = c.startDeployment(&deployment, fc)
+	} else {
+		deployment.Status = DeploymentStatusWaitingForBuild
+		log.Infof("Function composition with id %s is not built yet, deployment will be started after build is ready", fcId)
+		ch := make(chan Result, 1)
+		resultChan = ch
+
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		if c.pendingDeployments == nil {
+			c.pendingDeployments = make(map[string]chan Result)
+		}
+		c.pendingDeployments[deployment.Id] = ch
+	}
+
+	err = c.routingClient.SetRoutingTable(deployment)
+	if err != nil {
+		log.Errorf("failed to set routing table for deployment %s: %v", deployment.Id, err)
+		return nil, nil, err
+	}
+
+	err = c.deploymentRepo.Save(&deployment)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to save deployment: %w", err)
+	}
+
+	return &deployment, resultChan, nil
+}
+
+func (c *Composer) DeleteFcDeployment(deploymentId string) (<-chan Result, error) {
+	deployment, err := c.deploymentRepo.GetByID(deploymentId)
+	if err != nil || deployment == nil {
+		return nil, fmt.Errorf("deployment with id %s does not exist", deploymentId)
+	}
+
+	err = c.routingClient.DeleteRoutingTable(deploymentId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete routing table: %w", err)
+	}
+
+	err = c.deploymentRepo.Delete(deploymentId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete deployment: %w", err)
+	}
+
+	resultChan := c.scheduler.AddTask(c.deleteTask(*deployment), MaxRetries)
+	return resultChan, nil
 }
 
 func (c *Composer) SetRoutingTable(deploymentId string, table RoutingTable) error {
@@ -282,43 +355,36 @@ func (c *Composer) NotifyBuildReady(fcId, imageURL string, status string) {
 	}
 	log.Infof("Successfully built function composition with id %v. Image: %v", fc.Id, fc.Build.Image)
 
-	// Trigger any pending deployments
 	deployments, err := c.deploymentRepo.GetByFunctionCompositionID(fc.Id)
 	if err != nil {
 		log.Errorf("Failed to get deployments for function composition with id %s: %v", fc.Id, err)
 		return
 	}
 
+	// Trigger any pending deployments, while also notifying services waiting for deployment result through channels
 	for _, deployment := range deployments {
 		if deployment.Status == DeploymentStatusWaitingForBuild {
-			c.startDeployment(deployment, fc)
+			c.mu.Lock()
+			defer c.mu.Unlock()
+			ch, ok := c.pendingDeployments[deployment.Id]
+			if ok {
+				delete(c.pendingDeployments, deployment.Id)
+
+				deployment.Status = DeploymentStatusPending
+				depChan := c.startDeployment(deployment, fc)
+
+				go func(origChan chan Result, depChan <-chan Result) {
+					r := <-depChan
+					origChan <- r
+					close(origChan)
+				}(ch, depChan)
+			}
+
 		}
 	}
 }
 
-func (c *Composer) RollbackBulk(
-	app *FunctionApp,
-	compositions []*FunctionComposition,
-	deployments []*Deployment,
-) {
-	for _, dep := range deployments {
-		if err := c.deploymentRepo.Delete(dep.Id); err != nil {
-			log.Errorf("Failed to rollback deployment %s: %v", dep.Id, err)
-		}
-	}
-
-	for _, fc := range compositions {
-		if err := c.fcRepo.Delete(fc.Id); err != nil {
-			log.Errorf("Failed to rollback function composition %s: %v", fc.Id, err)
-		}
-	}
-
-	if app != nil {
-		if err := c.functionAppRepo.Delete(app.Id); err != nil {
-			log.Errorf("Failed to rollback function app %s: %v", app.Id, err)
-		}
-	}
-}
+// --- INTERNAL METHODS ---
 
 func (c *Composer) setRoutingTable(deployment *Deployment, table RoutingTable) error {
 	deployment.RoutingTable = table
@@ -334,22 +400,25 @@ func (c *Composer) setRoutingTable(deployment *Deployment, table RoutingTable) e
 	return nil
 }
 
-func (c *Composer) startDeployment(deployment *Deployment, fc *FunctionComposition) {
+func (c *Composer) startDeployment(deployment *Deployment, fc *FunctionComposition) <-chan Result {
 	resultChan := c.scheduler.AddTask(c.deployTask(*deployment, fc.Build.Image, fc.FunctionAppId), MaxRetries)
-	r := <-resultChan
-	if r.Err != nil {
-		log.Errorf("Deploying of function composition with id %v and deploymentId %v failed: %v, ", fc.Id, deployment.Id, r.Err)
-		deployment.Status = DeploymentStatusError
+	go func(dep *Deployment, fc *FunctionComposition) {
+		r := <-resultChan
+		if r.Err != nil {
+			log.Errorf("Deploying of function composition with id %v and deploymentId %v failed: %v, ", fc.Id, deployment.Id, r.Err)
+			deployment.Status = DeploymentStatusError
+			if err := c.deploymentRepo.Save(deployment); err != nil {
+				log.Errorf("Failed to save deployment with id %s: %v", deployment.Id, err)
+			}
+			return
+		}
+		log.Infof("Successfully deployed function composition with id %v, deploymentId %v", fc.Id, deployment.Id)
+		deployment.Status = DeploymentStatusDeployed
 		if err := c.deploymentRepo.Save(deployment); err != nil {
 			log.Errorf("Failed to save deployment with id %s: %v", deployment.Id, err)
 		}
-		return
-	}
-	log.Infof("Successfully deployed function composition with id %v, deploymentId %v", fc.Id, deployment.Id)
-	deployment.Status = DeploymentStatusDeployed
-	if err := c.deploymentRepo.Save(deployment); err != nil {
-		log.Errorf("Failed to save deployment with id %s: %v", deployment.Id, err)
-	}
+	}(deployment, fc)
+	return resultChan
 }
 
 func (c *Composer) buildTask(fc FunctionComposition, runtime, sourcePath string) func() (interface{}, error) {
@@ -378,6 +447,22 @@ func (c *Composer) deleteTask(deployment Deployment) func() (interface{}, error)
 	}
 }
 
+// --- HELPERS ---
+
 func createBuildTimestamp() string {
 	return time.Now().UTC().Format(time.RFC3339)
+}
+
+func containsComponent(components []Component, name string) bool {
+	for _, c := range components {
+		if c.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func isComponent(fileName string, runtime string) bool {
+	extension := filepath.Ext(fileName)
+	return runtimeExtensions[runtime] == extension
 }

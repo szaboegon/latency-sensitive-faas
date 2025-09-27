@@ -40,11 +40,16 @@ func (r *functionAppRepo) Save(app *core.FunctionApp) error {
 		return fmt.Errorf("failed to marshal files: %w", err)
 	}
 
+	layoutJSON, err := json.Marshal(app.LayoutCandidates)
+	if err != nil {
+		return fmt.Errorf("failed to marshal layout candidates: %w", err)
+	}
+
 	_, err = tx.Exec(`
-		INSERT OR REPLACE INTO function_apps (id, name, runtime, components, links, files, source_path, latency_limit) 
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		INSERT OR REPLACE INTO function_apps (id, name, runtime, components, links, files, source_path, latency_limit, layout_candidates) 
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		app.Id, app.Name, app.Runtime, string(componentsJSON), string(linksJSON),
-		string(filesJSON), app.SourcePath, app.LatencyLimit)
+		string(filesJSON), app.SourcePath, app.LatencyLimit, string(layoutJSON))
 	if err != nil {
 		return err
 	}
@@ -64,15 +69,16 @@ func (r *functionAppRepo) Save(app *core.FunctionApp) error {
 
 func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
 	row := r.db.QueryRow(`
-	SELECT id, name, runtime, components, links, files, source_path, latency_limit
+	SELECT id, name, runtime, components, links, files, source_path, latency_limit, layout_candidates
 	FROM function_apps WHERE id = ?`, id)
 
 	var app core.FunctionApp
 	var componentsJSON, linksJSON, filesJSON, sourcePath string
 	var latencyLimit int
+	var layoutCandidatesJSON string
 
 	if err := row.Scan(&app.Id, &app.Name, &app.Runtime, &componentsJSON,
-		&linksJSON, &filesJSON, &sourcePath, &latencyLimit); err != nil {
+		&linksJSON, &filesJSON, &sourcePath, &latencyLimit, &layoutCandidatesJSON); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -87,6 +93,9 @@ func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
 	}
 	if err := json.Unmarshal([]byte(filesJSON), &app.Files); err != nil {
 		return nil, fmt.Errorf("failed to parse files: %w", err)
+	}
+	if err := json.Unmarshal([]byte(layoutCandidatesJSON), &app.LayoutCandidates); err != nil {
+		return nil, fmt.Errorf("failed to parse layout candidates: %w", err)
 	}
 	app.SourcePath = sourcePath
 
@@ -115,7 +124,7 @@ func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
 
 func (r *functionAppRepo) GetAll() ([]*core.FunctionApp, error) {
 	rows, err := r.db.Query(`
-	SELECT id, name, runtime, components, links, files, source_path, latency_limit 
+	SELECT id, name, runtime, components, links, files, source_path, latency_limit, layout_candidates
 	FROM function_apps`)
 	if err != nil {
 		return nil, err
@@ -127,7 +136,9 @@ func (r *functionAppRepo) GetAll() ([]*core.FunctionApp, error) {
 		var app core.FunctionApp
 		var componentsJSON, linksJSON, filesJSON, sourcePath string
 		var latencyLimit int
-		if err := rows.Scan(&app.Id, &app.Name, &app.Runtime, &componentsJSON, &linksJSON, &filesJSON, &sourcePath, &latencyLimit); err != nil {
+		var layoutCandidatesJSON string
+		if err := rows.Scan(&app.Id, &app.Name, &app.Runtime, &componentsJSON,
+			 &linksJSON, &filesJSON, &sourcePath, &latencyLimit, &layoutCandidatesJSON); err != nil {
 			return nil, err
 		}
 
@@ -136,6 +147,9 @@ func (r *functionAppRepo) GetAll() ([]*core.FunctionApp, error) {
 		}
 		if err := json.Unmarshal([]byte(linksJSON), &app.Links); err != nil {
 			return nil, fmt.Errorf("failed to parse links: %w", err)
+		}
+		if err := json.Unmarshal([]byte(layoutCandidatesJSON), &app.LayoutCandidates); err != nil {
+			return nil, fmt.Errorf("failed to parse layout candidates: %w", err)
 		}
 		if err := json.Unmarshal([]byte(filesJSON), &app.Files); err != nil {
 			return nil, fmt.Errorf("failed to parse files: %w", err)
@@ -272,9 +286,11 @@ func (r *deploymentRepo) Save(deployment *core.Deployment) error {
 
 	_, err = r.db.Exec(`
 		INSERT OR REPLACE INTO deployments (
-			id, function_composition_id, node, namespace, routing_table, status
-		) VALUES (?, ?, ?, ?, ?, ?)`,
-		deployment.Id, deployment.FunctionCompositionId, deployment.Node, deployment.Namespace, string(routingTableJSON), deployment.Status,
+			id, function_composition_id, node, namespace, routing_table, status, scale_min_replicas, scale_max_replicas
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		deployment.Id, deployment.FunctionCompositionId, deployment.Node,
+		deployment.Namespace, string(routingTableJSON), deployment.Status,
+		deployment.Scale.MinReplicas, deployment.Scale.MaxReplicas,
 	)
 	return err
 }
@@ -289,7 +305,7 @@ func (r *deploymentRepo) Delete(id string) error {
 
 func (r *deploymentRepo) GetByID(id string) (*core.Deployment, error) {
 	row := r.db.QueryRow(`
-		SELECT id, function_composition_id, node, namespace, routing_table, status
+		SELECT id, function_composition_id, node, namespace, routing_table, status, scale_min_replicas, scale_max_replicas
 		FROM deployments
 		WHERE id = ?`, id)
 
@@ -299,6 +315,7 @@ func (r *deploymentRepo) GetByID(id string) (*core.Deployment, error) {
 	err := row.Scan(
 		&deployment.Id, &deployment.FunctionCompositionId, &deployment.Node,
 		&deployment.Namespace, &routingTableJSON, &deployment.Status,
+		&deployment.Scale.MinReplicas, &deployment.Scale.MaxReplicas,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -316,7 +333,7 @@ func (r *deploymentRepo) GetByID(id string) (*core.Deployment, error) {
 
 func (r *deploymentRepo) GetByFunctionCompositionID(functionCompositionID string) ([]*core.Deployment, error) {
 	rows, err := r.db.Query(`
-		SELECT id, function_composition_id, node, namespace, routing_table, status
+		SELECT id, function_composition_id, node, namespace, routing_table, status, scale_min_replicas, scale_max_replicas
 		FROM deployments
 		WHERE function_composition_id = ?`, functionCompositionID)
 	if err != nil {
@@ -331,7 +348,8 @@ func (r *deploymentRepo) GetByFunctionCompositionID(functionCompositionID string
 
 		err := rows.Scan(
 			&deployment.Id, &deployment.FunctionCompositionId, &deployment.Node,
-			&deployment.Namespace, &routingTableJSON, &deployment.Status,
+			&deployment.Namespace, &routingTableJSON, &deployment.Status, 
+			&deployment.Scale.MinReplicas, &deployment.Scale.MaxReplicas,
 		)
 		if err != nil {
 			return nil, err
@@ -349,7 +367,7 @@ func (r *deploymentRepo) GetByFunctionCompositionID(functionCompositionID string
 
 func (r *deploymentRepo) GetByFunctionAppID(functionAppID string) ([]*core.Deployment, error) {
 	rows, err := r.db.Query(`
-		SELECT d.id, d.function_composition_id, d.node, d.namespace, d.routing_table, d.status
+		SELECT d.id, d.function_composition_id, d.node, d.namespace, d.routing_table, d.status, d.scale_min_replicas, d.scale_max_replicas
 		FROM deployments d
 		INNER JOIN function_compositions fc ON d.function_composition_id = fc.id
 		WHERE fc.function_app_id = ?`, functionAppID)
@@ -366,6 +384,7 @@ func (r *deploymentRepo) GetByFunctionAppID(functionAppID string) ([]*core.Deplo
 		err := rows.Scan(
 			&deployment.Id, &deployment.FunctionCompositionId, &deployment.Node,
 			&deployment.Namespace, &routingTableJSON, &deployment.Status,
+			&deployment.Scale.MinReplicas, &deployment.Scale.MaxReplicas,
 		)
 		if err != nil {
 			return nil, err

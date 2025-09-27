@@ -57,6 +57,16 @@ func (rc *RouteConfigurator) SetRoutingTable(deployment core.Deployment) error {
 	return nil
 }
 
+func (rc *RouteConfigurator) DeleteRoutingTable(deploymentId string) error {
+	err := rc.RedisCli.Del(deploymentId).Err()
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Routing table for %s deleted successfully", deploymentId)
+	return nil
+}
+
 func getFunctionUrl(fcId, namespace string) string {
 	return fmt.Sprintf("http://%s.%s.svc.cluster.local", fcId, namespace)
 }

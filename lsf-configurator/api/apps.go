@@ -12,18 +12,18 @@ const (
 )
 
 type HandlerApps struct {
-	composer *core.Composer
+	composer   *core.Composer
 	controller core.Controller
-	conf     config.Configuration
-	mux      *http.ServeMux
+	conf       config.Configuration
+	mux        *http.ServeMux
 }
 
 func NewHandlerApps(composer *core.Composer, controller core.Controller, conf config.Configuration) *HandlerApps {
 	h := &HandlerApps{
-		composer: composer,
+		composer:   composer,
 		controller: controller,
-		conf:     conf,
-		mux:      http.NewServeMux(),
+		conf:       conf,
+		mux:        http.NewServeMux(),
 	}
 
 	h.mux.HandleFunc("GET /", h.list)
@@ -91,7 +91,7 @@ func (h *HandlerApps) create(w http.ResponseWriter, r *http.Request) {
 		LatencyLimit: payload.LatencyLimit,
 	}
 
-	if(payload.PlatformManaged) {
+	if payload.PlatformManaged {
 		_, err = h.controller.RegisterFunctionApp(data)
 	} else {
 		_, err = h.composer.CreateFunctionApp(data)
@@ -141,7 +141,7 @@ func (h *HandlerApps) bulkCreate(w http.ResponseWriter, r *http.Request) {
 	var err error
 	if payload.FunctionApp.PlatformManaged {
 		app, err = h.controller.RegisterFunctionApp(data)
-	}else{
+	} else {
 		app, err = h.composer.CreateFunctionApp(data)
 	}
 	if err != nil {
@@ -154,7 +154,7 @@ func (h *HandlerApps) bulkCreate(w http.ResponseWriter, r *http.Request) {
 	compositionIdMap := make(map[string]string)
 
 	for _, composition := range payload.FunctionCompositions {
-		fc, err := h.composer.AddFunctionComposition(app.Id, composition.Components, composition.Files)
+		fc, err := h.composer.AddFunctionComposition(app.Id, composition.Components)
 		if err != nil {
 			h.composer.RollbackBulk(createdApp, createdCompositions, createdDeployments)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -176,7 +176,8 @@ func (h *HandlerApps) bulkCreate(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Create deployment with an empty routing table
-		dep, err := h.composer.CreateFcDeployment(realCompositionId, deployment.Namespace, deployment.Node, core.RoutingTable{})
+		dep, _, err := h.composer.CreateFcDeployment(realCompositionId, deployment.Namespace,
+			deployment.Node, core.RoutingTable{}, core.Scale{MinReplicas: 0, MaxReplicas: 0})
 		if err != nil {
 			h.composer.RollbackBulk(createdApp, createdCompositions, createdDeployments)
 			http.Error(w, err.Error(), http.StatusInternalServerError)

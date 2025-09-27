@@ -1,9 +1,24 @@
 import React, { useState, useMemo } from "react";
-import { Typography, Box, Grid, Button, Tabs, Tab, Paper, Chip, Divider, Stack } from "@mui/material";
+import {
+  Typography,
+  Box,
+  Grid,
+  Button,
+  Tabs,
+  Tab,
+  Paper,
+  Chip,
+  Divider,
+  Stack,
+} from "@mui/material";
 import { useParams } from "react-router";
 import FunctionCompositionCard from "../components/FunctionCompositionCard";
 import { useFunctionAppById } from "../hooks/functionAppsHooks";
-import type { FunctionComposition, Component, ComponentLink } from "../models/models";
+import type {
+  FunctionComposition,
+  Component,
+  ComponentLink,
+} from "../models/models";
 import { generateComponentColor } from "../helpers/utilities";
 import { useDeleteFunctionComposition } from "../hooks/functionCompositionHooks";
 import AddIcon from "@mui/icons-material/Add";
@@ -23,7 +38,9 @@ const FunctionAppDetails: React.FC = () => {
   const [isAddModalOpen, setAddModalOpen] = useState(false);
 
   const allDeployments = useMemo(
-    () => app?.compositions?.flatMap((composition) => composition.deployments) ?? [],
+    () =>
+      app?.compositions?.flatMap((composition) => composition.deployments) ??
+      [],
     [app]
   );
 
@@ -138,7 +155,13 @@ const FunctionAppDetails: React.FC = () => {
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   {component.name}
                 </Typography>
-                <Stack direction="row" spacing={1} alignItems="center" justifyContent="center" mt={1}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  justifyContent="center"
+                  mt={1}
+                >
                   <Chip
                     icon={<MemoryIcon />}
                     label={`${component.memory} MB`}
@@ -181,7 +204,8 @@ const FunctionAppDetails: React.FC = () => {
                   <LinkIcon color="primary" />
                   <Box>
                     <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                      {link.from} <span style={{ color: "#888" }}>→</span> {link.to}
+                      {link.from} <span style={{ color: "#888" }}>→</span>{" "}
+                      {link.to}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Invocation Rate: <b>{link.invocationRate}</b>
@@ -214,7 +238,7 @@ const FunctionAppDetails: React.FC = () => {
                 <FunctionCompositionCard
                   composition={composition}
                   onDelete={deleteComposition}
-                  allDeployments={allDeployments} 
+                  allDeployments={allDeployments}
                 />
               </Grid>
             ))}
@@ -245,16 +269,13 @@ const FunctionAppDetails: React.FC = () => {
           </Grid>
         )}
 
-        {tabValue === "graph" && (
-          <CallGraphView deployments={allDeployments} /> 
-        )}
+        {tabValue === "graph" && <CallGraphView deployments={allDeployments} />}
       </Box>
       <FunctionCompositionAddModal
         open={isAddModalOpen}
         onClose={handleCloseAddModal}
         appId={app.id ?? ""}
-        appFiles={app.files ?? []}
-        appComponents={app.components?.map(comp => comp.name) ?? []}
+        appComponents={app.components?.map((comp) => comp.name) ?? []}
       />
     </>
   );

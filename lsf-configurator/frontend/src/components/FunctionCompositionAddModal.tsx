@@ -19,20 +19,14 @@ interface FunctionCompositionAddModalProps {
   open: boolean;
   onClose: () => void;
   appId: string;
-  appFiles: string[];
   appComponents: string[];
 }
 
-const FunctionCompositionAddModal: React.FC<FunctionCompositionAddModalProps> = ({
-  open,
-  onClose,
-  appId,
-  appFiles,
-  appComponents,
-}) => {
+const FunctionCompositionAddModal: React.FC<
+  FunctionCompositionAddModalProps
+> = ({ open, onClose, appId, appComponents }) => {
   const { control, handleSubmit } = useForm<FunctionCompositionCreateDto>({
     defaultValues: {
-      files: [],
       components: [],
     },
   });
@@ -63,29 +57,6 @@ const FunctionCompositionAddModal: React.FC<FunctionCompositionAddModalProps> = 
           Add New Function Composition
         </Typography>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <FormControl fullWidth margin="normal">
-            <InputLabel id="files-label">Files</InputLabel>
-            <Controller
-              name="files"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  {...field}
-                  labelId="files-label"
-                  label="Files"
-                  multiple
-                  renderValue={(selected) => selected.join(", ")}
-                >
-                  {appFiles.map((file) => (
-                    <MenuItem key={file} value={file}>
-                      <Checkbox checked={field.value.includes(file)} />
-                      <ListItemText primary={file} />
-                    </MenuItem>
-                  ))}
-                </Select>
-              )}
-            />
-          </FormControl>
           <FormControl fullWidth margin="normal">
             <InputLabel id="components-label">Components</InputLabel>
             <Controller

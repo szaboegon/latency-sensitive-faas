@@ -2,10 +2,13 @@ package core
 
 import "mime/multipart"
 
+type Layout = map[string][]string
+
 type Component struct {
 	Name    string `json:"name"`
 	Memory  int    `json:"memory"`  // in MB
 	Runtime int    `json:"runtime"` // The execution time of the component in milliseconds
+	Files   []string `json:"files"`   // List of files required by the component
 }
 
 type ComponentLink struct {
@@ -24,6 +27,7 @@ type FunctionApp struct {
 	Compositions []*FunctionComposition `json:"compositions"`
 	SourcePath   string                 `json:"source_path"`
 	LatencyLimit int                    `json:"latency_limit"` // in milliseconds
+	LayoutCandidates []Layout           `json:"layout_candidates"`
 }
 
 type BuildStatus string
@@ -60,6 +64,12 @@ type Deployment struct {
 	Namespace             string           `json:"namespace"`
 	RoutingTable          RoutingTable     `json:"routing_table"`
 	Status                DeploymentStatus `json:"status"`
+	Scale                 Scale            `json:"scale"`
+}
+
+type Scale struct {
+	MinReplicas int `json:"min_replicas"`
+	MaxReplicas int `json:"max_replicas"`
 }
 
 type Route struct {
