@@ -87,7 +87,8 @@ func main() {
 	layoutCalculator := layout.NewLayoutCalculator()
 
 	controllerCtx, controllerCancel := context.WithCancel(context.Background())
-	controller = core.NewController(composer, metricsReader, layoutCalculator, 1*time.Second, conf.DeployNamespace)
+	controller = core.NewController(composer, metricsReader, layoutCalculator,
+		time.Duration(conf.ControllerDelay)*time.Second, conf.DeployNamespace)
 
 	if !conf.LocalMode {
 		go func() {

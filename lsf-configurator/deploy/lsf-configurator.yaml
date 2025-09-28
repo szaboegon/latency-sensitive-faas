@@ -20,7 +20,15 @@ rules:
 
   # Tekton Pipelines API (allow managing PipelineRuns and related resources)
   - apiGroups: ["tekton.dev"]
-    resources: ["pipelineruns", "pipelineruns/finalizers", "pipelineruns/status", "taskruns", "taskruns/finalizers", "taskruns/status"]
+    resources:
+      [
+        "pipelineruns",
+        "pipelineruns/finalizers",
+        "pipelineruns/status",
+        "taskruns",
+        "taskruns/finalizers",
+        "taskruns/status",
+      ]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---
 apiVersion: v1
@@ -35,7 +43,7 @@ metadata:
   name: configurator-rolebinding
 subjects:
   - kind: ServiceAccount
-    name: configurator-sa  
+    name: configurator-sa
     namespace: configurator
 roleRef:
   kind: ClusterRole
@@ -117,7 +125,7 @@ spec:
             - name: TEKTON_SERVICE_ACCOUNT
               value: "buildpacks-service-account"
             - name: TEKTON_CONCURRENCY_LIMIT
-              value: "1"  
+              value: "1"
             - name: DATABASE_PATH
               value: "/db/db.sqlite3"
             - name: ALERTING_API_URL
@@ -129,6 +137,8 @@ spec:
               value: "elastic"
             - name: LOCAL_MODE
               value: "false"
+            - name: CONTROLLER_DELAY
+              value: "30"
           volumeMounts:
             - name: uploads-pvc
               mountPath: /uploads
@@ -152,9 +162,9 @@ spec:
   selector:
     app: lsf-configurator
   ports:
-  - port: 80
-    targetPort: 8080
-    nodePort: 30001
+    - port: 80
+      targetPort: 8080
+      nodePort: 30001
 # ---
 # apiVersion: apps/v1
 # kind: Deployment
@@ -206,5 +216,4 @@ spec:
 #       targetPort: 8080
 #       protocol: TCP
 #   type: NodePort
-
 

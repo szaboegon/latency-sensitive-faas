@@ -296,122 +296,133 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 }
 
 func (c metricsClient) Query95thPercentileAppRuntimes() (map[string]float64, error) {
-    size := 1000
-    appNameField := "labels.app_name"
+	size := 1000
+	appNameField := "labels.app_name"
 
-    res, err := c.client.Search().
-        Index(tracesIndex).
-        Request(&search.Request{
-            Size: intPtr(size), 
-            Query: &types.Query{
-                Bool: &types.BoolQuery{
-                    Filter: []types.Query{
-                        {
-                            Range: map[string]types.RangeQuery{
-                                "@timestamp": &types.DateRangeQuery{
-                                    Gte: strPtr("now-160m"),
-                                    Lte: strPtr("now"),
-                                },
-                            },
-                        },
+	res, err := c.client.Search().
+		Index(tracesIndex).
+		Request(&search.Request{
+			Size: intPtr(size),
+			Query: &types.Query{
+				Bool: &types.BoolQuery{
+					Filter: []types.Query{
 						{
-                            Term: map[string]types.TermQuery{
-                                "processor.event": {
-                                    Value: "span",
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-            Aggregations: map[string]types.Aggregations{
-                "apps": {
-                    Terms: &types.TermsAggregation{
-                        Field: &appNameField,
-                        Size:  &size,
-                    },
-                    Aggregations: map[string]types.Aggregations{
-                        "traces": {
-                            Terms: &types.TermsAggregation{
-                                Field: strPtr("trace.id"),
-                                Size:  &size,
-                            },
-                            Aggregations: map[string]types.Aggregations{
-                                "min_start": {
-                                    Min: &types.MinAggregation{
-                                        Field: strPtr("@timestamp"),
-                                    },
-                                },
-                                "max_end": {
-                                    Max: &types.MaxAggregation{
-                                        // Calculate the end time of each span using a script
-                                        Script: &types.Script{
-                                            Source: strPtr("doc['@timestamp'].value.toInstant().toEpochMilli() + doc['span.duration.us'].value / 1000"),
-                                        },
-                                    },
-                                },
-                                "trace_duration_ms": {
-                                    BucketScript: &types.BucketScriptAggregation{
-                                        BucketsPath: map[string]string{
-                                            "min_start": "min_start.value",
-                                            "max_end":   "max_end.value",
-                                        },
-                                        Script: &types.Script{
-                                            Source: strPtr("params.max_end - params.min_start"),
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                        "p95_trace_duration": {
-                            PercentilesBucket: &types.PercentilesBucketAggregation{
-                                // The field here refers to the output of the "trace_duration_ms" bucket script
-                                BucketsPath:    strPtr("traces>trace_duration_ms"),
-                                Percents: []types.Float64{95.0},
-                            },
-                        },
-                    },
-                },
-            },
-        }).
-        Do(context.Background())
+							Range: map[string]types.RangeQuery{
+								"@timestamp": &types.DateRangeQuery{
+									Gte: strPtr("now-160m"),
+									Lte: strPtr("now"),
+								},
+							},
+						},
+						{
+							Term: map[string]types.TermQuery{
+								"processor.event": {
+									Value: "span",
+								},
+							},
+						},
+					},
+				},
+			},
+			Aggregations: map[string]types.Aggregations{
+				"apps": {
+					Terms: &types.TermsAggregation{
+						Field: &appNameField,
+						Size:  &size,
+					},
+					Aggregations: map[string]types.Aggregations{
+						"traces": {
+							Terms: &types.TermsAggregation{
+								Field: strPtr("trace.id"),
+								Size:  &size,
+							},
+							Aggregations: map[string]types.Aggregations{
+								"min_start": {
+									Min: &types.MinAggregation{
+										Field: strPtr("@timestamp"),
+									},
+								},
+								"max_end": {
+									Max: &types.MaxAggregation{
+										// Calculate the end time of each span using a script
+										Script: &types.Script{
+											Source: strPtr("doc['@timestamp'].value.toInstant().toEpochMilli() + doc['span.duration.us'].value / 1000"),
+										},
+									},
+								},
+								"trace_duration_ms": {
+									BucketScript: &types.BucketScriptAggregation{
+										BucketsPath: map[string]string{
+											"min_start": "min_start.value",
+											"max_end":   "max_end.value",
+										},
+										Script: &types.Script{
+											Source: strPtr("params.max_end - params.min_start"),
+										},
+									},
+								},
+							},
+						},
+						"p95_trace_duration": {
+							PercentilesBucket: &types.PercentilesBucketAggregation{
+								// The field here refers to the output of the "trace_duration_ms" bucket script
+								BucketsPath: strPtr("traces>trace_duration_ms"),
+								Percents:    []types.Float64{95.0},
+							},
+						},
+					},
+				},
+			},
+		}).
+		Do(context.Background())
 
-    if err != nil {
-        return nil, fmt.Errorf("error querying metrics: %w", err)
-    }
+	if err != nil {
+		return nil, fmt.Errorf("error querying metrics: %w", err)
+	}
 
-    appsAgg, ok := res.Aggregations["apps"].(*types.StringTermsAggregate)
-    if !ok {
-        return nil, errors.New("incorrect aggregation type for apps")
-    }
+	appsInterface, exists := res.Aggregations["apps"]
+	if !exists || appsInterface == nil {
+		return make(map[string]float64), nil // no records yet
+	}
 
-    result := make(map[string]float64)
+	appsAgg, ok := appsInterface.(*types.StringTermsAggregate)
+	if !ok {
+		return nil, errors.New("incorrect aggregation type for apps")
+	}
 
-    for _, appBucket := range appsAgg.Buckets.([]types.StringTermsBucket) {
-        percentileAgg, ok := appBucket.Aggregations["p95_trace_duration"].(*types.PercentilesBucketAggregate)
-        if !ok {
-            continue
-        }
+	result := make(map[string]float64)
 
-        values, ok := percentileAgg.Values.(map[string]interface{})
-        if !ok {
-            continue
-        }
+	for _, appBucket := range appsAgg.Buckets.([]types.StringTermsBucket) {
+		p95Interface, ok := appBucket.Aggregations["p95_trace_duration"]
+		if !ok || p95Interface == nil {
+			continue
+		}
 
-        p95, found := values["95.0"]
-        if !found {
-            continue
-        }
+		percentileAgg, ok := p95Interface.(*types.PercentilesBucketAggregate)
+		if !ok {
+			continue
+		}
 
-        result[appBucket.Key.(string)] = p95.(float64)
-    }
+		values, ok := percentileAgg.Values.(map[string]interface{})
+		if !ok {
+			continue
+		}
 
-    return result, nil
+		p95, found := values["95.0"]
+		if !found {
+			continue
+		}
+
+		if f, ok := p95.(float64); ok {
+			result[appBucket.Key.(string)] = f
+		}
+	}
+
+	return result, nil
 }
 
 func strPtr(s string) *string { return &s }
 func intPtr(v int) *int       { return &v }
-
 
 func unmarshalSpanTimestamp(jsonMessage json.RawMessage) (float64, error) {
 	var span map[string]interface{}

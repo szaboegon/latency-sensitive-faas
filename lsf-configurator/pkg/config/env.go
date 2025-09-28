@@ -31,6 +31,7 @@ type Configuration struct {
 	AlertingConnector      string `env:"ALERTING_CONNECTOR" default:"lsf-alerts-connector"`
 	LocalMode              bool   `env:"LOCAL_MODE" default:"false"`
 	DeployNamespace        string `env:"DEPLOY_NAMESPACE" default:"application"`
+	ControllerDelay        int    `env:"CONTROLLER_DELAY" default:"1"`
 }
 
 func Init() Configuration {

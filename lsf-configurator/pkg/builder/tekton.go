@@ -51,7 +51,6 @@ func (b *TektonBuilder) Build(ctx context.Context, fc core.FunctionComposition, 
 		select {
 		case <-time.After(TimeoutDuration):
 			b.releaseSemaphore()
-			log.Printf("Timeout reached, semaphore released for build %s", fc.Id)
 		case <-ctx.Done():
 
 		}

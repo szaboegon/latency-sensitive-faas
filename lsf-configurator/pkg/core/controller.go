@@ -17,6 +17,8 @@ type latencyController struct {
 	layout          LayoutCalculator
 	delay           time.Duration
 	deployNamespace string
+	lastReconfigs   map[string]time.Time
+	cooldownPeriod  time.Duration
 }
 
 func NewController(composer *Composer, metrics MetricsReader, layout LayoutCalculator,
@@ -27,6 +29,8 @@ func NewController(composer *Composer, metrics MetricsReader, layout LayoutCalcu
 		layout:          layout,
 		delay:           delay,
 		deployNamespace: deployNamespace,
+		lastReconfigs:   make(map[string]time.Time),
+		cooldownPeriod:  60 * time.Second,
 	}
 }
 
@@ -54,6 +58,12 @@ func (c *latencyController) Start(ctx context.Context) error {
 					continue
 				}
 				if app.LatencyLimit > 0 && runtime > float64(app.LatencyLimit) {
+					last, ok := c.lastReconfigs[app.Id]
+					if ok && time.Since(last) < c.cooldownPeriod {
+						log.Printf("Skipping reconfiguration for app %s due to cooldown (last at %v)", app.Id, last)
+						continue
+					}
+
 					go func(a *FunctionApp) {
 						if err := c.handleLatencyViolation(a); err != nil {
 							log.Printf("Error handling latency violation for app %s: %v", a.Id, err)
@@ -94,7 +104,7 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 		return nil, err
 	}
 
-	log.Printf("Calculated layouts for app %s: %v", app.Id, layouts)
+	log.Printf("Successfully deployed function app with layout %s: %v", app.Id, layouts)
 	return app, nil
 }
 
@@ -171,7 +181,7 @@ func (c *latencyController) deployLayout(appId string, layout Layout) error {
 			log.Printf("No existing deployment found for node %s, creating new", node)
 			emptyRT := make(RoutingTable)
 			// maxReplicas=0 means no bounds, TODO minReplicas hardcoded to 1 for now
-			newDep, depChan, err := c.composer.CreateFcDeployment(matchedFc.Id, node, c.deployNamespace, emptyRT, Scale{MinReplicas: 1, MaxReplicas: 0})
+			newDep, depChan, err := c.composer.CreateFcDeployment(matchedFc.Id, c.deployNamespace, node, emptyRT, Scale{MinReplicas: 1, MaxReplicas: 0})
 			if err != nil {
 				resultChan <- depResult{"", nil, fmt.Errorf("failed to create deployment for fc %s on node %s: %w", matchedFc.Id, node, err)}
 				return
