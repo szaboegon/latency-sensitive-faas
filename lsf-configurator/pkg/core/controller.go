@@ -98,13 +98,16 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 		}
 	}
 
-	err = c.deployLayout(app.Id, layouts[0]) // deploy the first layout by default
-	if err != nil {
-		log.Printf("Error deploying layout for app %s: %v", app.Id, err)
-		return nil, err
-	}
+	go func(appId string, layout Layout) {
+		err = c.deployLayout(appId, layout)
+		if err != nil {
+			log.Printf("Error deploying layout for app %s: %v", appId, err)
+			return
+		}
+		log.Printf("Successfully deployed function app with layout %s: %v", appId, layout)
+		// deploy the first layout by default
+	}(app.Id, layouts[0])
 
-	log.Printf("Successfully deployed function app with layout %s: %v", app.Id, layouts)
 	return app, nil
 }
 
