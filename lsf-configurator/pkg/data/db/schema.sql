@@ -30,5 +30,8 @@ CREATE TABLE IF NOT EXISTS deployments (
     status TEXT DEFAULT 'pending',
     scale_min_replicas INTEGER DEFAULT 0,
     scale_max_replicas INTEGER DEFAULT 0,
+    scale_target_concurrency INTEGER DEFAULT 1,
+    resources_memory INTEGER,
+    resources_cpu INTEGER,
     FOREIGN KEY (function_composition_id) REFERENCES function_compositions(id) ON DELETE CASCADE
 );

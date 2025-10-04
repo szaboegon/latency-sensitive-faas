@@ -7,7 +7,12 @@ export interface FunctionAppCreateDto {
     runtime: number;
     files: string[];
   }[];
-  links: { from: string; to: string; invocationRate: number }[];
+  links: {
+    from: string;
+    to: string;
+    invocationRate: number;
+    dataDelay: number;
+  }[];
   sourcePath?: string;
   latencyLimit: number;
   platformManaged: boolean;

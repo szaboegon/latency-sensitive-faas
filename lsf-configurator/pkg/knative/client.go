@@ -16,8 +16,6 @@ import (
 
 const CompositionTemplateName = "composition"
 
-//var DefaultScaleMetric string = "concurrency"
-
 type Client struct {
 	fnClient      *fn.Client
 	imageRegistry string
@@ -89,10 +87,21 @@ func (c *Client) Deploy(ctx context.Context, deployment core.Deployment, image, 
 			Namespace: deployment.Namespace,
 			Options: fn.Options{
 				Scale: &fn.ScaleOptions{
-					Min: int64Ptr(deployment.Scale.MinReplicas),
-					Max: int64Ptr(deployment.Scale.MaxReplicas),
+					Min:    int64Ptr(deployment.Scale.MinReplicas),
+					Max:    int64Ptr(deployment.Scale.MaxReplicas),
+					Metric: strPtr("concurrency"),
+					Target: floatPtr(float64(deployment.Scale.TargetConcurrency)),
 				},
-				//ScaleMetric: &DefaultScaleMetric,
+				Resources: &fn.ResourcesOptions{
+					Requests: &fn.ResourcesRequestsOptions{
+						Memory: strPtr(fmt.Sprintf("%dMi", deployment.Resources.Memory)),
+						CPU:    strPtr(fmt.Sprintf("%dm", deployment.Resources.CPU)),
+					},
+					Limits: &fn.ResourcesLimitsOptions{
+						Memory: strPtr(fmt.Sprintf("%dMi", deployment.Resources.Memory)),
+						CPU:    strPtr(fmt.Sprintf("%dm", deployment.Resources.CPU)),
+					},
+				},
 			},
 		},
 		Run: fn.RunSpec{
@@ -155,4 +164,12 @@ func getDeployEnvs(appId, deploymentId string) []fn.Env {
 func int64Ptr(i int) *int64 {
 	i64 := int64(i)
 	return &i64
+}
+
+func strPtr(s string) *string {
+	return &s
+}
+
+func floatPtr(f float64) *float64 {
+	return &f
 }

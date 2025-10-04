@@ -9,6 +9,7 @@ export interface ComponentLink {
   from: string;
   to: string;
   invocationRate: number;
+  dataDelay: number;
 }
 
 export interface FunctionApp {

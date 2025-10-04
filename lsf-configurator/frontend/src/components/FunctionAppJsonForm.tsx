@@ -47,74 +47,42 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
       { "name": "tag", "memory": 83, "runtime": 33, "files": [] }
     ],
     "links": [
-      { "from": "resize", "to": "grayscale", "invocationRate": 1.0 },
-      { "from": "grayscale", "to": "objectdetect", "invocationRate": 1.0 },
-      { "from": "objectdetect", "to": "cut", "invocationRate": 1.0 },
-      { "from": "cut", "to": "objectdetect2", "invocationRate": 3.0 },
-      { "from": "objectdetect2", "to": "tag", "invocationRate": 1.0 }
+      {
+        "from": "resize",
+        "to": "grayscale",
+        "invocationRate": 2.0,
+        "dataDelay": 3
+      },
+      {
+        "from": "grayscale",
+        "to": "objectdetect",
+        "invocationRate": 2.0,
+        "dataDelay": 3
+      },
+      {
+        "from": "objectdetect",
+        "to": "cut",
+        "invocationRate": 2.0,
+        "dataDelay": 3
+      },
+      {
+        "from": "cut",
+        "to": "objectdetect2",
+        "invocationRate": 4.0,
+        "dataDelay": 3
+      },
+      {
+        "from": "objectdetect2",
+        "to": "tag",
+        "invocationRate": 4.0,
+        "dataDelay": 3
+      }
     ],
     "latencyLimit": 2252,
-    "platformManaged": false
+    "platformManaged": true
   },
-  "functionCompositions": [
-    {
-      "id": "composition-1",
-      "components": ["resize"]
-    },
-    {
-      "id": "composition-2",
-      "components": ["grayscale", "cut"]
-    },
-    {
-      "id": "composition-3",
-      "components": ["objectdetect", "objectdetect2"]
-    },
-    {
-      "id": "composition-4",
-      "components": ["objectdetect2", "tag"]
-    }
-  ],
-  "deployments": [
-    {
-      "id": "deployment-1",
-      "functionCompositionId": "composition-1",
-      "node": "knative",
-      "namespace": "application",
-      "routingTable": {
-        "resize": [{ "to": "grayscale", "function": "deployment-2" }]
-      }
-    },
-    {
-      "id": "deployment-2",
-      "functionCompositionId": "composition-2",
-      "node": "knative-m02",
-      "namespace": "application",
-      "routingTable": {
-        "grayscale": [{ "to": "objectdetect", "function": "deployment-3" }],
-        "cut": [{ "to": "objectdetect2", "function": "deployment-3" }]
-      }
-    },
-    {
-      "id": "deployment-3",
-      "functionCompositionId": "composition-3",
-      "node": "knative-m02",
-      "namespace": "application",
-      "routingTable": {
-        "objectdetect": [{ "to": "cut", "function": "deployment-2" }],
-        "objectdetect2": [{ "to": "tag", "function": "deployment-4" }]
-      }
-    },
-    {
-      "id": "deployment-4",
-      "functionCompositionId": "composition-4",
-      "node": "knative-m03",
-      "namespace": "application",
-      "routingTable": {
-        "objectdetect2": [{ "to": "tag", "function": "local" }],
-        "tag": []
-      }
-    }
-  ]
+  "functionCompositions": [],
+  "deployments": []
 }`,
     },
   });

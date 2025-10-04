@@ -39,11 +39,11 @@ type MetricsReader interface {
 	EnsureIndex(ctx context.Context, indexName string) error
 }
 
-type Controller interface{
+type Controller interface {
 	Start(ctx context.Context) error
 	RegisterFunctionApp(creationData FunctionAppCreationData) (*FunctionApp, error)
 }
 
 type LayoutCalculator interface {
-	CalculateLayouts(app FunctionApp) ([]Layout, error)
+	CalculateLayout(profiles []ComponentProfile, links []ComponentLink, appLatencyReq, memoryAvailable int) (Layout, error)
 }

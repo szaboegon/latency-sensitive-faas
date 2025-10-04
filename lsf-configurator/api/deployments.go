@@ -43,7 +43,7 @@ func (h *HandlerDeployments) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	deployment, _, err := h.composer.CreateFcDeployment(req.FunctionCompositionId, req.Node,
-		req.Namespace, req.RoutingTable, core.Scale{MinReplicas: 0, MaxReplicas: 0})
+		req.Namespace, req.RoutingTable, core.Scale{MinReplicas: 0, MaxReplicas: 0}, core.Resources{Memory: 512, CPU: 1000})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

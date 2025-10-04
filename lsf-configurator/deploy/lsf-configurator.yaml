@@ -137,8 +137,15 @@ spec:
               value: "elastic"
             - name: LOCAL_MODE
               value: "false"
-            - name: CONTROLLER_DELAY
+            - name: CONTROLLER_TICK_DELAY_SECONDS
               value: "30"
+            - name: PLATFORM_NODES
+              value: "knative,knative-m02,knative-m03"
+            - name: PLATFORM_DELAY_MS
+              value: "10"
+              # currently nodes have 6GB total RAM, we leave 2GB for system processes
+            - name: AVAILABLE_NODE_MEMORY_GB
+              value: "4"
           volumeMounts:
             - name: uploads-pvc
               mountPath: /uploads

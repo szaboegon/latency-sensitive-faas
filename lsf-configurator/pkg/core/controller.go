@@ -4,33 +4,37 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math"
-	"slices"
 	"sort"
 	"strings"
 	"time"
 )
 
 type latencyController struct {
-	composer        *Composer
-	metrics         MetricsReader
-	layout          LayoutCalculator
-	delay           time.Duration
-	deployNamespace string
-	lastReconfigs   map[string]time.Time
-	cooldownPeriod  time.Duration
+	composer              *Composer
+	metrics               MetricsReader
+	layout                LayoutCalculator
+	delay                 time.Duration
+	deployNamespace       string
+	lastReconfigs         map[string]time.Time
+	cooldownPeriod        time.Duration
+	availableNodeMemoryGb int // same for all nodes for now, in GB
 }
 
+// set target concurrency globally to 1 for now, but this can be different per function composition depending on how CPU-bound they are
+// this should be measured and set accordingly for each function composition)
+const targetConcurrency = 1
+
 func NewController(composer *Composer, metrics MetricsReader, layout LayoutCalculator,
-	delay time.Duration, deployNamespace string) Controller {
+	delay time.Duration, deployNamespace string, availableNodeMemoryGb int) Controller {
 	return &latencyController{
-		composer:        composer,
-		metrics:         metrics,
-		layout:          layout,
-		delay:           delay,
-		deployNamespace: deployNamespace,
-		lastReconfigs:   make(map[string]time.Time),
-		cooldownPeriod:  60 * time.Second,
+		composer:              composer,
+		metrics:               metrics,
+		layout:                layout,
+		delay:                 delay,
+		deployNamespace:       deployNamespace,
+		lastReconfigs:         make(map[string]time.Time),
+		cooldownPeriod:        60 * time.Second,
+		availableNodeMemoryGb: availableNodeMemoryGb,
 	}
 }
 
@@ -82,19 +86,25 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 		return nil, err
 	}
 
-	layouts, err := c.layout.CalculateLayouts(*app)
+	// Max replica count needs to be calculated before the layout, because we need to estimate max memory needs
+	componentProfiles := buildComponentProfiles(app.Components, app.Links)
+	layout, err := c.layout.CalculateLayout(componentProfiles, app.Links, app.LatencyLimit, c.availableNodeMemoryGb)
 	if err != nil {
 		log.Printf("Error calculating layout for app %s: %v", app.Id, err)
 		return nil, err
 	}
-
-	for _, layout := range layouts {
-		for _, components := range layout {
-			_, err := c.composer.AddFunctionComposition(app.Id, components)
-			if err != nil {
-				log.Printf("Error adding function composition for app %s: %v", app.Id, err)
-				return nil, err
-			}
+	// TODO calculate multiple layouts with different invocation rates, memory limits, etc.
+	app.LayoutCandidates = []Layout{layout}
+	c.composer.functionAppRepo.Save(app)
+	for _, components := range layout {
+		componentNames := make([]string, len(components))
+		for i, cp := range components {
+			componentNames[i] = cp.Name
+		}
+		_, err := c.composer.AddFunctionComposition(app.Id, componentNames)
+		if err != nil {
+			log.Printf("Error adding function composition for app %s: %v", app.Id, err)
+			return nil, err
 		}
 	}
 
@@ -106,7 +116,7 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 		}
 		log.Printf("Successfully deployed function app with layout %s: %v", appId, layout)
 		// deploy the first layout by default
-	}(app.Id, layouts[0])
+	}(app.Id, app.LayoutCandidates[0])
 
 	return app, nil
 }
@@ -118,7 +128,6 @@ func (c *latencyController) handleLatencyViolation(app *FunctionApp) error {
 	return nil
 }
 
-// //TODO https://chatgpt.com/share/68d6d4d1-5ba0-8009-9d2c-bc51efa84e16
 func (c *latencyController) deployLayout(appId string, layout Layout) error {
 	log.Printf("Deploying layout for app %s: %v", appId, layout)
 
@@ -161,11 +170,19 @@ func (c *latencyController) deployLayout(appId string, layout Layout) error {
 	}
 
 	resultChan := make(chan depResult, len(layout))
+
+	compRuntimeMap := make(map[string]int) // component -> runtime in ms
+	for _, comp := range app.Components {
+		compRuntimeMap[comp.Name] = comp.Runtime
+	}
 	for node, components := range layout {
 		// process each node+components in parallel
-		go func(node string, components []string) {
-			// check if function composition exists for this component set
-			fcKey := componentsKey(components)
+		go func(node string, components []ComponentProfile) {
+			componentNames := make([]string, len(components))
+			for i, cp := range components {
+				componentNames[i] = cp.Name
+			}
+			fcKey := componentsKey(componentNames)
 			matchedFc, ok := fcByKey[fcKey]
 			if !ok {
 				resultChan <- depResult{"", nil, fmt.Errorf("no matching function composition for components: %v", components)}
@@ -182,9 +199,11 @@ func (c *latencyController) deployLayout(appId string, layout Layout) error {
 
 			// otherwise, create a new deployment, routing table will be set later once all deployments ids are known
 			log.Printf("No existing deployment found for node %s, creating new", node)
+			resources := calculateDeploymentResources(components)
+			scale := calculateDeploymentMaxReplicas(components, targetConcurrency)
+
 			emptyRT := make(RoutingTable)
-			// maxReplicas=0 means no bounds, TODO minReplicas hardcoded to 1 for now
-			newDep, depChan, err := c.composer.CreateFcDeployment(matchedFc.Id, c.deployNamespace, node, emptyRT, Scale{MinReplicas: 1, MaxReplicas: 0})
+			newDep, depChan, err := c.composer.CreateFcDeployment(matchedFc.Id, c.deployNamespace, node, emptyRT, scale, resources)
 			if err != nil {
 				resultChan <- depResult{"", nil, fmt.Errorf("failed to create deployment for fc %s on node %s: %w", matchedFc.Id, node, err)}
 				return
@@ -219,7 +238,12 @@ func (c *latencyController) deployLayout(appId string, layout Layout) error {
 	// build and apply routing tables
 	referencedDepIDs := make(map[string]bool)
 	for node, comps := range layout {
-		fcKey := componentsKey(comps)
+		componentNames := make([]string, len(comps))
+		for i, cp := range comps {
+			componentNames[i] = cp.Name
+		}
+
+		fcKey := componentsKey(componentNames)
 		matchedFc := fcByKey[fcKey]
 		depKey := matchedFc.Id + "@" + node
 		dep := activeDepsByKey[depKey]
@@ -229,7 +253,7 @@ func (c *latencyController) deployLayout(appId string, layout Layout) error {
 		}
 
 		rt := make(RoutingTable)
-		for _, comp := range comps {
+		for _, comp := range componentNames {
 			var routes []Route
 			for _, link := range app.Links {
 				if link.From != comp {
@@ -291,29 +315,6 @@ func (c *latencyController) deployLayout(appId string, layout Layout) error {
 	return nil
 }
 
-// calculates minimum required replicas based on edges and invocation rates
-func calculateMinReplicas(fc *FunctionComposition, links []ComponentLink) int {
-	compDemand := make(map[string]float64)
-	for _, comp := range fc.Components {
-		compDemand[comp] = 1 // default for components with no incoming link
-	}
-
-	for _, link := range links {
-		if slices.Contains(fc.Components, link.To) {
-			compDemand[link.To] += link.InvocationRate
-		}
-	}
-
-	maxDemand := 0.0
-	for _, comp := range fc.Components {
-		if compDemand[comp] > maxDemand {
-			maxDemand = compDemand[comp]
-		}
-	}
-
-	return int(math.Ceil(maxDemand))
-}
-
 func getFunctionComposition(app *FunctionApp, fcId string) *FunctionComposition {
 	for _, fc := range app.Compositions {
 		if fc.Id == fcId {
@@ -321,6 +322,20 @@ func getFunctionComposition(app *FunctionApp, fcId string) *FunctionComposition 
 		}
 	}
 	return nil
+}
+
+func buildComponentProfiles(components []Component, links []ComponentLink) []ComponentProfile {
+	profiles := make([]ComponentProfile, 0, len(components))
+	for _, comp := range components {
+		replicas := calculateComponentMaxReplicas(comp, links, targetConcurrency)
+		profiles = append(profiles, ComponentProfile{
+			Name:             comp.Name,
+			Runtime:          comp.Runtime,
+			Memory:           comp.Memory,
+			RequiredReplicas: replicas,
+		})
+	}
+	return profiles
 }
 
 func componentsKey(comps []string) string {

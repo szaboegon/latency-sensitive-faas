@@ -241,7 +241,7 @@ func (c *Composer) DeleteFunctionComposition(fcId string) error {
 
 // --- DEPLOYMENTS ---
 
-func (c *Composer) CreateFcDeployment(fcId, namespace, node string, routingTable RoutingTable, scale Scale) (*Deployment, <-chan Result, error) {
+func (c *Composer) CreateFcDeployment(fcId, namespace, node string, routingTable RoutingTable, scale Scale, resources Resources) (*Deployment, <-chan Result, error) {
 	fc, err := c.fcRepo.GetByID(fcId)
 	if err != nil || fc == nil {
 		return nil, nil, fmt.Errorf("function composition with id %s does not exist", fcId)
@@ -254,6 +254,7 @@ func (c *Composer) CreateFcDeployment(fcId, namespace, node string, routingTable
 		Node:                  node,
 		RoutingTable:          routingTable,
 		Scale:                 scale,
+		Resources:             resources,
 	}
 
 	var resultChan <-chan Result

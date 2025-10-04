@@ -5,33 +5,38 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 )
 
 type Configuration struct {
-	UploadDir              string `env:"UPLOAD_DIR"`
-	TemplatesPath          string `env:"TEMPLATES_PATH"`
-	ImageRegistry          string `env:"IMAGE_REGISTRY"`
-	ImageRepository        string `env:"IMAGE_REPOSITORY"`
-	RedisUrl               string `env:"REDIS_URL"`
-	VerboseLogs            bool   `env:"VERBOSE_LOGS"`
-	MetricsBackendAddress  string `env:"METRICS_BACKEND_ADDRESS"`
-	TektonNamespace        string `env:"TEKTON_NAMESPACE"`
-	TektonPipeline         string `env:"TEKTON_PIPELINE"`
-	TektonNotifyURL        string `env:"TEKTON_NOTIFY_URL"`
-	TektonWorkspacePVC     string `env:"TEKTON_WORKSPACE_PVC"`
-	TektonServiceAccount   string `env:"TEKTON_SERVICE_ACCOUNT"`
-	TektonConcurrencyLimit int    `env:"TEKTON_CONCURRENCY_LIMIT"`
-	DatabasePath           string `env:"DATABASE_PATH"`
-	AlertingApiUrl         string `env:"ALERTING_API_URL"`
-	AlertingUsername       string `env:"ALERTING_USERNAME"`
-	AlertingPassword       string `env:"ALERTING_PASSWORD"`
-	AlertsIndex            string `env:"ALERTS_INDEX" default:"latency-alerts"`
-	AlertingConnector      string `env:"ALERTING_CONNECTOR" default:"lsf-alerts-connector"`
-	LocalMode              bool   `env:"LOCAL_MODE" default:"false"`
-	DeployNamespace        string `env:"DEPLOY_NAMESPACE" default:"application"`
-	ControllerDelay        int    `env:"CONTROLLER_DELAY" default:"1"`
+	UploadDir                  string   `env:"UPLOAD_DIR"`
+	TemplatesPath              string   `env:"TEMPLATES_PATH"`
+	ImageRegistry              string   `env:"IMAGE_REGISTRY"`
+	ImageRepository            string   `env:"IMAGE_REPOSITORY"`
+	RedisUrl                   string   `env:"REDIS_URL"`
+	VerboseLogs                bool     `env:"VERBOSE_LOGS"`
+	MetricsBackendAddress      string   `env:"METRICS_BACKEND_ADDRESS"`
+	TektonNamespace            string   `env:"TEKTON_NAMESPACE"`
+	TektonPipeline             string   `env:"TEKTON_PIPELINE"`
+	TektonNotifyURL            string   `env:"TEKTON_NOTIFY_URL"`
+	TektonWorkspacePVC         string   `env:"TEKTON_WORKSPACE_PVC"`
+	TektonServiceAccount       string   `env:"TEKTON_SERVICE_ACCOUNT"`
+	TektonConcurrencyLimit     int      `env:"TEKTON_CONCURRENCY_LIMIT"`
+	DatabasePath               string   `env:"DATABASE_PATH"`
+	AlertingApiUrl             string   `env:"ALERTING_API_URL"`
+	AlertingUsername           string   `env:"ALERTING_USERNAME"`
+	AlertingPassword           string   `env:"ALERTING_PASSWORD"`
+	AlertsIndex                string   `env:"ALERTS_INDEX" default:"latency-alerts"`
+	AlertingConnector          string   `env:"ALERTING_CONNECTOR" default:"lsf-alerts-connector"`
+	LocalMode                  bool     `env:"LOCAL_MODE" default:"false"`
+	DeployNamespace            string   `env:"DEPLOY_NAMESPACE" default:"application"`
+	ControllerTickDelaySeconds int      `env:"CONTROLLER_TICK_DELAY_SECONDS" default:"1"`
+	PlatformNodes              []string `env:"PLATFORM_NODES"`
+	PlatformDelayMs            int      `env:"PLATFORM_DELAY_MS"`
+	AvailableNodeMemoryGb      int      `env:"AVAILABLE_NODE_MEMORY_GB"`
+	PythonPath                 string   `env:"PYTHON_PATH" default:"python3"`
 }
 
 func Init() Configuration {
@@ -80,6 +85,17 @@ func Init() Configuration {
 				fieldVal.SetBool(boolValue)
 			} else {
 				log.Fatalf("Invalid bool value for %s: %s", envVar, envValue)
+			}
+
+		case reflect.Slice:
+			if fieldVal.Type().Elem().Kind() == reflect.String {
+				parts := strings.Split(envValue, ",")
+				for i := range parts {
+					parts[i] = strings.TrimSpace(parts[i])
+				}
+				fieldVal.Set(reflect.ValueOf(parts))
+			} else {
+				log.Fatalf("Unsupported slice type for %s", field.Name)
 			}
 		}
 	}

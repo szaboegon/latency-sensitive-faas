@@ -177,7 +177,7 @@ func (h *HandlerApps) bulkCreate(w http.ResponseWriter, r *http.Request) {
 
 		// Create deployment with an empty routing table
 		dep, _, err := h.composer.CreateFcDeployment(realCompositionId, deployment.Namespace,
-			deployment.Node, core.RoutingTable{}, core.Scale{MinReplicas: 0, MaxReplicas: 0})
+			deployment.Node, core.RoutingTable{}, core.Scale{MinReplicas: 0, MaxReplicas: 0}, core.Resources{Memory: 512, CPU: 1000})
 		if err != nil {
 			h.composer.RollbackBulk(createdApp, createdCompositions, createdDeployments)
 			http.Error(w, err.Error(), http.StatusInternalServerError)

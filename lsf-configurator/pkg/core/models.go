@@ -1,33 +1,36 @@
 package core
 
-import "mime/multipart"
+import (
+	"mime/multipart"
+)
 
-type Layout = map[string][]string
+type Layout = map[string][]ComponentProfile // Key: Node name, Value: List of ComponentProfiles assigned to that node
 
 type Component struct {
-	Name    string `json:"name"`
-	Memory  int    `json:"memory"`  // in MB
-	Runtime int    `json:"runtime"` // The execution time of the component in milliseconds
+	Name    string   `json:"name"`
+	Memory  int      `json:"memory"`  // in MB
+	Runtime int      `json:"runtime"` // The execution time of the component in milliseconds
 	Files   []string `json:"files"`   // List of files required by the component
 }
 
 type ComponentLink struct {
 	From           string  `json:"from"`
 	To             string  `json:"to"`
-	InvocationRate float64 `json:"invocation_rate"` // Relative invocation rate between components
+	InvocationRate float64 `json:"invocation_rate"` // Average invocations per second
+	DataDelay      int     `json:"data_delay"`      // Delay caused by data transfer in milliseconds
 }
 
 type FunctionApp struct {
-	Id           string                 `json:"id"`
-	Name         string                 `json:"name"`
-	Runtime      string                 `json:"runtime"`
-	Components   []Component            `json:"components"`
-	Links        []ComponentLink        `json:"links"`
-	Files        []string               `json:"files"`
-	Compositions []*FunctionComposition `json:"compositions"`
-	SourcePath   string                 `json:"source_path"`
-	LatencyLimit int                    `json:"latency_limit"` // in milliseconds
-	LayoutCandidates []Layout           `json:"layout_candidates"`
+	Id               string                 `json:"id"`
+	Name             string                 `json:"name"`
+	Runtime          string                 `json:"runtime"`
+	Components       []Component            `json:"components"`
+	Links            []ComponentLink        `json:"links"`
+	Files            []string               `json:"files"`
+	Compositions     []*FunctionComposition `json:"compositions"`
+	SourcePath       string                 `json:"source_path"`
+	LatencyLimit     int                    `json:"latency_limit"` // in milliseconds
+	LayoutCandidates []Layout               `json:"layout_candidates"`
 }
 
 type BuildStatus string
@@ -65,11 +68,18 @@ type Deployment struct {
 	RoutingTable          RoutingTable     `json:"routing_table"`
 	Status                DeploymentStatus `json:"status"`
 	Scale                 Scale            `json:"scale"`
+	Resources             Resources        `json:"resources"`
 }
 
 type Scale struct {
-	MinReplicas int `json:"min_replicas"`
-	MaxReplicas int `json:"max_replicas"`
+	MinReplicas       int `json:"min_replicas"`
+	MaxReplicas       int `json:"max_replicas"`
+	TargetConcurrency int `json:"target_concurrency"`
+}
+
+type Resources struct {
+	Memory int `json:"memory"` // in MB
+	CPU    int `json:"cpu"`    // in millicores
 }
 
 type Route struct {
@@ -92,4 +102,15 @@ type FunctionAppCreationData struct {
 	AppName      string
 	Runtime      string
 	LatencyLimit int
+}
+
+type ComponentProfile struct {
+	Name             string `json:"name"`
+	Runtime          int    `json:"runtime"`
+	Memory           int    `json:"memory"`
+	RequiredReplicas int    `json:"required_replicas"`
+}
+
+func (cp *ComponentProfile) TotalMemory() int {
+	return cp.Memory * cp.RequiredReplicas
 }

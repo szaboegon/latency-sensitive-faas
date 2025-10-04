@@ -84,11 +84,11 @@ func main() {
 		log.Fatalf("Could not create uploads directory: %v", err)
 	}
 
-	layoutCalculator := layout.NewLayoutCalculator()
+	layoutCalculator := layout.NewLayoutCalculator(conf.PythonPath, "pkg/layout/slambuc_layout.py", conf.PlatformNodes, conf.PlatformDelayMs)
 
 	controllerCtx, controllerCancel := context.WithCancel(context.Background())
 	controller = core.NewController(composer, metricsReader, layoutCalculator,
-		time.Duration(conf.ControllerDelay)*time.Second, conf.DeployNamespace)
+		time.Duration(conf.ControllerTickDelaySeconds)*time.Second, conf.DeployNamespace, conf.AvailableNodeMemoryGb)
 
 	if !conf.LocalMode {
 		go func() {
