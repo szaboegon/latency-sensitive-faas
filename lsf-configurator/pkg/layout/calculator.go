@@ -35,7 +35,7 @@ func (c *slambucCalculator) CalculateLayout(profiles []core.ComponentProfile, li
 		profileMap[id] = p
 		nodes = append(nodes, map[string]interface{}{
 			"id":      id,
-			"mem":     p.TotalMemory(),
+			"mem":     MBToGB(p.TotalMemory()),
 			"runtime": p.Runtime,
 		})
 	}
@@ -96,6 +96,10 @@ func (c *slambucCalculator) CalculateLayout(profiles []core.ComponentProfile, li
 		return nil, fmt.Errorf("failed to parse python output: %w, stdout: %s", err, stdout.String())
 	}
 
+	if pyOutput.Latency < 0 {
+		return nil, fmt.Errorf("no valid layout found within latency requirement")
+	}
+
 	if len(pyOutput.Layout) > len(c.platformNodes) {
 		return nil, fmt.Errorf("insufficient memory: layout has more groups (%d) than platform nodes (%d)", len(pyOutput.Layout), len(c.platformNodes))
 	}
@@ -112,4 +116,8 @@ func (c *slambucCalculator) CalculateLayout(profiles []core.ComponentProfile, li
 	}
 
 	return layout, nil
+}
+
+func MBToGB(mb int) float64 {
+	return float64(mb) / 1024
 }
