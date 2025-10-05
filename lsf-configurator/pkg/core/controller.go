@@ -9,10 +9,14 @@ import (
 	"time"
 )
 
+// set target concurrency globally to 1 for now, but this can be different per function composition depending on how CPU-bound they are
+// this should be measured and set accordingly for each function composition)
+const targetConcurrency = 1
+
 type latencyController struct {
 	composer              *Composer
 	metrics               MetricsReader
-	layout                LayoutCalculator
+	scenarioManager       ScenarioManager
 	delay                 time.Duration
 	deployNamespace       string
 	lastReconfigs         map[string]time.Time
@@ -20,16 +24,12 @@ type latencyController struct {
 	availableNodeMemoryGb int // same for all nodes for now, in GB
 }
 
-// set target concurrency globally to 1 for now, but this can be different per function composition depending on how CPU-bound they are
-// this should be measured and set accordingly for each function composition)
-const targetConcurrency = 1
-
-func NewController(composer *Composer, metrics MetricsReader, layout LayoutCalculator,
+func NewController(composer *Composer, metrics MetricsReader, scenarioManager ScenarioManager,
 	delay time.Duration, deployNamespace string, availableNodeMemoryGb int) Controller {
 	return &latencyController{
 		composer:              composer,
 		metrics:               metrics,
-		layout:                layout,
+		scenarioManager:       scenarioManager,
 		delay:                 delay,
 		deployNamespace:       deployNamespace,
 		lastReconfigs:         make(map[string]time.Time),
@@ -86,28 +86,33 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 		return nil, err
 	}
 
-	// Max replica count needs to be calculated before the layout, because we need to estimate max memory needs
-	componentProfiles := buildComponentProfiles(app.Components, app.Links)
-	layout, err := c.layout.CalculateLayout(componentProfiles, app.Links, app.LatencyLimit, c.availableNodeMemoryGb)
+	candidates, err := c.scenarioManager.GenerateLayoutCandidates(
+		app.Components,
+		app.Links,
+		app.LatencyLimit,
+		c.availableNodeMemoryGb*1024)
 	if err != nil {
-		log.Printf("Error calculating layout for app %s: %v", app.Id, err)
+		log.Printf("Error generating layout candidates for app %s: %v", app.Id, err)
 		return nil, err
 	}
-	// TODO calculate multiple layouts with different invocation rates, memory limits, etc.
-	app.LayoutCandidates = []Layout{layout}
+	app.LayoutCandidates = candidates
 	c.composer.functionAppRepo.Save(app)
-	for _, components := range layout {
-		componentNames := make([]string, len(components))
-		for i, cp := range components {
-			componentNames[i] = cp.Name
-		}
-		_, err := c.composer.AddFunctionComposition(app.Id, componentNames)
-		if err != nil {
-			log.Printf("Error adding function composition for app %s: %v", app.Id, err)
-			return nil, err
+
+	for _, layout := range app.LayoutCandidates {
+		for _, components := range layout {
+			componentNames := make([]string, len(components))
+			for i, cp := range components {
+				componentNames[i] = cp.Name
+			}
+			_, err := c.composer.AddFunctionComposition(app.Id, componentNames)
+			if err != nil {
+				log.Printf("Error adding function composition for app %s: %v", app.Id, err)
+				return nil, err
+			}
 		}
 	}
 
+	app.ActiveLayoutKey = LayoutKeyMin
 	go func(appId string, layout Layout) {
 		err = c.deployLayout(appId, layout)
 		if err != nil {
@@ -116,14 +121,35 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 		}
 		log.Printf("Successfully deployed function app with layout %s: %v", appId, layout)
 		// deploy the first layout by default
-	}(app.Id, app.LayoutCandidates[0])
+	}(app.Id, app.LayoutCandidates[LayoutKeyMin])
 
 	return app, nil
 }
 
+// TODO think about a backwards direction: if the best layout is already active, and the app is still over the limit, should we try a less resource-intensive layout?
 func (c *latencyController) handleLatencyViolation(app *FunctionApp) error {
 	log.Printf("App %s exceeds latency threshold (%d ms). Triggering reconfiguration.", app.Id, app.LatencyLimit)
-	//TODO select a different layout candidate based on some criteria and then call deployLayout
+
+	nextLayoutKey := layoutUpgradePath[app.ActiveLayoutKey]
+	if nextLayoutKey == "" {
+		log.Printf("No further layout candidates available for app %s. Skipping reconfiguration.", app.Id)
+		return nil
+	}
+
+	nextLayout, ok := app.LayoutCandidates[nextLayoutKey]
+	if !ok {
+		return fmt.Errorf("no layout candidate found for key %s in app %s", nextLayoutKey, app.Id)
+	}
+
+	app.ActiveLayoutKey = nextLayoutKey
+	err := c.composer.functionAppRepo.Save(app)
+	if err != nil {
+		return fmt.Errorf("failed to update active layout key for app %s: %w", app.Id, err)
+	}
+
+	if err := c.deployLayout(app.Id, nextLayout); err != nil {
+		return fmt.Errorf("failed to deploy new layout for app %s: %w", app.Id, err)
+	}
 
 	return nil
 }
@@ -322,20 +348,6 @@ func getFunctionComposition(app *FunctionApp, fcId string) *FunctionComposition 
 		}
 	}
 	return nil
-}
-
-func buildComponentProfiles(components []Component, links []ComponentLink) []ComponentProfile {
-	profiles := make([]ComponentProfile, 0, len(components))
-	for _, comp := range components {
-		replicas := calculateComponentMaxReplicas(comp, links, targetConcurrency)
-		profiles = append(profiles, ComponentProfile{
-			Name:             comp.Name,
-			Runtime:          comp.Runtime,
-			Memory:           comp.Memory,
-			RequiredReplicas: replicas,
-		})
-	}
-	return profiles
 }
 
 func componentsKey(comps []string) string {

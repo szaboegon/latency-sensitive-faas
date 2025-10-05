@@ -8,8 +8,13 @@ export interface Component {
 export interface ComponentLink {
   from: string;
   to: string;
-  invocationRate: number;
+  invocationRate: InvocationRate;
   dataDelay: number;
+}
+
+export interface InvocationRate {
+  min: number;
+  max: number;
 }
 
 export interface FunctionApp {

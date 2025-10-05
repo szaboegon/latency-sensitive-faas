@@ -14,10 +14,15 @@ type Component struct {
 }
 
 type ComponentLink struct {
-	From           string  `json:"from"`
-	To             string  `json:"to"`
-	InvocationRate float64 `json:"invocation_rate"` // Average invocations per second
-	DataDelay      int     `json:"data_delay"`      // Delay caused by data transfer in milliseconds
+	From           string         `json:"from"`
+	To             string         `json:"to"`
+	InvocationRate InvocationRate `json:"invocation_rate"`
+	DataDelay      int            `json:"data_delay"` // Delay caused by data transfer in milliseconds
+}
+
+type InvocationRate struct {
+	Min float64 `json:"min"` // in requests per second
+	Max float64 `json:"max"`
 }
 
 type FunctionApp struct {
@@ -29,8 +34,9 @@ type FunctionApp struct {
 	Files            []string               `json:"files"`
 	Compositions     []*FunctionComposition `json:"compositions"`
 	SourcePath       string                 `json:"source_path"`
-	LatencyLimit     int                    `json:"latency_limit"` // in milliseconds
-	LayoutCandidates []Layout               `json:"layout_candidates"`
+	LatencyLimit     int                    `json:"latency_limit"`     // in milliseconds
+	LayoutCandidates map[string]Layout      `json:"layout_candidates"` // Key: LayoutKey, Value: Layout
+	ActiveLayoutKey  string                 `json:"active_layout_key"`
 }
 
 type BuildStatus string
@@ -104,6 +110,13 @@ type FunctionAppCreationData struct {
 	LatencyLimit int
 }
 
+type LayoutScenario struct {
+	LatencyRequirement  int
+	AvailableNodeMemory int
+	Profiles            []ComponentProfile
+	Links               []ScenarioLink
+}
+
 type ComponentProfile struct {
 	Name             string `json:"name"`
 	Runtime          int    `json:"runtime"`
@@ -113,4 +126,11 @@ type ComponentProfile struct {
 
 func (cp *ComponentProfile) TotalMemory() int {
 	return cp.Memory * cp.RequiredReplicas
+}
+
+type ScenarioLink struct {
+	From           string
+	To             string
+	InvocationRate float64
+	DataDelay      int
 }

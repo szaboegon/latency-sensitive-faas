@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS function_apps (
     files TEXT,
     source_path TEXT,
     latency_limit INTEGER,
-    layout_candidates TEXT
+    layout_candidates TEXT,
+    active_layout_key TEXT
 );
 
 CREATE TABLE IF NOT EXISTS function_compositions (

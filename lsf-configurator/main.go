@@ -85,9 +85,10 @@ func main() {
 	}
 
 	layoutCalculator := layout.NewLayoutCalculator(conf.PythonPath, "pkg/layout/slambuc_layout.py", conf.PlatformNodes, conf.PlatformDelayMs)
+	scenarioManager := core.NewScenarioManager(layoutCalculator)
 
 	controllerCtx, controllerCancel := context.WithCancel(context.Background())
-	controller = core.NewController(composer, metricsReader, layoutCalculator,
+	controller = core.NewController(composer, metricsReader, scenarioManager,
 		time.Duration(conf.ControllerTickDelaySeconds)*time.Second, conf.DeployNamespace, conf.AvailableNodeMemoryGb)
 
 	if !conf.LocalMode {

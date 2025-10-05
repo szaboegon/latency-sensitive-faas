@@ -24,12 +24,12 @@ func NewLayoutCalculator(pythonCmd, script string, platformNodes []string, platf
 	}
 }
 
-func (c *slambucCalculator) CalculateLayout(profiles []core.ComponentProfile, links []core.ComponentLink, appLatencyReq, memoryAvailable int) (core.Layout, error) {
+func (c *slambucCalculator) CalculateLayout(scenario core.LayoutScenario) (core.Layout, error) {
 	idMap := make(map[string]int)
 	profileMap := make(map[int]core.ComponentProfile)
 	nodes := []map[string]interface{}{}
 
-	for i, p := range profiles {
+	for i, p := range scenario.Profiles {
 		id := i + 1
 		idMap[p.Name] = id
 		profileMap[id] = p
@@ -41,7 +41,7 @@ func (c *slambucCalculator) CalculateLayout(profiles []core.ComponentProfile, li
 	}
 
 	edges := []map[string]interface{}{}
-	for _, l := range links {
+	for _, l := range scenario.Links {
 		fromId, ok := idMap[l.From]
 		if !ok {
 			continue
@@ -62,9 +62,9 @@ func (c *slambucCalculator) CalculateLayout(profiles []core.ComponentProfile, li
 	input := map[string]interface{}{
 		"params": map[string]interface{}{
 			"root":   1,
-			"M":      memoryAvailable,
-			"L":      appLatencyReq,
-			"cp_end": len(profiles),
+			"M":      scenario.AvailableNodeMemory,
+			"L":      scenario.LatencyRequirement,
+			"cp_end": len(scenario.Profiles),
 			"delay":  c.platformDelay,
 		},
 		"nodes": nodes,

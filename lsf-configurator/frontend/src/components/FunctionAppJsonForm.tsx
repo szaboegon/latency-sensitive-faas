@@ -50,35 +50,50 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
       {
         "from": "resize",
         "to": "grayscale",
-        "invocationRate": 2.0,
+        "invocationRate": {
+          "min": 1.0,
+          "max": 2.0
+        },
         "dataDelay": 3
       },
       {
         "from": "grayscale",
         "to": "objectdetect",
-        "invocationRate": 2.0,
+        "invocationRate": {
+          "min": 1.0,
+          "max": 2.0
+        },
         "dataDelay": 3
       },
       {
         "from": "objectdetect",
         "to": "cut",
-        "invocationRate": 2.0,
+        "invocationRate": {
+          "min": 1.0,
+          "max": 2.0
+        },
         "dataDelay": 3
       },
       {
         "from": "cut",
         "to": "objectdetect2",
-        "invocationRate": 4.0,
+        "invocationRate": {
+          "min": 2.0,
+          "max": 6.0
+        },
         "dataDelay": 3
       },
       {
         "from": "objectdetect2",
         "to": "tag",
-        "invocationRate": 4.0,
+        "invocationRate": {
+          "min": 2.0,
+          "max": 6.0
+        },
         "dataDelay": 3
       }
     ],
-    "latencyLimit": 2252,
+    "latencyLimit": 2500,
     "platformManaged": true
   },
   "functionCompositions": [],

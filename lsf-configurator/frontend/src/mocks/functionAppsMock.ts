@@ -18,9 +18,24 @@ export const functionAppsMock: FunctionApp[] = [
       { name: "Component C1", memory: 128, runtime: 100, files: ["file2.txt"] },
     ],
     links: [
-      { from: "Component A1", to: "Component B1", invocationRate: 1.0 },
-      { from: "Component A1", to: "Component C1", invocationRate: 1.0 },
-      { from: "Component B1", to: "Component C1", invocationRate: 1.0 },
+      {
+        from: "Component A1",
+        to: "Component B1",
+        invocationRate: { min: 1.0, max: 2.0 },
+        dataDelay: 0,
+      },
+      {
+        from: "Component A1",
+        to: "Component C1",
+        invocationRate: { min: 1.0, max: 2.0 },
+        dataDelay: 0,
+      },
+      {
+        from: "Component B1",
+        to: "Component C1",
+        invocationRate: { min: 1.0, max: 2.0 },
+        dataDelay: 0,
+      },
     ],
     compositions: [
       {
@@ -87,9 +102,24 @@ export const functionAppsMock: FunctionApp[] = [
       { name: "Component Z2", memory: 128, runtime: 100, files: [] },
     ],
     links: [
-      { from: "Component X2", to: "Component Y2", invocationRate: 1.0 },
-      { from: "Component X2", to: "Component Z2", invocationRate: 1.0 },
-      { from: "Component Y2", to: "Component Z2", invocationRate: 1.0 },
+      {
+        from: "Component X2",
+        to: "Component Y2",
+        invocationRate: { min: 1.0, max: 2.0 },
+        dataDelay: 0,
+      },
+      {
+        from: "Component X2",
+        to: "Component Z2",
+        invocationRate: { min: 1.0, max: 2.0 },
+        dataDelay: 0,
+      },
+      {
+        from: "Component Y2",
+        to: "Component Z2",
+        invocationRate: { min: 1.0, max: 2.0 },
+        dataDelay: 0,
+      },
     ],
     compositions: [
       {
@@ -156,9 +186,24 @@ export const functionAppsMock: FunctionApp[] = [
       { name: "Component O3", memory: 128, runtime: 100, files: [] },
     ],
     links: [
-      { from: "Component M3", to: "Component N3", invocationRate: 1.0 },
-      { from: "Component M3", to: "Component O3", invocationRate: 1.0 },
-      { from: "Component N3", to: "Component O3", invocationRate: 1.0 },
+      {
+        from: "Component M3",
+        to: "Component N3",
+        invocationRate: { min: 1.0, max: 2.0 },
+        dataDelay: 0,
+      },
+      {
+        from: "Component M3",
+        to: "Component O3",
+        invocationRate: { min: 1.0, max: 2.0 },
+        dataDelay: 0,
+      },
+      {
+        from: "Component N3",
+        to: "Component O3",
+        invocationRate: { min: 1.0, max: 2.0 },
+        dataDelay: 0,
+      },
     ],
     compositions: [
       {
@@ -223,7 +268,14 @@ export const functionAppsMock: FunctionApp[] = [
       { name: "Component P4", memory: 128, runtime: 100, files: [] },
       { name: "Component Q4", memory: 128, runtime: 100, files: [] },
     ],
-    links: [{ from: "Component P4", to: "Component Q4", invocationRate: 1.0 }],
+    links: [
+      {
+        from: "Component P4",
+        to: "Component Q4",
+        invocationRate: { min: 1.0, max: 2.0 },
+        dataDelay: 0,
+      },
+    ],
     compositions: [
       {
         id: "composition4a",
@@ -286,9 +338,24 @@ export const functionAppsMock: FunctionApp[] = [
       { name: "Component U5", memory: 128, runtime: 100, files: [] },
     ],
     links: [
-      { from: "Component R5", to: "Component S5", invocationRate: 1.0 },
-      { from: "Component S5", to: "Component T5", invocationRate: 1.0 },
-      { from: "Component T5", to: "Component U5", invocationRate: 1.0 },
+      {
+        from: "Component R5",
+        to: "Component S5",
+        invocationRate: { min: 1.0, max: 2.0 },
+        dataDelay: 0,
+      },
+      {
+        from: "Component S5",
+        to: "Component T5",
+        invocationRate: { min: 1.0, max: 2.0 },
+        dataDelay: 0,
+      },
+      {
+        from: "Component T5",
+        to: "Component U5",
+        invocationRate: { min: 1.0, max: 2.0 },
+        dataDelay: 0,
+      },
     ],
     compositions: [
       {

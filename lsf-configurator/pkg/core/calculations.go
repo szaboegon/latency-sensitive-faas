@@ -13,7 +13,7 @@ import "math"
 //
 // Returns:
 //   int - The calculated number of replicas needed for this component, at least 1.
-func calculateComponentMaxReplicas(c Component, links []ComponentLink, targetConcurrency int) int {
+func calculateComponentMaxReplicas(c Component, links []ScenarioLink, targetConcurrency int) int {
 	totalInvocationRate := 0.0
 	for _, link := range links {
 		if link.To == c.Name {

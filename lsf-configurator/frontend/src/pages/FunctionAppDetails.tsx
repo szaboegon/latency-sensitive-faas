@@ -208,7 +208,14 @@ const FunctionAppDetails: React.FC = () => {
                       {link.to}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Invocation Rate: <b>{link.invocationRate}</b>
+                      Invocation Rate:{" "}
+                      <b>
+                        {link.invocationRate?.min ?? "?"} -{" "}
+                        {link.invocationRate?.max ?? "?"} /s
+                      </b>
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Data Delay: <b>{link.dataDelay ?? "?"} ms</b>
                     </Typography>
                   </Box>
                 </Paper>

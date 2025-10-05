@@ -45,5 +45,13 @@ type Controller interface {
 }
 
 type LayoutCalculator interface {
-	CalculateLayout(profiles []ComponentProfile, links []ComponentLink, appLatencyReq, memoryAvailable int) (Layout, error)
+	CalculateLayout(scenario LayoutScenario) (Layout, error)
+}
+
+type ScenarioManager interface {
+	GenerateLayoutCandidates(
+		components []Component,
+		links []ComponentLink,
+		appLatencyReq int,
+		memoryAvailable int) (map[string]Layout, error)
 }

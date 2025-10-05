@@ -10,7 +10,10 @@ export interface FunctionAppCreateDto {
   links: {
     from: string;
     to: string;
-    invocationRate: number;
+    invocationRate: {
+      min: number;
+      max: number;
+    };
     dataDelay: number;
   }[];
   sourcePath?: string;

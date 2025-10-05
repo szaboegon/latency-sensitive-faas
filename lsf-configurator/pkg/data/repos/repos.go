@@ -46,10 +46,10 @@ func (r *functionAppRepo) Save(app *core.FunctionApp) error {
 	}
 
 	_, err = tx.Exec(`
-		INSERT OR REPLACE INTO function_apps (id, name, runtime, components, links, files, source_path, latency_limit, layout_candidates) 
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		INSERT OR REPLACE INTO function_apps (id, name, runtime, components, links, files, source_path, latency_limit, layout_candidates, active_layout_key) 
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		app.Id, app.Name, app.Runtime, string(componentsJSON), string(linksJSON),
-		string(filesJSON), app.SourcePath, app.LatencyLimit, string(layoutJSON))
+		string(filesJSON), app.SourcePath, app.LatencyLimit, string(layoutJSON), app.ActiveLayoutKey)
 	if err != nil {
 		return err
 	}
@@ -69,16 +69,17 @@ func (r *functionAppRepo) Save(app *core.FunctionApp) error {
 
 func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
 	row := r.db.QueryRow(`
-	SELECT id, name, runtime, components, links, files, source_path, latency_limit, layout_candidates
+	SELECT id, name, runtime, components, links, files, source_path, latency_limit, layout_candidates, active_layout_key
 	FROM function_apps WHERE id = ?`, id)
 
 	var app core.FunctionApp
 	var componentsJSON, linksJSON, filesJSON, sourcePath string
 	var latencyLimit int
+	var activeLayoutKey string
 	var layoutCandidatesJSON string
 
 	if err := row.Scan(&app.Id, &app.Name, &app.Runtime, &componentsJSON,
-		&linksJSON, &filesJSON, &sourcePath, &latencyLimit, &layoutCandidatesJSON); err != nil {
+		&linksJSON, &filesJSON, &sourcePath, &latencyLimit, &layoutCandidatesJSON, &activeLayoutKey); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -99,6 +100,7 @@ func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
 	}
 	app.SourcePath = sourcePath
 	app.LatencyLimit = latencyLimit
+	app.ActiveLayoutKey = activeLayoutKey
 
 	app.Compositions = make([]*core.FunctionComposition, 0)
 	rows, err := r.db.Query(`SELECT id FROM function_compositions WHERE function_app_id = ?`, app.Id)
@@ -125,7 +127,7 @@ func (r *functionAppRepo) GetByID(id string) (*core.FunctionApp, error) {
 
 func (r *functionAppRepo) GetAll() ([]*core.FunctionApp, error) {
 	rows, err := r.db.Query(`
-	SELECT id, name, runtime, components, links, files, source_path, latency_limit, layout_candidates
+	SELECT id, name, runtime, components, links, files, source_path, latency_limit, layout_candidates, active_layout_key
 	FROM function_apps`)
 	if err != nil {
 		return nil, err
@@ -137,9 +139,9 @@ func (r *functionAppRepo) GetAll() ([]*core.FunctionApp, error) {
 		var app core.FunctionApp
 		var componentsJSON, linksJSON, filesJSON, sourcePath string
 		var latencyLimit int
-		var layoutCandidatesJSON string
+		var layoutCandidatesJSON, activeLayoutKey string
 		if err := rows.Scan(&app.Id, &app.Name, &app.Runtime, &componentsJSON,
-			&linksJSON, &filesJSON, &sourcePath, &latencyLimit, &layoutCandidatesJSON); err != nil {
+			&linksJSON, &filesJSON, &sourcePath, &latencyLimit, &layoutCandidatesJSON, &activeLayoutKey); err != nil {
 			return nil, err
 		}
 
@@ -157,6 +159,7 @@ func (r *functionAppRepo) GetAll() ([]*core.FunctionApp, error) {
 		}
 		app.SourcePath = sourcePath
 		app.LatencyLimit = latencyLimit
+		app.ActiveLayoutKey = activeLayoutKey
 
 		apps = append(apps, &app)
 	}

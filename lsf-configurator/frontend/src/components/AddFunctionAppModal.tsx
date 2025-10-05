@@ -332,7 +332,7 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
                       name={`links.${index}.from`}
                       rules={{ required: true }}
                       render={({ field }) => (
-                        <FormControl sx={{ minWidth: "30%", maxWidth: "40%" }}>
+                        <FormControl sx={{ minWidth: "20%", maxWidth: "40%" }}>
                           <InputLabel id={`link-from-label-${index}`}>
                             From
                           </InputLabel>
@@ -359,7 +359,7 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
                       name={`links.${index}.to`}
                       rules={{ required: true }}
                       render={({ field }) => (
-                        <FormControl sx={{ minWidth: "30%", maxWidth: "40%" }}>
+                        <FormControl sx={{ minWidth: "20%", maxWidth: "40%" }}>
                           <InputLabel id={`link-to-label-${index}`}>
                             To
                           </InputLabel>
@@ -381,11 +381,35 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
                         </FormControl>
                       )}
                     />
+                    {/* Min invocation rate */}
                     <TextField
-                      label="Invocation Rate"
+                      label="Min Rate"
                       type="number"
-                      sx={{ minWidth: "10%", maxWidth: "15%" }}
-                      {...register(`links.${index}.invocationRate`, {
+                      sx={{ minWidth: "15%", maxWidth: "15%" }}
+                      inputProps={{ step: "any" }}
+                      {...register(`links.${index}.invocationRate.min`, {
+                        required: true,
+                        valueAsNumber: true,
+                      })}
+                    />
+                    {/* Max invocation rate */}
+                    <TextField
+                      label="Max Rate"
+                      type="number"
+                      sx={{ minWidth: "15%", maxWidth: "15%" }}
+                      inputProps={{ step: "any" }}
+                      {...register(`links.${index}.invocationRate.max`, {
+                        required: true,
+                        valueAsNumber: true,
+                      })}
+                    />
+                    {/* Data delay */}
+                    <TextField
+                      label="Data Delay"
+                      type="number"
+                      sx={{ minWidth: "15%", maxWidth: "15%" }}
+                      inputProps={{ step: "any" }}
+                      {...register(`links.${index}.dataDelay`, {
                         required: true,
                         valueAsNumber: true,
                       })}
@@ -400,7 +424,12 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
                 startIcon={<AddIcon />}
                 sx={{ mt: 1 }}
                 onClick={() =>
-                  appendLink({ from: "", to: "", invocationRate: 0 })
+                  appendLink({
+                    from: "",
+                    to: "",
+                    invocationRate: { min: 0, max: 0 },
+                    dataDelay: 0,
+                  })
                 }
               >
                 Add Link
