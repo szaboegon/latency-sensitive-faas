@@ -295,7 +295,7 @@ func (c metricsClient) QueryAverageAppRuntime(appId string) (float64, error) {
 	return averageRuntime, nil
 }
 
-func (c metricsClient) Query95thPercentileAppRuntimes() (map[string]float64, error) {
+func (c metricsClient) Query95thPercentileAppRuntimes() (map[string]float64, map[string]int, error) {
 	size := 1000
 	appNameField := "labels.app_name"
 
@@ -331,6 +331,11 @@ func (c metricsClient) Query95thPercentileAppRuntimes() (map[string]float64, err
 						Size:  &size,
 					},
 					Aggregations: map[string]types.Aggregations{
+						"trace_count": {
+							Cardinality: &types.CardinalityAggregation{
+								Field: strPtr("trace.id"),
+							},
+						},
 						"traces": {
 							Terms: &types.TermsAggregation{
 								Field: strPtr("trace.id"),
@@ -377,48 +382,49 @@ func (c metricsClient) Query95thPercentileAppRuntimes() (map[string]float64, err
 		Do(context.Background())
 
 	if err != nil {
-		return nil, fmt.Errorf("error querying metrics: %w", err)
+		return nil, nil, fmt.Errorf("error querying metrics: %w", err)
 	}
 
 	appsInterface, exists := res.Aggregations["apps"]
 	if !exists || appsInterface == nil {
-		return make(map[string]float64), nil // no records yet
+		return make(map[string]float64), nil, nil // no records yet
 	}
 
 	appsAgg, ok := appsInterface.(*types.StringTermsAggregate)
 	if !ok {
-		return nil, errors.New("incorrect aggregation type for apps")
+		return nil, nil, errors.New("incorrect aggregation type for apps")
 	}
 
-	result := make(map[string]float64)
+	p95Result := make(map[string]float64)
+	countResult := make(map[string]int)
 
 	for _, appBucket := range appsAgg.Buckets.([]types.StringTermsBucket) {
+		appName := appBucket.Key.(string)
+
+		// 1. Extract P95 Runtime
 		p95Interface, ok := appBucket.Aggregations["p95_trace_duration"]
-		if !ok || p95Interface == nil {
-			continue
+		if ok && p95Interface != nil {
+			if percentileAgg, ok := p95Interface.(*types.PercentilesBucketAggregate); ok {
+				if values, ok := percentileAgg.Values.(map[string]interface{}); ok {
+					if p95, found := values["95.0"]; found {
+						if f, ok := p95.(float64); ok {
+							p95Result[appName] = f
+						}
+					}
+				}
+			}
 		}
 
-		percentileAgg, ok := p95Interface.(*types.PercentilesBucketAggregate)
-		if !ok {
-			continue
-		}
-
-		values, ok := percentileAgg.Values.(map[string]interface{})
-		if !ok {
-			continue
-		}
-
-		p95, found := values["95.0"]
-		if !found {
-			continue
-		}
-
-		if f, ok := p95.(float64); ok {
-			result[appBucket.Key.(string)] = f
+		// 2. Extract Trace Count
+		countInterface, ok := appBucket.Aggregations["trace_count"]
+		if ok && countInterface != nil {
+			if countAgg, ok := countInterface.(*types.CardinalityAggregate); ok {
+				countResult[appName] = int(countAgg.Value)
+			}
 		}
 	}
 
-	return result, nil
+	return p95Result, countResult, nil
 }
 
 func strPtr(s string) *string { return &s }

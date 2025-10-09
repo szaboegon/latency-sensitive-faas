@@ -53,7 +53,7 @@ export const functionAppsMock: FunctionApp[] = [
             id: "deployment1a",
             functionCompositionId: "composition1a",
             node: "Node 1",
-            namespace: "Namespace 1",
+            namespace: "namespace 1",
             routingTable: {
               "Component A1": [
                 { to: "Component B1", function: "local" },
@@ -82,7 +82,7 @@ export const functionAppsMock: FunctionApp[] = [
             id: "deployment1b",
             functionCompositionId: "composition1b",
             node: "Node 1",
-            namespace: "Namespace 1",
+            namespace: "namespace 1",
             routingTable: {
               "Component C1": [],
             },
@@ -90,6 +90,57 @@ export const functionAppsMock: FunctionApp[] = [
         ],
       },
     ],
+    layoutCandidates: {
+      strategyA: {
+        Node1: [
+          {
+            name: "Component A1",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+          {
+            name: "Component B1",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+        Node2: [
+          {
+            name: "Component C1",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+      },
+      strategyB: {
+        Node1: [
+          {
+            name: "Component A1",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+        Node2: [
+          {
+            name: "Component B1",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+          {
+            name: "Component C1",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+      },
+    },
+    activeLayoutKey: "strategyA",
   },
   {
     id: "2",
@@ -137,7 +188,7 @@ export const functionAppsMock: FunctionApp[] = [
             id: "deployment2a",
             functionCompositionId: "composition2a",
             node: "Node 2",
-            namespace: "Namespace 2",
+            namespace: "namespace 2",
             routingTable: {
               "Component X2": [
                 { to: "Component Y2", function: "local" },
@@ -166,7 +217,7 @@ export const functionAppsMock: FunctionApp[] = [
             id: "deployment2b",
             functionCompositionId: "composition2b",
             node: "Node 2",
-            namespace: "Namespace 2",
+            namespace: "namespace 2",
             routingTable: {
               "Component Z2": [],
             },
@@ -174,6 +225,59 @@ export const functionAppsMock: FunctionApp[] = [
         ],
       },
     ],
+    layoutCandidates: {
+      default: {
+        NodeX: [
+          {
+            name: "Component X2",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+        NodeY: [
+          {
+            name: "Component Y2",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+        NodeZ: [
+          {
+            name: "Component Z2",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+      },
+      compact: {
+        NodeX: [
+          {
+            name: "Component X2",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+          {
+            name: "Component Y2",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+        NodeZ: [
+          {
+            name: "Component Z2",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+      },
+    },
+    activeLayoutKey: "default",
   },
   {
     id: "3",
@@ -221,7 +325,7 @@ export const functionAppsMock: FunctionApp[] = [
             id: "deployment3a",
             functionCompositionId: "composition3a",
             node: "Node 3",
-            namespace: "Namespace 3",
+            namespace: "namespace 3",
             routingTable: {
               "Component M3": [
                 { to: "Component N3", function: "local" },
@@ -250,7 +354,7 @@ export const functionAppsMock: FunctionApp[] = [
             id: "deployment3b",
             functionCompositionId: "composition3b",
             node: "Node 3",
-            namespace: "Namespace 3",
+            namespace: "namespace 3",
             routingTable: {
               "Component O3": [],
             },
@@ -258,6 +362,59 @@ export const functionAppsMock: FunctionApp[] = [
         ],
       },
     ],
+    layoutCandidates: {
+      spread: {
+        NodeM: [
+          {
+            name: "Component M3",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+        NodeN: [
+          {
+            name: "Component N3",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+        NodeO: [
+          {
+            name: "Component O3",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+      },
+      grouped: {
+        NodeMN: [
+          {
+            name: "Component M3",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+          {
+            name: "Component N3",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+        NodeO: [
+          {
+            name: "Component O3",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+      },
+    },
+    activeLayoutKey: "spread",
   },
   {
     id: "4",
@@ -292,7 +449,7 @@ export const functionAppsMock: FunctionApp[] = [
             id: "deployment4a",
             functionCompositionId: "composition4a",
             node: "Node 4",
-            namespace: "Namespace 4",
+            namespace: "namespace 4",
             routingTable: {
               "Component P4": [
                 { to: "Component Q4", function: "deployment4b" },
@@ -317,7 +474,7 @@ export const functionAppsMock: FunctionApp[] = [
             id: "deployment4b",
             functionCompositionId: "composition4b",
             node: "Node 4",
-            namespace: "Namespace 4",
+            namespace: "namespace 4",
             routingTable: {
               "Component Q4": [],
             },
@@ -325,6 +482,43 @@ export const functionAppsMock: FunctionApp[] = [
         ],
       },
     ],
+    layoutCandidates: {
+      single: {
+        NodeP: [
+          {
+            name: "Component P4",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+          {
+            name: "Component Q4",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+      },
+      split: {
+        NodeP: [
+          {
+            name: "Component P4",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+        NodeQ: [
+          {
+            name: "Component Q4",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+      },
+    },
+    activeLayoutKey: "single",
   },
   {
     id: "5",
@@ -373,7 +567,7 @@ export const functionAppsMock: FunctionApp[] = [
             id: "deployment5a",
             functionCompositionId: "composition5a",
             node: "Node 5",
-            namespace: "Namespace 5",
+            namespace: "namespace 5",
             routingTable: {
               "Component R5": [
                 { to: "Component S5", function: "deployment5b" },
@@ -398,7 +592,7 @@ export const functionAppsMock: FunctionApp[] = [
             id: "deployment5b",
             functionCompositionId: "composition5b",
             node: "Node 5",
-            namespace: "Namespace 5",
+            namespace: "namespace 5",
             routingTable: {
               "Component S5": [
                 { to: "Component T5", function: "deployment5c" },
@@ -423,7 +617,7 @@ export const functionAppsMock: FunctionApp[] = [
             id: "deployment5c",
             functionCompositionId: "composition5c",
             node: "Node 5",
-            namespace: "Namespace 5",
+            namespace: "namespace 5",
             routingTable: {
               "Component T5": [
                 { to: "Component U5", function: "deployment5d" },
@@ -448,7 +642,7 @@ export const functionAppsMock: FunctionApp[] = [
             id: "deployment5d",
             functionCompositionId: "composition5d",
             node: "Node 5",
-            namespace: "Namespace 5",
+            namespace: "namespace 5",
             routingTable: {
               "Component U5": [],
             },
@@ -456,5 +650,70 @@ export const functionAppsMock: FunctionApp[] = [
         ],
       },
     ],
+    layoutCandidates: {
+      chain: {
+        NodeR: [
+          {
+            name: "Component R5",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+        NodeS: [
+          {
+            name: "Component S5",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+        NodeT: [
+          {
+            name: "Component T5",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+        NodeU: [
+          {
+            name: "Component U5",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+      },
+      "all-in-one": {
+        NodeRSTU: [
+          {
+            name: "Component R5",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+          {
+            name: "Component S5",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+          {
+            name: "Component T5",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+          {
+            name: "Component U5",
+            runtime: 100,
+            memory: 128,
+            requiredReplicas: 1,
+          },
+        ],
+      },
+    },
+    activeLayoutKey: "chain",
   },
 ];

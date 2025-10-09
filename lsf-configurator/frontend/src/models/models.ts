@@ -27,6 +27,8 @@ export interface FunctionApp {
   compositions?: FunctionComposition[];
   sourcePath?: string;
   latencyLimit: number;
+  layoutCandidates?: Record<string, Layout>; // key: strategy name
+  activeLayoutKey?: string;
 }
 
 export interface FunctionComposition {
@@ -58,3 +60,12 @@ export interface Build {
   image?: string;
   timestamp?: string;
 }
+
+export interface ComponentProfile {
+  name: string;
+  runtime: number;
+  memory: number;
+  requiredReplicas: number;
+}
+
+export type Layout = Record<string, ComponentProfile[]>; // key: node name

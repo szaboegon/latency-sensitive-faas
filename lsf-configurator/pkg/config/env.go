@@ -37,6 +37,7 @@ type Configuration struct {
 	PlatformDelayMs            int      `env:"PLATFORM_DELAY_MS"`
 	AvailableNodeMemoryGb      int      `env:"AVAILABLE_NODE_MEMORY_GB"`
 	PythonPath                 string   `env:"PYTHON_PATH" default:"python3"`
+	LayoutScriptPath           string   `env:"LAYOUT_SCRIPT_PATH"`
 }
 
 func Init() Configuration {

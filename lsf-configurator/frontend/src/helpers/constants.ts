@@ -3,3 +3,7 @@ export const fileExtensions = {
   nodeJs: ".js",
   go: ".go",
 };
+
+export const colors = {
+  dark: "#1e1e2f",
+};

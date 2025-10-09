@@ -293,7 +293,7 @@ func (r *deploymentRepo) Save(deployment *core.Deployment) error {
 	_, err = r.db.Exec(`
 		INSERT OR REPLACE INTO deployments (
 			id, function_composition_id, node, namespace, routing_table, status, scale_min_replicas, scale_max_replicas, scale_target_concurrency, resources_memory, resources_cpu
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		deployment.Id, deployment.FunctionCompositionId, deployment.Node,
 		deployment.Namespace, string(routingTableJSON), deployment.Status,
 		deployment.Scale.MinReplicas, deployment.Scale.MaxReplicas,

@@ -28,6 +28,7 @@ import LinkIcon from "@mui/icons-material/Link";
 import MemoryIcon from "@mui/icons-material/Memory";
 import TimerIcon from "@mui/icons-material/Timer";
 import SpeedIcon from "@mui/icons-material/Speed";
+import LayoutCandidatesView from "../components/LayoutCandidatesView";
 
 const FunctionAppDetails: React.FC = () => {
   const { id } = useParams();
@@ -134,7 +135,7 @@ const FunctionAppDetails: React.FC = () => {
         <Typography variant="h5" gutterBottom>
           Components
         </Typography>
-        <Grid container spacing={2} mb={2}>
+        <Grid container spacing={2} mb={4}>
           {app.components?.map((component: Component) => (
             <Grid key={component.name} size={{ xs: 12, sm: 6, md: 4 }}>
               <Paper
@@ -229,6 +230,14 @@ const FunctionAppDetails: React.FC = () => {
             </Grid>
           )}
         </Grid>
+
+        {/* Layout Candidates Visualization */}
+        <Box mb={4}>
+          <LayoutCandidatesView
+            layoutCandidates={app.layoutCandidates ?? {}}
+            activeLayoutId={app.activeLayoutKey}
+          />
+        </Box>
 
         <Divider sx={{ my: 4 }} />
 

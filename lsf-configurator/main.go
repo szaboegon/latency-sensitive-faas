@@ -84,7 +84,7 @@ func main() {
 		log.Fatalf("Could not create uploads directory: %v", err)
 	}
 
-	layoutCalculator := layout.NewLayoutCalculator(conf.PythonPath, "pkg/layout/slambuc_layout.py", conf.PlatformNodes, conf.PlatformDelayMs)
+	layoutCalculator := layout.NewLayoutCalculator(conf.PythonPath, conf.LayoutScriptPath, conf.PlatformNodes, conf.PlatformDelayMs)
 	scenarioManager := core.NewScenarioManager(layoutCalculator)
 
 	controllerCtx, controllerCancel := context.WithCancel(context.Background())

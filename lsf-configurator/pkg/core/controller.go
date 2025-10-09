@@ -11,7 +11,10 @@ import (
 
 // set target concurrency globally to 1 for now, but this can be different per function composition depending on how CPU-bound they are
 // this should be measured and set accordingly for each function composition)
-const targetConcurrency = 1
+const (
+	targetConcurrency = 1
+	minimalTraceCount = 50
+)
 
 type latencyController struct {
 	composer              *Composer
@@ -49,12 +52,19 @@ func (c *latencyController) Start(ctx context.Context) error {
 			log.Println("Latency Controller received cancellation signal")
 			return nil
 		case <-ticker.C:
-			runtimes, err := c.metrics.Query95thPercentileAppRuntimes()
+			runtimes, traceCounts, err := c.metrics.Query95thPercentileAppRuntimes()
+			log.Printf("Debug: runtimes: %v", runtimes)
+			log.Printf("Debug: traceCounts: %v", traceCounts)
 			if err != nil {
 				log.Printf("Error querying 95th percentile app runtimes: %v", err)
 				continue
 			}
 			for appId, runtime := range runtimes {
+				count, ok := traceCounts[appId]
+				if !ok || count < minimalTraceCount {
+					log.Printf("Skipping app %s reconfiguration due to insufficient trace count (%d < %d)", appId, count, minimalTraceCount)
+					continue
+				}
 				log.Printf("App %s 95th percentile runtime: %.0f ms", appId, runtime)
 				app, err := c.composer.GetFunctionApp(appId)
 				if err != nil {
@@ -96,6 +106,8 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 		return nil, err
 	}
 	app.LayoutCandidates = candidates
+	// Default to the minimal layout initially
+	app.ActiveLayoutKey = LayoutKeyMin
 	c.composer.functionAppRepo.Save(app)
 
 	for _, layout := range app.LayoutCandidates {
@@ -112,7 +124,6 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 		}
 	}
 
-	app.ActiveLayoutKey = LayoutKeyMin
 	go func(appId string, layout Layout) {
 		err = c.deployLayout(appId, layout)
 		if err != nil {
