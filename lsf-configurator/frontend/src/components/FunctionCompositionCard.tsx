@@ -1,15 +1,28 @@
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, Typography, Divider, Box, Chip, Stack, Button } from "@mui/material";
-import type { FunctionComposition, Deployment } from "../models/models"; 
-import DeploymentDetailsDrawer from "../components/DeploymentDetailsDrawer"; 
-import CreateDeploymentModal from "./CreateDeploymentModal"; 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  Typography,
+  Divider,
+  Box,
+  Chip,
+  Stack,
+  Button,
+} from "@mui/material";
+import type { FunctionComposition, Deployment } from "../models/models";
+import DeploymentDetailsDrawer from "../components/DeploymentDetailsDrawer";
+import CreateDeploymentModal from "./CreateDeploymentModal";
 import { generateComponentColor } from "../helpers/utilities";
 
-const StatusColorMap: Record<"pending" | "built" | "deployed" | "error", string> = {
-    pending: "#ff9800",
-    built: "#4caf50",   
-    deployed: "#2196f3", 
-    error: "#f44336"    
+const StatusColorMap: Record<
+  "pending" | "built" | "deployed" | "error",
+  string
+> = {
+  pending: "#ff9800",
+  built: "#4caf50",
+  deployed: "#2196f3",
+  error: "#f44336",
 };
 
 interface Props {
@@ -18,8 +31,13 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
-const FunctionCompositionCard: React.FC<Props> = ({ composition, allDeployments, onDelete }) => {
-  const [selectedDeployment, setSelectedDeployment] = useState<Deployment | null>(null);
+const FunctionCompositionCard: React.FC<Props> = ({
+  composition,
+  allDeployments,
+  onDelete,
+}) => {
+  const [selectedDeployment, setSelectedDeployment] =
+    useState<Deployment | null>(null);
   const [isAddDeploymentModalOpen, setAddDeploymentModalOpen] = useState(false);
 
   const handleDelete = () => {
@@ -28,11 +46,15 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, allDeployments,
     }
   };
 
-  const handleOpenDrawer = (deployment: Deployment) => setSelectedDeployment(deployment);
+  const handleOpenDrawer = (deployment: Deployment) =>
+    setSelectedDeployment(deployment);
   const handleCloseDrawer = () => setSelectedDeployment(null);
 
   const handleOpenAddDeploymentModal = () => setAddDeploymentModalOpen(true);
   const handleCloseAddDeploymentModal = () => setAddDeploymentModalOpen(false);
+
+  const hasDeployments =
+    composition.deployments && composition.deployments.length > 0;
 
   return (
     <>
@@ -48,7 +70,18 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, allDeployments,
         }}
       >
         <CardHeader
-          title={<Typography variant="h6">{composition.id || "Unnamed Composition"}</Typography>}
+          title={
+            <Stack direction="row" alignItems="center" spacing={1}>
+              <Typography variant="h6">
+                {composition.id || "Unnamed Composition"}
+              </Typography>
+              {hasDeployments ? (
+                <Chip label="In Use" color="success" size="small" />
+              ) : (
+                <Chip label="Unused" color="warning" size="small" />
+              )}
+            </Stack>
+          }
         />
 
         <CardContent sx={{ flex: 1, overflowY: "auto" }}>
@@ -68,7 +101,8 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, allDeployments,
                 textAlign: "center",
               }}
             >
-              {composition.status.charAt(0).toUpperCase() + composition.status.slice(1)}
+              {composition.status.charAt(0).toUpperCase() +
+                composition.status.slice(1)}
             </Box>
           </Box>
 
@@ -152,7 +186,11 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, allDeployments,
         <Divider />
 
         <Stack direction={"row"} spacing={1} sx={{ padding: 2 }}>
-          <Button variant="contained" color="primary" onClick={handleOpenAddDeploymentModal}>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleOpenAddDeploymentModal}
+          >
             New Deployment
           </Button>
           <Button variant="outlined" color="error" onClick={handleDelete}>
@@ -181,4 +219,3 @@ const FunctionCompositionCard: React.FC<Props> = ({ composition, allDeployments,
 };
 
 export default FunctionCompositionCard;
-

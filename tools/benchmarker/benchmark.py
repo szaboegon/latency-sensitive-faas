@@ -13,14 +13,21 @@ import os
 # -------------------------------------------------------------------
 # Config
 # -------------------------------------------------------------------
-HANDLERS: List[str] = ["resize", "grayscale", "objectdetect", "cut", "objectdetect2", "tag"]      # handler file names (without .py)
+HANDLERS: List[str] = [
+    "resize",
+    "grayscale",
+    "objectdetect",
+    "cut",
+    "objectdetect2",
+    "tag",
+]  # handler file names (without .py)
 DOCKER_IMAGE_TEMPLATE: str = "szaboegon/{handler}_benchmark:latest"
 DEPLOY_YAML_TEMPLATE: str = "./deploy.tmpl"
 LOCAL_PORT: int = 8080
 SVC_PORT: int = 80
 NAMESPACE: str = "default"
 N: int = 1000  # default number of requests
-RESULTS_FILE: Path = Path("./results.json")       # where benchmark results are stored
+RESULTS_FILE: Path = Path("./results.json")  # where benchmark results are stored
 # -------------------------------------------------------------------
 
 
@@ -36,12 +43,7 @@ def build_docker_image(image: str, handler: str) -> None:
         f.write(dockerfile_content)
     try:
         subprocess.run(
-            [
-                "docker", "build",
-                "-t", image,
-                "--build-arg", f"HANDLER={handler}",
-                "."
-            ],
+            ["docker", "build", "-t", image, "--build-arg", f"HANDLER={handler}", "."],
             check=True,
         )
         subprocess.run(["docker", "push", image], check=True)
@@ -56,14 +58,15 @@ def deploy_to_k8s(deploy_yaml: str, function_name: str) -> None:
     print(f"Deploying {function_name}...")
     subprocess.run(["kubectl", "apply", "-f", deploy_yaml], check=True)
     print(f"Waiting for deployment {function_name} to be ready...")
-    subprocess.run(["kubectl", "rollout", "status", f"deployment/{function_name}"], check=True)
+    subprocess.run(
+        ["kubectl", "rollout", "status", f"deployment/{function_name}"], check=True
+    )
 
 
 def get_pod_name(deployment_name: str, namespace: str) -> str:
     v1 = client.CoreV1Api()
     pods = v1.list_namespaced_pod(
-        namespace=namespace,
-        label_selector=f"app={deployment_name}"
+        namespace=namespace, label_selector=f"app={deployment_name}"
     )
     if not pods.items:
         raise RuntimeError(f"No pods found for deployment {deployment_name}")
@@ -82,7 +85,9 @@ def kill_existing_port_forwards() -> None:
         try:
             cmdline = proc.info["cmdline"]
             if cmdline and "kubectl" in cmdline[0] and "port-forward" in cmdline:
-                print(f"Killing existing port-forward PID {proc.info['pid']}: {' '.join(cmdline)}")
+                print(
+                    f"Killing existing port-forward PID {proc.info['pid']}: {' '.join(cmdline)}"
+                )
                 proc.kill()
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
@@ -90,19 +95,29 @@ def kill_existing_port_forwards() -> None:
 
 def get_free_port() -> int:
     import socket
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('', 0))
+        s.bind(("", 0))
         return int(s.getsockname()[1])
 
 
-def port_forward(function_name: str, max_retries: int = 5, delay: int = 3) -> Tuple[subprocess.Popen[Any], int]:
+def port_forward(
+    function_name: str, max_retries: int = 5, delay: int = 3
+) -> Tuple[subprocess.Popen[Any], int]:
     kill_existing_port_forwards()
     local_port = get_free_port()
 
     for attempt in range(1, max_retries + 1):
-        print(f"Port-forward attempt {attempt}/{max_retries} for {function_name} on port {local_port}...")
+        print(
+            f"Port-forward attempt {attempt}/{max_retries} for {function_name} on port {local_port}..."
+        )
         pf: subprocess.Popen[Any] = subprocess.Popen(
-            ["kubectl", "port-forward", f"svc/{function_name}", f"{local_port}:{SVC_PORT}"],
+            [
+                "kubectl",
+                "port-forward",
+                f"svc/{function_name}",
+                f"{local_port}:{SVC_PORT}",
+            ],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
@@ -118,11 +133,15 @@ def port_forward(function_name: str, max_retries: int = 5, delay: int = 3) -> Tu
             time.sleep(delay)
             local_port = get_free_port()
 
-    raise RuntimeError(f"Failed to port-forward {function_name} after {max_retries} attempts")
+    raise RuntimeError(
+        f"Failed to port-forward {function_name} after {max_retries} attempts"
+    )
 
 
 # ------------------------ Kubernetes Memory -----------------------
-def get_mem_usage(pod_name: str, namespace: str, retries: int = 10, delay: float = 5.0) -> float:
+def get_mem_usage(
+    pod_name: str, namespace: str, retries: int = 10, delay: float = 5.0
+) -> float:
     metrics_api: client.CustomObjectsApi = client.CustomObjectsApi()
     for attempt in range(retries):
         metrics: Any = metrics_api.list_namespaced_custom_object(
@@ -145,7 +164,9 @@ def get_mem_usage(pod_name: str, namespace: str, retries: int = 10, delay: float
                     raise ValueError(f"Unexpected memory format: {mem_str}")
         if attempt < retries - 1:
             time.sleep(delay)
-    raise RuntimeError(f"Pod {pod_name} not found in namespace {namespace} after {retries} attempts")
+    raise RuntimeError(
+        f"Pod {pod_name} not found in namespace {namespace} after {retries} attempts"
+    )
 
 
 # ------------------------ Payload Load ----------------------------
@@ -155,21 +176,25 @@ def load_payload(json_file: str) -> Any:
 
 
 # ------------------------ Benchmark --------------------------------
-def benchmark(url: str, pod_name: str, json_file: str, num_requests: int, delay: float = 0.1) -> Dict[str, Any]:
+def benchmark(
+    url: str, pod_name: str, json_file: str, num_requests: int, delay: float = 0.1
+) -> Dict[str, Any]:
     payload: Any = load_payload(json_file)
     wall_times: List[float] = []
     server_mems: List[float] = []
 
     for i in range(num_requests):
-        start: float = time.perf_counter()
         try:
             resp: requests.Response = requests.post(url, json=payload)
             resp.raise_for_status()
         except requests.exceptions.RequestException as e:
             print(f"Request failed at iteration {i+1}: {e}")
             continue
-        elapsed: float = time.perf_counter() - start
-        wall_times.append(elapsed)
+
+        data = resp.json()
+        elapsed: float = data.get("server_elapsed")
+        if elapsed is not None:
+            wall_times.append(elapsed)
 
         mem: float = get_mem_usage(pod_name, NAMESPACE)
         server_mems.append(mem)
@@ -186,7 +211,11 @@ def benchmark(url: str, pod_name: str, json_file: str, num_requests: int, delay:
 
     result = {
         "mean_wall_time_ms": int(statistics.mean(wall_times_ms)),
-        "p95_wall_time_ms": int(statistics.quantiles(wall_times_ms, n=100)[94]) if len(wall_times_ms) >= 100 else max(wall_times_ms),
+        "p95_wall_time_ms": (
+            int(statistics.quantiles(wall_times_ms, n=100)[94])
+            if len(wall_times_ms) >= 100
+            else max(wall_times_ms)
+        ),
         "mean_server_memory_mib": statistics.mean(server_mems),
         "peak_server_memory_mib": max(server_mems),
     }
