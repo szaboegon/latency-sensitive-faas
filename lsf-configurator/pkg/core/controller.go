@@ -297,13 +297,22 @@ func (c *latencyController) deployLayout(appId string, layout Layout) error {
 					continue
 				}
 				if targetDepID, ok := compToDepID[link.To]; ok {
-					routes = append(routes, Route{To: link.To, Function: targetDepID})
+					// If the target deployment is the same as the current deployment, set Function to "local"
+					functionField := targetDepID
+					if dep.Id == targetDepID {
+						functionField = "local"
+					}
+					routes = append(routes, Route{To: link.To, Function: functionField})
 					referencedDepIDs[targetDepID] = true
 					continue
 				}
 				// fallback: use old deployment if available
 				if oldDepID, ok := oldCompToDepID[link.To]; ok {
-					routes = append(routes, Route{To: link.To, Function: oldDepID})
+					functionField := oldDepID
+					if dep.Id == oldDepID {
+						functionField = "local"
+					}
+					routes = append(routes, Route{To: link.To, Function: functionField})
 					referencedDepIDs[oldDepID] = true
 					log.Printf("Warning: using fallback routing for component %s to old deployment %s", link.To, oldDepID)
 					continue

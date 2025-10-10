@@ -6,6 +6,7 @@ import SpeedIcon from "@mui/icons-material/Speed";
 import MemoryIcon from "@mui/icons-material/Memory";
 import type { Layout } from "../models/models";
 import { colors } from "../helpers/constants";
+import { toSnakeCase } from "../helpers/utilities";
 
 interface Props {
   layoutCandidates: Record<string, Layout>;
@@ -34,7 +35,8 @@ const LayoutCandidatesView: React.FC<Props> = ({
       <Grid container spacing={2}>
         {keys.map((key) => {
           const candidateLayout = layoutCandidates[key];
-          const isActive = key === activeLayoutId;
+          const isActive =
+            toSnakeCase(key) === toSnakeCase(activeLayoutId ?? "");
           return (
             <Grid size={{ xs: 12, sm: 6, md: 4 }} key={key}>
               <Paper
@@ -49,7 +51,7 @@ const LayoutCandidatesView: React.FC<Props> = ({
                 <Stack direction="row" alignItems="center" spacing={1} mb={1}>
                   <LayersIcon color="primary" />
                   <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                    Layout Key: {key}
+                    Layout Key: {toSnakeCase(key)}
                   </Typography>
                   <Chip
                     label={key}
