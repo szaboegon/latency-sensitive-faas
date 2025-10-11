@@ -53,12 +53,6 @@ const LayoutCandidatesView: React.FC<Props> = ({
                   <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                     Layout Key: {toSnakeCase(key)}
                   </Typography>
-                  <Chip
-                    label={key}
-                    color={isActive ? "success" : "default"}
-                    size="small"
-                    sx={{ ml: 1, fontWeight: 500 }}
-                  />
                   {isActive && (
                     <Chip
                       icon={<CheckCircleIcon color="success" />}

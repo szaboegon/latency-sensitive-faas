@@ -115,7 +115,7 @@ const FunctionAppDetails: React.FC = () => {
     <>
       <Box my={4}>
         <Typography variant="h4" gutterBottom>
-          {app.name} Details
+          {app.name}({app.id})
         </Typography>
 
         {/* Latency Limit */}

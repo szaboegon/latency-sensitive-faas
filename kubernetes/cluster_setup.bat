@@ -11,7 +11,7 @@ set STORAGECLASS_YAML_PATH="storageclass.yaml"
 
 echo %cd%
 echo Starting minikube cluster with %NUM_NODES% nodes...
-minikube start --nodes %NUM_NODES% -p knative --memory %MEMORY_LIMIT% --cpus %CPUS% --addons=ingress
+minikube start --nodes %NUM_NODES% -p knative --memory %MEMORY_LIMIT% --cpus %CPUS% --addons=ingress --driver=docker
 if errorlevel 1 (
     echo Failed to start Minikube cluster.
     exit /b 1

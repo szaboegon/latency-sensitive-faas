@@ -17,8 +17,9 @@ import (
 const CompositionTemplateName = "composition"
 
 type Client struct {
-	fnClient      *fn.Client
-	imageRegistry string
+	fnClient           *fn.Client
+	imageRegistry      string
+	resultStoreAddress string
 }
 
 func NewClient(conf config.Configuration) *Client {
@@ -31,8 +32,9 @@ func NewClient(conf config.Configuration) *Client {
 	fnClient := fn.New(o...)
 
 	return &Client{
-		fnClient:      fnClient,
-		imageRegistry: conf.ImageRegistry + "/" + conf.ImageRepository,
+		fnClient:           fnClient,
+		imageRegistry:      conf.ImageRegistry + "/" + conf.ImageRepository,
+		resultStoreAddress: conf.ResultStoreAddress,
 	}
 }
 
@@ -87,8 +89,10 @@ func (c *Client) Deploy(ctx context.Context, deployment core.Deployment, image, 
 			Namespace: deployment.Namespace,
 			Options: fn.Options{
 				Scale: &fn.ScaleOptions{
-					Min:    int64Ptr(deployment.Scale.MinReplicas),
-					Max:    int64Ptr(deployment.Scale.MaxReplicas),
+					Min: int64Ptr(deployment.Scale.MinReplicas),
+					//Max:    int64Ptr(deployment.Scale.MaxReplicas),
+					// TODO only for testing
+					Max:    int64Ptr(1),
 					Metric: strPtr("concurrency"),
 					Target: floatPtr(float64(deployment.Scale.TargetConcurrency)),
 				},
@@ -105,7 +109,7 @@ func (c *Client) Deploy(ctx context.Context, deployment core.Deployment, image, 
 			},
 		},
 		Run: fn.RunSpec{
-			Envs: getDeployEnvs(appId, deployment.Id),
+			Envs: getDeployEnvs(appId, deployment.Id, c.resultStoreAddress),
 		},
 	}
 
@@ -147,16 +151,20 @@ func copyNonSourceFiles(sourcePath, buildDir string, fileNames []string) error {
 	return err
 }
 
-func getDeployEnvs(appId, deploymentId string) []fn.Env {
+func getDeployEnvs(appId, deploymentId, resultStoreAddress string) []fn.Env {
 	envFuncName := "FUNCTION_NAME"
 	envFuncNameValue := deploymentId
 
 	envAppName := "APP_NAME"
 	envAppNameValue := appId
 
+	envResultStore := "RESULT_STORE_ADDRESS"
+	envResultStoreValue := resultStoreAddress
+
 	envs := make([]fn.Env, 0)
 	envs = append(envs, fn.Env{Name: &envFuncName, Value: &envFuncNameValue})
 	envs = append(envs, fn.Env{Name: &envAppName, Value: &envAppNameValue})
+	envs = append(envs, fn.Env{Name: &envResultStore, Value: &envResultStoreValue})
 
 	return envs
 }

@@ -126,7 +126,7 @@ spec:
             - name: TEKTON_SERVICE_ACCOUNT
               value: "buildpacks-service-account"
             - name: TEKTON_CONCURRENCY_LIMIT
-              value: "1"
+              value: "2"
             - name: DATABASE_PATH
               value: "/db/db.sqlite3"
             - name: ALERTING_API_URL
@@ -139,7 +139,7 @@ spec:
             - name: LOCAL_MODE
               value: "false"
             - name: CONTROLLER_TICK_DELAY_SECONDS
-              value: "30"
+              value: "60"
             - name: PLATFORM_NODES
               value: "knative,knative-m02,knative-m03"
             - name: PLATFORM_DELAY_MS
@@ -149,6 +149,8 @@ spec:
               value: "4"
             - name: LAYOUT_SCRIPT_PATH
               value: "/layout/slambuc_layout.py"
+            - name: RESULT_STORE_ADDRESS
+              value: "redis-master.redis.svc.cluster.local"
           volumeMounts:
             - name: uploads-pvc
               mountPath: /uploads

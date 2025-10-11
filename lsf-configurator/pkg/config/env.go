@@ -38,6 +38,7 @@ type Configuration struct {
 	AvailableNodeMemoryGb      int      `env:"AVAILABLE_NODE_MEMORY_GB"`
 	PythonPath                 string   `env:"PYTHON_PATH" default:"python3"`
 	LayoutScriptPath           string   `env:"LAYOUT_SCRIPT_PATH"`
+	ResultStoreAddress         string   `env:"RESULT_STORE_ADDRESS"`
 }
 
 func Init() Configuration {

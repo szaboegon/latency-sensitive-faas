@@ -105,10 +105,14 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 		log.Printf("Error generating layout candidates for app %s: %v", app.Id, err)
 		return nil, err
 	}
+	log.Printf("Generated layout candidates for app: %s: %v", app.Id, candidates)
 	app.LayoutCandidates = candidates
 	// Default to the minimal layout initially
 	app.ActiveLayoutKey = LayoutKeyMin
 	c.composer.functionAppRepo.Save(app)
+
+	// Track which component sets we've already created compositions for
+	createdCompositionKeys := make(map[string]bool)
 
 	for _, layout := range app.LayoutCandidates {
 		for _, components := range layout {
@@ -116,11 +120,20 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 			for i, cp := range components {
 				componentNames[i] = cp.Name
 			}
+
+			// Skip if we've already created a composition for this set of components
+			fcKey := componentsKey(componentNames)
+			if createdCompositionKeys[fcKey] {
+				continue
+			}
+
 			_, err := c.composer.AddFunctionComposition(app.Id, componentNames)
 			if err != nil {
 				log.Printf("Error adding function composition for app %s: %v", app.Id, err)
 				return nil, err
 			}
+
+			createdCompositionKeys[fcKey] = true
 		}
 	}
 

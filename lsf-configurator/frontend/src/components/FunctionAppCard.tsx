@@ -39,7 +39,7 @@ const FunctionAppCard: React.FC<FunctionAppCardProps> = ({ app }) => {
       }}
     >
       <Typography variant="h6" fontWeight={600} gutterBottom>
-        {app.name}
+        {app.name}({app.id})
       </Typography>
       <Divider sx={{ my: 1 }} />
       {/* Runtime */}
