@@ -6,6 +6,7 @@ import (
 	"log"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -25,6 +26,7 @@ type latencyController struct {
 	lastReconfigs         map[string]time.Time
 	cooldownPeriod        time.Duration
 	availableNodeMemoryGb int // same for all nodes for now, in GB
+	lastReconfigsMu       sync.Mutex
 }
 
 func NewController(composer *Composer, metrics MetricsReader, scenarioManager ScenarioManager,
@@ -38,6 +40,7 @@ func NewController(composer *Composer, metrics MetricsReader, scenarioManager Sc
 		lastReconfigs:         make(map[string]time.Time),
 		cooldownPeriod:        60 * time.Second,
 		availableNodeMemoryGb: availableNodeMemoryGb,
+		lastReconfigsMu:       sync.Mutex{},
 	}
 }
 
@@ -72,12 +75,17 @@ func (c *latencyController) Start(ctx context.Context) error {
 					continue
 				}
 				if app.LatencyLimit > 0 && runtime > float64(app.LatencyLimit) {
+					c.lastReconfigsMu.Lock()
 					last, ok := c.lastReconfigs[app.Id]
+
 					if ok && time.Since(last) < c.cooldownPeriod {
 						log.Printf("Skipping reconfiguration for app %s due to cooldown (last at %v)", app.Id, last)
+						c.lastReconfigsMu.Unlock()
 						continue
 					}
 
+					c.lastReconfigs[app.Id] = time.Now()
+					c.lastReconfigsMu.Unlock()
 					go func(a *FunctionApp) {
 						if err := c.handleLatencyViolation(a); err != nil {
 							log.Printf("Error handling latency violation for app %s: %v", a.Id, err)
@@ -109,7 +117,11 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 	app.LayoutCandidates = candidates
 	// Default to the minimal layout initially
 	app.ActiveLayoutKey = LayoutKeyMin
-	c.composer.functionAppRepo.Save(app)
+	err = c.composer.functionAppRepo.Save(app)
+	if err != nil {
+		log.Printf("Error saving function app %s: %v", app.Id, err)
+		return nil, err
+	}
 
 	// Track which component sets we've already created compositions for
 	createdCompositionKeys := make(map[string]bool)
