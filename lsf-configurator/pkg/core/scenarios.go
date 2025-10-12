@@ -1,5 +1,7 @@
 package core
 
+import "sort"
+
 const (
 	LayoutKeyMin = "min_rate"
 	LayoutKeyAvg = "avg_rate"
@@ -73,8 +75,10 @@ func (sm *scenarioManager) buildLayoutScenario(
 	links []ComponentLink,
 	rateFunc func(min, max float64) float64) *LayoutScenario {
 
-	scenarioLinks := make([]ScenarioLink, 0, len(links))
-	for _, link := range links {
+	sortedLinks := sortLinksByCallGraphOrder(links)
+
+	scenarioLinks := make([]ScenarioLink, 0, len(sortedLinks))
+	for _, link := range sortedLinks {
 		rate := rateFunc(link.InvocationRate.Min, link.InvocationRate.Max)
 		scenarioLinks = append(scenarioLinks, ScenarioLink{
 			From:           link.From,
@@ -84,8 +88,10 @@ func (sm *scenarioManager) buildLayoutScenario(
 		})
 	}
 
+	sortedComponents := sortComponentsByCallGraphOrder(compMap, sortedLinks)
 	profiles := make([]ComponentProfile, 0, len(compMap))
-	for _, comp := range compMap {
+	for _, comp := range sortedComponents {
+		comp := compMap[comp]
 		// Calculate replicas using the provided helper function and the generated ScenarioLinks
 		replicas := calculateComponentMaxReplicas(comp, scenarioLinks, targetConcurrency)
 		profiles = append(profiles, ComponentProfile{
@@ -100,4 +106,112 @@ func (sm *scenarioManager) buildLayoutScenario(
 		Profiles: profiles,
 		Links:    scenarioLinks,
 	}
+}
+
+func sortLinksByCallGraphOrder(links []ComponentLink) []ComponentLink {
+	if len(links) == 0 {
+		return nil
+	}
+
+	sorted := make([]ComponentLink, 0, len(links))
+
+	outgoing := make(map[string][]int)    // from -> indices into links
+	incomingCount := make(map[string]int) // node -> incoming count
+	nodes := make(map[string]struct{})    // all nodes seen
+
+	for i, l := range links {
+		outgoing[l.From] = append(outgoing[l.From], i)
+		incomingCount[l.To]++
+		nodes[l.From] = struct{}{}
+		nodes[l.To] = struct{}{}
+	}
+
+	// Sort outgoing lists deterministically by target name
+	for from, idxs := range outgoing {
+		sort.Slice(idxs, func(i, j int) bool {
+			return links[idxs[i]].To < links[idxs[j]].To
+		})
+		outgoing[from] = idxs
+	}
+
+	// Collect source nodes (in-degree == 0)
+	sources := make([]string, 0)
+	for node := range nodes {
+		if incomingCount[node] == 0 {
+			sources = append(sources, node)
+		}
+	}
+	sort.Strings(sources) // deterministic order for sources
+
+	visitedLink := make([]bool, len(links))
+
+	// Traverse from every source; BFS-style per source to preserve chain order
+	queue := make([]string, 0, len(sources))
+	queue = append(queue, sources...)
+
+	for len(queue) > 0 {
+		node := queue[0]
+		queue = queue[1:]
+
+		for _, idx := range outgoing[node] {
+			if visitedLink[idx] {
+				continue
+			}
+			// append this link in traversal order
+			sorted = append(sorted, links[idx])
+			visitedLink[idx] = true
+			// enqueue target so its outgoing links are processed next
+			queue = append(queue, links[idx].To)
+		}
+	}
+
+	// If some links remain (cycles or otherwise), append them deterministically
+	if len(sorted) < len(links) {
+		remaining := make([]ComponentLink, 0, len(links)-len(sorted))
+		for i, l := range links {
+			if !visitedLink[i] {
+				remaining = append(remaining, l)
+			}
+		}
+		sort.Slice(remaining, func(i, j int) bool {
+			if remaining[i].From == remaining[j].From {
+				return remaining[i].To < remaining[j].To
+			}
+			return remaining[i].From < remaining[j].From
+		})
+		sorted = append(sorted, remaining...)
+	}
+
+	return sorted
+}
+
+func sortComponentsByCallGraphOrder(compMap map[string]Component, sortedLinks []ComponentLink) []string {
+	componentOrder := make([]string, 0, len(compMap))
+	seen := make(map[string]bool)
+
+	// Add components in the order they appear in sorted links
+	for _, link := range sortedLinks {
+		if !seen[link.From] {
+			componentOrder = append(componentOrder, link.From)
+			seen[link.From] = true
+		}
+		if !seen[link.To] {
+			componentOrder = append(componentOrder, link.To)
+			seen[link.To] = true
+		}
+	}
+
+	// Add any remaining components that don't appear in links (isolated components)
+	remainingComponents := make([]string, 0)
+	for name := range compMap {
+		if !seen[name] {
+			remainingComponents = append(remainingComponents, name)
+		}
+	}
+
+	// Sort isolated components alphabetically for consistency
+	sort.Strings(remainingComponents)
+	componentOrder = append(componentOrder, remainingComponents...)
+
+	return componentOrder
 }
