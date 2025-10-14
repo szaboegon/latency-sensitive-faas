@@ -2,7 +2,7 @@ from redis import Redis
 import os
 import json
 from typing import Dict, cast, Any, Callable
-from parliament import Context #type: ignore
+from parliament import Context  # type: ignore
 from route import RoutingTable
 
 REDIS_URL = os.environ["NODE_IP"]
@@ -14,6 +14,7 @@ HANDLERS: Dict[str, Callable[[Context], Any]] = {
     # REGISTER COMPONENT HANDLERS HERE
 }
 
+
 def read_config() -> RoutingTable:
     """
     Reads configuration keys from Redis and populates HANDLERS dictionary.
@@ -21,7 +22,6 @@ def read_config() -> RoutingTable:
     config: Any = redis_client.get(FUNCTION_NAME)
     if not config:
         raise ValueError(f"Configuration for {FUNCTION_NAME} not found in Redis")
-    
+
     configJson = json.loads(config)
     return cast(RoutingTable, configJson)
-        

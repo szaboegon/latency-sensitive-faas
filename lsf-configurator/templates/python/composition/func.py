@@ -1,10 +1,11 @@
+import concurrent.futures
 from parliament import Context  # type: ignore
 import requests
 from opentelemetry.propagate import inject, extract
 import tracing
 from opentelemetry import trace
-from opentelemetry.context import Context as OtelContext
-from config import APP_NAME, FUNCTION_NAME, HANDLERS, read_config
+from opentelemetry.context import Context as OtelContext, get_current, attach, detach
+from config import APP_NAME, FUNCTION_NAME, read_config
 from route import Route
 from typing import Any, Dict, Deque, List, Tuple, Optional, TypedDict, Union
 import threading
@@ -12,11 +13,18 @@ from collections import deque
 from event import Event, extract_event, create_event
 from opentelemetry.trace.status import Status, StatusCode  # Add this import
 from logger import setup_logging
+from results import write_result
+import faulthandler
+import sys
 
-if "tracer" not in globals():
-    tracer = tracing.instrument_app(app_name=APP_NAME, service_name=FUNCTION_NAME)
+faulthandler.enable(file=sys.stderr, all_threads=True)
+
 
 logger = setup_logging(__name__)
+tracer = tracing.instrument_app(app_name=APP_NAME, service_name=FUNCTION_NAME)
+
+_PROCESS_POOL = concurrent.futures.ProcessPoolExecutor(max_workers=8)
+FuturesTimeout = concurrent.futures.TimeoutError
 
 
 class RouteToProcess(TypedDict):
@@ -45,22 +53,52 @@ def get_headers(
 HandlerReturnType = Union[Dict[str, Any], bytes, List[Dict[str, Any]], List[bytes]]
 
 
+def _handler_worker(component: str, event: Event) -> Any:
+    """
+    Worker function executed in a separate process.
+    Dynamically imports func.HANDLERS to avoid stale global state.
+    """
+    from config import HANDLERS
+
+    try:
+        if component not in HANDLERS:
+            raise ValueError(f"No handler registered for component '{component}'")
+
+        handler = HANDLERS[component]
+        return handler(event)
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        raise e
+
+
 def handle_request(
     event: Event, component: str, parent_context: Optional[OtelContext]
 ) -> Tuple[HandlerReturnType, Optional[OtelContext]]:
     """
-    Handles the request by invoking the appropriate handler and preparing
-    the next component's details.
+    Handles the request by invoking the appropriate handler in a worker process.
+    The handler is executed in an isolated process to prevent global tracer races.
     """
     with tracer.start_as_current_span(component, context=parent_context) as span:
         try:
-            if component in HANDLERS:
-                handler = HANDLERS[component]
-                event_out: HandlerReturnType = handler(event)
-                logger.info(f"Component '{component}' processed successfully.")
-                return event_out, trace.set_span_in_context(span)
-            logger.warning(f"Component '{component}' not found in HANDLERS.")
-            return {}, trace.set_span_in_context(span)
+            logger.info(
+                f"Submitting handler for component '{component}' to process pool."
+            )
+
+            # Submit the job to a worker process
+            future = _PROCESS_POOL.submit(_handler_worker, component, event)
+
+            try:
+                event_out: HandlerReturnType = future.result(timeout=30)
+            except FuturesTimeout:
+                future.cancel()
+                raise TimeoutError(f"Handler '{component}' timed out")
+
+            logger.info(f"Component '{component}' processed successfully.")
+            span.set_status(Status(StatusCode.OK))
+            return event_out, trace.set_span_in_context(span)
+
         except Exception as e:
             span.set_status(Status(StatusCode.ERROR, str(e)))
             span.record_exception(e)
@@ -82,23 +120,29 @@ def forward_request(
         return
 
     headers = get_headers(route["component"], span_context)
+    parent_otel_context = get_current()
 
     def send_async_request() -> None:
-        with tracer.start_as_current_span(
-            "forward_request", context=span_context
-        ) as span:
-            try:
-                requests.post(url=route["url"], json=event_out, headers=headers)
-                logger.info(
-                    f"Request forwarded to component '{route['component']}' at URL '{route['url']}'."
-                )
-            except Exception as e:
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-                span.record_exception(e)
-                logger.error(
-                    f"Error forwarding request to '{route['component']}' at '{route['url']}': {e}"
-                )
-                # Do not rethrow exception to allow function to continue processing other routes
+        token = attach(parent_otel_context)
+
+        try:
+            with tracer.start_as_current_span(
+                "forward_request", context=span_context
+            ) as span:
+                try:
+                    requests.post(url=route["url"], json=event_out, headers=headers)
+                    logger.info(
+                        f"Request forwarded to component '{route['component']}' at URL '{route['url']}'."
+                    )
+                except Exception as e:
+                    span.set_status(Status(StatusCode.ERROR, str(e)))
+                    span.record_exception(e)
+                    logger.error(
+                        f"Error forwarding request to '{route['component']}' at '{route['url']}': {e}"
+                    )
+                    raise e
+        finally:
+            detach(token)
 
     # Start the async thread
     t = threading.Thread(target=send_async_request)
@@ -156,7 +200,12 @@ def main(context: Context) -> Tuple[str, int]:
 
             outputs = output if isinstance(output, list) else [output]
             for o in outputs:
-                for next_route in routing_table.get(component, []):
+                next_routes = routing_table.get(component, [])
+                if not next_routes:
+                    # No next components, write result to Redis
+                    write_result(o)
+                    logger.info(f"Result for component '{component}' written to Redis.")
+                for next_route in next_routes:
                     if next_route["url"] == "local":
                         event_in = create_event(o)
                         route_to_process = RouteToProcess(

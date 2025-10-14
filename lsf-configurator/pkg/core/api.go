@@ -55,3 +55,7 @@ type ScenarioManager interface {
 		appLatencyReq int,
 		memoryAvailable int) (map[string]Layout, error)
 }
+
+type ResultsClient interface {
+	GetAppResults(appId string, count int) ([]string, error)
+}

@@ -15,6 +15,7 @@ import (
 	"lsf-configurator/pkg/knative"
 	"lsf-configurator/pkg/layout"
 	"lsf-configurator/pkg/metrics"
+	"lsf-configurator/pkg/results"
 	"lsf-configurator/pkg/routing"
 	"net/http"
 	"os"
@@ -27,6 +28,7 @@ var controller core.Controller
 var composer *core.Composer
 var conf config.Configuration
 var metricsReader core.MetricsReader
+var resultsClient core.ResultsClient
 
 func main() {
 	logFile := configureLogging()
@@ -101,6 +103,8 @@ func main() {
 		}()
 	}
 
+	resultsClient = results.NewRedisResultsClient(conf.RedisUrl)
+
 	s := startHttpServer()
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, syscall.SIGINT, syscall.SIGTERM)
@@ -136,7 +140,7 @@ func registerHandlers(mux *http.ServeMux) {
 	mux.Handle(api.DeploymentsPath+"/", http.StripPrefix(api.DeploymentsPath, api.NewHandlerDeployments(composer, conf)))
 	mux.Handle(api.FunctionCompositionsPath+"/", http.StripPrefix(api.FunctionCompositionsPath, api.NewHandlerFunctionCompositions(composer, conf)))
 	mux.Handle(api.MetricsPath+"/", http.StripPrefix(api.MetricsPath, api.NewHandlerMetrics(metricsReader, conf)))
-
+	mux.Handle(api.ResultsPath+"/", http.StripPrefix(api.ResultsPath, api.NewHandlerResults(resultsClient)))
 	mux.Handle("/", api.SpaHandler("./public"))
 }
 

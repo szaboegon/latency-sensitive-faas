@@ -29,13 +29,16 @@ import MemoryIcon from "@mui/icons-material/Memory";
 import TimerIcon from "@mui/icons-material/Timer";
 import SpeedIcon from "@mui/icons-material/Speed";
 import LayoutCandidatesView from "../components/LayoutCandidatesView";
+import ResultsView from "../components/ResultsView";
 
 const FunctionAppDetails: React.FC = () => {
   const { id } = useParams();
   const { data: app, isLoading, error } = useFunctionAppById(id ?? "");
   const { mutate: deleteComposition } = useDeleteFunctionComposition();
 
-  const [tabValue, setTabValue] = useState<"list" | "graph">("list");
+  const [tabValue, setTabValue] = useState<"list" | "graph" | "results">(
+    "list"
+  );
   const [isAddModalOpen, setAddModalOpen] = useState(false);
 
   const allDeployments = useMemo(
@@ -55,7 +58,7 @@ const FunctionAppDetails: React.FC = () => {
 
   const handleTabChange = (
     _: React.SyntheticEvent,
-    newValue: "list" | "graph"
+    newValue: "list" | "graph" | "results"
   ) => {
     setTabValue(newValue);
   };
@@ -245,6 +248,7 @@ const FunctionAppDetails: React.FC = () => {
         <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2 }}>
           <Tab label="List View" value="list" />
           <Tab label="Call Graph View" value="graph" />
+          <Tab label="Results" value="results" />
         </Tabs>
 
         {tabValue === "list" && (
@@ -286,6 +290,12 @@ const FunctionAppDetails: React.FC = () => {
         )}
 
         {tabValue === "graph" && <CallGraphView deployments={allDeployments} />}
+
+        {tabValue === "results" && (
+          <Box mt={2}>
+            <ResultsView appId={app.id ?? ""} />
+          </Box>
+        )}
       </Box>
       <FunctionCompositionAddModal
         open={isAddModalOpen}
