@@ -57,5 +57,5 @@ type ScenarioManager interface {
 }
 
 type ResultsClient interface {
-	GetAppResults(appId string, count int) ([]string, error)
+	GetAppResults(appId string, count int) ([]AppResult, error)
 }

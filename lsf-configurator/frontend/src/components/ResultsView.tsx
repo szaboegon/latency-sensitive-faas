@@ -119,9 +119,9 @@ const ResultsView: React.FC<ResultsViewProps> = ({ appId, count = 5 }) => {
       {data.map((result, idx) => (
         <Paper key={idx} sx={{ p: 2, background: "#f5faff" }}>
           <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-            Result #{idx + 1}
+            {result.timestamp}
           </Typography>
-          <ResultString value={result} />
+          <ResultString value={result.event} />
         </Paper>
       ))}
     </Stack>

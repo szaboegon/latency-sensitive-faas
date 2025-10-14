@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/json"
 	"mime/multipart"
 )
 
@@ -133,4 +134,9 @@ type ScenarioLink struct {
 	To             string
 	InvocationRate float64
 	DataDelay      int
+}
+
+type AppResult struct {
+	Timestamp string          `json:"timestamp"`
+	Event     json.RawMessage `json:"event"`
 }

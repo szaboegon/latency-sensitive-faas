@@ -69,3 +69,8 @@ export interface ComponentProfile {
 }
 
 export type Layout = Record<string, ComponentProfile[]>; // key: node name
+
+export interface AppResult {
+  timestamp: string;
+  event: string;
+}
