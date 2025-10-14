@@ -11,6 +11,7 @@ import {
   Divider,
 } from "@mui/material";
 import { useNavigate } from "react-router";
+import { useDeleteFunctionApp } from "../hooks/functionAppsHooks";
 
 interface FunctionAppCardProps {
   app: FunctionApp;
@@ -18,6 +19,7 @@ interface FunctionAppCardProps {
 
 const FunctionAppCard: React.FC<FunctionAppCardProps> = ({ app }) => {
   const navigate = useNavigate();
+  const { mutate: deleteFunctionApp } = useDeleteFunctionApp();
 
   return (
     <Paper
@@ -77,15 +79,23 @@ const FunctionAppCard: React.FC<FunctionAppCardProps> = ({ app }) => {
           </ListItem>
         ))}
       </List>
-      <Box mt={2}>
+      <Box mt={2} sx={{ display: "flex", gap: 1 }}>
         <Button
           variant="contained"
           size="small"
           onClick={() => navigate(`/function-apps/${app.id}`)}
-          sx={{ textTransform: "none", fontWeight: 500 }}
-          fullWidth
+          sx={{ textTransform: "none", fontWeight: 500, flex: 1 }}
         >
           View Details
+        </Button>
+        <Button
+          variant="outlined"
+          color="error"
+          size="small"
+          onClick={() => deleteFunctionApp(app.id!)}
+          sx={{ textTransform: "none", fontWeight: 500, flex: 1 }}
+        >
+          Delete
         </Button>
       </Box>
     </Paper>

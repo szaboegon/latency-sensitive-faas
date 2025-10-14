@@ -124,19 +124,27 @@ func (c *Composer) DeleteFunctionApp(appId string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get deployments for function app %s: %w", appId, err)
 	}
-	for _, d := range deployments {
-		resultChan := c.scheduler.AddTask(c.deleteTask(*d), MaxRetries)
 
-		r := <-resultChan
-		if r.Err != nil {
-			log.Errorf("Deleting deployment with id %v failed: %v", d.Id, r.Err)
-			return r.Err
-		}
-		log.Infof("Successfully deleted deployment with id %v", d.Id)
-		err = filesystem.DeleteDir(app.SourcePath)
-		if err != nil {
-			return fmt.Errorf("could not delete app source directory: %s", err.Error())
-		}
+	for _, d := range deployments {
+
+		go func(deploymentId string, sourcePath string) {
+			resultChan := c.scheduler.AddTask(c.deleteTask(*d), MaxRetries)
+
+			r := <-resultChan
+			if r.Err != nil {
+				log.Errorf("Deleting deployment with id %v failed: %v", deploymentId, r.Err)
+			}
+			log.Infof("Successfully deleted deployment with id %v", deploymentId)
+			err = filesystem.DeleteDir(sourcePath)
+			if err != nil {
+				log.Errorf("could not delete app source directory: %s", err.Error())
+			}
+
+			err = c.routingClient.DeleteRoutingTable(deploymentId)
+			if err != nil {
+				log.Errorf("failed to delete routing table for deployment %s: %v", deploymentId, err)
+			}
+		}(d.Id, app.SourcePath)
 	}
 
 	if err := c.functionAppRepo.Delete(appId); err != nil {
