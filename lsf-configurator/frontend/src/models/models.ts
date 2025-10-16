@@ -72,5 +72,5 @@ export type Layout = Record<string, ComponentProfile[]>; // key: node name
 
 export interface AppResult {
   timestamp: string;
-  event: string;
+  event: unknown; // event can be any JSON value
 }
