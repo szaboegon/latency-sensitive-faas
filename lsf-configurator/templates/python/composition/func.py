@@ -203,8 +203,25 @@ def main(context: Context) -> Tuple[str, int]:
                 next_routes = routing_table.get(component, [])
                 if not next_routes:
                     # No next components, write result to Redis
-                    write_result(o)
-                    logger.info(f"Result for component '{component}' written to Redis.")
+                    with tracer.start_as_current_span(
+                        "write_result", context=span_context
+                    ) as span:
+                        try:
+                            write_result(o)
+                            logger.info(
+                                f"Result for component '{component}' written to Redis."
+                            )
+                            span.set_status(Status(StatusCode.OK))
+                        except Exception as e:
+                            span.set_status(Status(StatusCode.ERROR, str(e)))
+                            span.record_exception(e)
+                            logger.error(
+                                f"Error writing result for component '{component}': {e}"
+                            )
+                            return (
+                                f"Error writing result for component '{component}'",
+                                500,
+                            )
                 for next_route in next_routes:
                     if next_route["url"] == "local":
                         event_in = create_event(o)
