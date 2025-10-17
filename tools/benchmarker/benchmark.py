@@ -177,11 +177,11 @@ def load_payload(json_file: str) -> Any:
 
 # ------------------------ Benchmark --------------------------------
 def benchmark(
-    url: str, pod_name: str, json_file: str, num_requests: int, delay: float = 0.1
-) -> Dict[str, Any]:
-    payload: Any = load_payload(json_file)
+    url: str, pod_name: str, payload: Any, num_requests: int, delay: float = 0.1
+) -> Tuple[Dict[str, Any], Any]:
     wall_times: List[float] = []
     server_mems: List[float] = []
+    first_result: Any = None
 
     for i in range(num_requests):
         try:
@@ -192,6 +192,11 @@ def benchmark(
             continue
 
         data = resp.json()
+        if i == 0:
+            first_result = data.get("result")
+            if isinstance(first_result, list):
+                first_result = first_result[0]
+
         elapsed: float = data.get("server_elapsed")
         if elapsed is not None:
             wall_times.append(elapsed)
@@ -206,7 +211,6 @@ def benchmark(
     if not wall_times:
         raise RuntimeError("No successful requests were completed.")
 
-    # Convert wall times to ms
     wall_times_ms: List[int] = [int(w * 1000) for w in wall_times]
 
     result = {
@@ -224,7 +228,7 @@ def benchmark(
     for k, v in result.items():
         print(f"{k}: {v}")
 
-    return result
+    return result, first_result
 
 
 # ------------------------ Results Writer --------------------------
@@ -266,7 +270,8 @@ def main() -> None:
         build_docker_image(docker_image, handler)
 
     # Then deploy and test each handler
-    for handler in HANDLERS:
+    prev_payload = None
+    for idx, handler in enumerate(HANDLERS):
         function_name = f"{handler}-func"
         docker_image = DOCKER_IMAGE_TEMPLATE.format(handler=handler)
         with open(DEPLOY_YAML_TEMPLATE, "r") as f:
@@ -275,7 +280,11 @@ def main() -> None:
         with open(deploy_yaml_path, "w") as f:
             f.write(deploy_yaml_content)
 
-        json_file = f"./inputs/{handler}.json"
+        if idx == 0:
+            json_file = f"./inputs/{handler}.json"
+            payload = load_payload(json_file)
+        else:
+            payload = prev_payload
 
         print(f"\n=== Testing handler: {handler} ===")
 
@@ -288,8 +297,9 @@ def main() -> None:
             try:
                 pod_name = get_pod_name(function_name, NAMESPACE)
                 print(f"Target pod for memory metrics: {pod_name}")
-                results = benchmark(url, pod_name, json_file, num_requests)
+                results, first_result = benchmark(url, pod_name, payload, num_requests)
                 save_results(handler, results)
+                prev_payload = first_result
             finally:
                 print("Stopping port-forward...")
                 pf.terminate()
@@ -297,7 +307,6 @@ def main() -> None:
         finally:
             if os.path.exists(deploy_yaml_path):
                 os.remove(deploy_yaml_path)
-            # Delete deployment and service after test
             delete_deployment(function_name)
 
 
