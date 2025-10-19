@@ -33,7 +33,7 @@
       { "from": "cut", "to": "objectdetect2", "invocationRate": 3.0 },
       { "from": "objectdetect2", "to": "tag", "invocationRate": 1.0 }
     ],
-    "latencyLimit": 2252,
+    "latencyLimit": 1000,
     "platformManaged": false
   },
   "functionCompositions": [

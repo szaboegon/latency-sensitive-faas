@@ -73,7 +73,7 @@
         "dataDelay": 3
       }
     ],
-    "latencyLimit": 2500,
+    "latencyLimit": 1000,
     "platformManaged": true
   },
   "functionCompositions": [],

@@ -74,6 +74,10 @@ func (c *latencyController) Start(ctx context.Context) error {
 					log.Printf("Error retrieving function app %s: %v", appId, err)
 					continue
 				}
+				if app == nil {
+					log.Printf("Found traces for app %s, but app is not registered in the database. Skipping", appId)
+					continue
+				}
 				if app.LatencyLimit > 0 && runtime > float64(app.LatencyLimit) {
 					c.lastReconfigsMu.Lock()
 					last, ok := c.lastReconfigs[app.Id]
@@ -292,6 +296,9 @@ func (c *latencyController) deployLayout(appId string, layout Layout) error {
 		activeDepsByKey[res.key] = res.dep
 		activeDepIDs[res.dep.Id] = true
 		fc := getFunctionComposition(app, res.dep.FunctionCompositionId)
+		if fc == nil {
+			panic(fmt.Sprintf("unexpected error: missing function composition %s for deployment %s", res.dep.FunctionCompositionId, res.dep.Id))
+		}
 		for _, comp := range fc.Components {
 			compToDepID[comp] = res.dep.Id
 		}

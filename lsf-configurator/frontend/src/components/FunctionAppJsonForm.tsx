@@ -23,28 +23,28 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
     "name": "object-detection",
     "runtime": "python",
     "components": [
-      { "name": "resize", "memory": 97, "runtime": 31, "files": [] },
-      { "name": "grayscale", "memory": 92, "runtime": 52, "files": [] },
+      { "name": "resize", "memory": 97, "runtime": 16, "files": [] },
+      { "name": "grayscale", "memory": 70, "runtime": 3, "files": [] },
       {
         "name": "objectdetect",
-        "memory": 592,
-        "runtime": 1066,
+        "memory": 175,
+        "runtime": 82,
         "files": [
           "MobileNetSSD_deploy.caffemodel",
           "MobileNetSSD_deploy.prototxt.txt"
         ]
       },
-      { "name": "cut", "memory": 79, "runtime": 29, "files": [] },
+      { "name": "cut", "memory": 79, "runtime": 14, "files": [] },
       {
         "name": "objectdetect2",
-        "memory": 592,
-        "runtime": 1041,
+        "memory": 307,
+        "runtime": 411,
         "files": [
           "MobileNetSSD_deploy.caffemodel",
           "MobileNetSSD_deploy.prototxt.txt"
         ]
       },
-      { "name": "tag", "memory": 83, "runtime": 33, "files": [] }
+      { "name": "tag", "memory": 83, "runtime": 20, "files": [] }
     ],
     "links": [
       {
@@ -93,7 +93,7 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
         "dataDelay": 3
       }
     ],
-    "latencyLimit": 2500,
+    "latencyLimit": 1000,
     "platformManaged": true
   },
   "functionCompositions": [],
