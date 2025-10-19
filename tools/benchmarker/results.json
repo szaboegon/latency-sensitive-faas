@@ -1,38 +1,38 @@
 {
   "resize": {
-    "mean_wall_time_ms": 26,
-    "p95_wall_time_ms": 31,
-    "mean_server_memory_mib": 95.45257421875,
-    "peak_server_memory_mib": 96.7734375
+    "mean_wall_time_ms": 12,
+    "p95_wall_time_ms": 16,
+    "mean_server_memory_mib": 95.737328125,
+    "peak_server_memory_mib": 96.86328125
   },
   "grayscale": {
-    "mean_wall_time_ms": 41,
-    "p95_wall_time_ms": 52,
-    "mean_server_memory_mib": 85.487796875,
-    "peak_server_memory_mib": 91.203125
+    "mean_wall_time_ms": 3,
+    "p95_wall_time_ms": 3,
+    "mean_server_memory_mib": 69.10837890625,
+    "peak_server_memory_mib": 69.5625
   },
   "objectdetect": {
-    "mean_wall_time_ms": 1009,
-    "p95_wall_time_ms": 1066,
-    "mean_server_memory_mib": 543.30377734375,
-    "peak_server_memory_mib": 591.8046875
+    "mean_wall_time_ms": 58,
+    "p95_wall_time_ms": 82,
+    "mean_server_memory_mib": 172.35008203125,
+    "peak_server_memory_mib": 173.06640625
   },
   "cut": {
-    "mean_wall_time_ms": 24,
-    "p95_wall_time_ms": 29,
-    "mean_server_memory_mib": 77.82366796875,
-    "peak_server_memory_mib": 78.73046875
+    "mean_wall_time_ms": 10,
+    "p95_wall_time_ms": 14,
+    "mean_server_memory_mib": 77.91983984375,
+    "peak_server_memory_mib": 78.7421875
   },
   "objectdetect2": {
-    "mean_wall_time_ms": 998,
-    "p95_wall_time_ms": 1041,
-    "mean_server_memory_mib": 539.2533515625,
-    "peak_server_memory_mib": 591.64453125
+    "mean_wall_time_ms": 355,
+    "p95_wall_time_ms": 411,
+    "mean_server_memory_mib": 288.115921875,
+    "peak_server_memory_mib": 306.3359375
   },
   "tag": {
-    "mean_wall_time_ms": 28,
-    "p95_wall_time_ms": 33,
-    "mean_server_memory_mib": 81.635140625,
-    "peak_server_memory_mib": 82.5546875
+    "mean_wall_time_ms": 14,
+    "p95_wall_time_ms": 20,
+    "mean_server_memory_mib": 81.4226328125,
+    "peak_server_memory_mib": 82.62890625
   }
 }

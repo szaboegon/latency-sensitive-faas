@@ -4,7 +4,7 @@ import statistics
 import json
 import sys
 import subprocess
-from kubernetes import client, config
+from kubernetes import client, config  # type: ignore
 from typing import Any, List, Dict, Tuple
 import psutil
 from pathlib import Path
