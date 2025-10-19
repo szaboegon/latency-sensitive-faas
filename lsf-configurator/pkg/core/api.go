@@ -59,3 +59,8 @@ type ScenarioManager interface {
 type ResultsClient interface {
 	GetAppResults(appId string, count int) ([]AppResult, error)
 }
+
+type DNSClient interface {
+	EnsureDNSRecord(ctx context.Context, namespace, appName, targetServiceName string) error
+	DeleteDNSRecord(ctx context.Context, namespace, appName string) error
+}

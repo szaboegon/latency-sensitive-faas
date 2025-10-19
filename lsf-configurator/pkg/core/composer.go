@@ -29,6 +29,7 @@ type Composer struct {
 	scheduler          Scheduler
 	routingClient      RoutingClient
 	builder            Builder
+	dnsClient          DNSClient
 	functionAppRepo    FunctionAppRepository
 	fcRepo             FunctionCompositionRepository
 	deploymentRepo     DeploymentRepository
@@ -45,6 +46,7 @@ func NewComposer(
 	knClient KnClient,
 	builder Builder,
 	metricsReader MetricsReader,
+	dnsClient DNSClient,
 ) *Composer {
 	scheduler := NewScheduler(WorkerPoolSize, QueueSize)
 	return &Composer{
@@ -52,6 +54,7 @@ func NewComposer(
 		scheduler:       scheduler,
 		routingClient:   routingClient,
 		builder:         builder,
+		dnsClient:       dnsClient,
 		functionAppRepo: functionAppRepo,
 		fcRepo:          fcRepo,
 		deploymentRepo:  deploymentRepo,
@@ -147,6 +150,14 @@ func (c *Composer) DeleteFunctionApp(appId string) error {
 		}(d.Id, app.SourcePath)
 	}
 
+	if len(deployments) > 0 {
+		go func() {
+			if err := c.dnsClient.DeleteDNSRecord(context.TODO(), deployments[0].Namespace, app.Name); err != nil {
+				log.Errorf("failed to delete DNS record for app %s: %v", app.Name, err)
+			}
+		}()
+	}
+
 	if err := c.functionAppRepo.Delete(appId); err != nil {
 		return fmt.Errorf("failed to delete function app: %w", err)
 	}
@@ -175,6 +186,10 @@ func (c *Composer) RollbackBulk(
 			log.Errorf("Failed to rollback function app %s: %v", app.Id, err)
 		}
 	}
+}
+
+func (c *Composer) UpdateDNSRecord(appId, namespace, targetDeploymentId string) error {
+	return c.dnsClient.EnsureDNSRecord(context.TODO(), namespace, appId, targetDeploymentId)
 }
 
 // --- FUNCTION COMPOSITIONS ---

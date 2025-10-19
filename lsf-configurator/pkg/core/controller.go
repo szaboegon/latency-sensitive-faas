@@ -361,6 +361,17 @@ func (c *latencyController) deployLayout(appId string, layout Layout) error {
 		log.Printf("Set routing table for deployment %s: %v", dep.Id, rt)
 	}
 
+	//TODO: this list is not necessarily ordered, but its fine for now
+	firstComponent := app.Components[0].Name
+	firstDepID, ok := compToDepID[firstComponent]
+	if !ok {
+		return fmt.Errorf("no deployment found for first component %s", firstComponent)
+	}
+	if err := c.composer.UpdateDNSRecord(app.Id, c.deployNamespace, firstDepID); err != nil {
+		return fmt.Errorf("failed to update DNS record for app %s: %w", app.Id, err)
+	}
+	log.Printf("Updated DNS record for app %s to deployment %s (first component: %s)", app.Id, firstDepID, firstComponent)
+
 	// cleanup: remove unused deployments asynchronously
 	go func() {
 		time.Sleep(10 * time.Second)

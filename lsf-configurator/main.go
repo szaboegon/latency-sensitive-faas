@@ -13,6 +13,7 @@ import (
 	"lsf-configurator/pkg/data/repos"
 	"lsf-configurator/pkg/filesystem"
 	"lsf-configurator/pkg/knative"
+	"lsf-configurator/pkg/kubeclient"
 	"lsf-configurator/pkg/layout"
 	"lsf-configurator/pkg/metrics"
 	"lsf-configurator/pkg/results"
@@ -65,21 +66,13 @@ func main() {
 		log.Fatalf("failed to create metrics reader: %v", err)
 	}
 
-	// TODO delete if not needed anymore
-	// alertClient = alerts.NewAlertClient(conf.AlertingApiUrl, conf.AlertingUsername, conf.AlertingPassword)
-	// if !conf.LocalMode {
-	// 	err = metricsReader.EnsureIndex(context.Background(), conf.AlertsIndex)
-	// 	if err != nil {
-	// 		log.Fatalf("failed to ensure alerts index: %v", err)
-	// 	}
-	// 	_, err = alertClient.EnsureAlertConnector(context.Background(), conf.AlertingConnector, conf.AlertsIndex)
-	// 	if err != nil {
-	// 		log.Fatalf("failed to ensure alert connector: %v", err)
-	// 	}
-	// }
+	dnsClient, err := kubeclient.NewKubeclient()
+	if err != nil {
+		log.Fatalf("failed to create DNS client: %v", err)
+	}
 
 	composer = core.NewComposer(functionAppRepo, fcRepo, deploymentRepo, routingClient,
-		knClient, tektonBuilder, metricsReader)
+		knClient, tektonBuilder, metricsReader, dnsClient)
 
 	err = filesystem.CreateDir(conf.UploadDir)
 	if err != nil {
