@@ -30,6 +30,8 @@ import TimerIcon from "@mui/icons-material/Timer";
 import SpeedIcon from "@mui/icons-material/Speed";
 import LayoutCandidatesView from "../components/LayoutCandidatesView";
 import ResultsView from "../components/ResultsView";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import { IconButton, Tooltip } from "@mui/material";
 
 const FunctionAppDetails: React.FC = () => {
   const { id } = useParams();
@@ -40,6 +42,7 @@ const FunctionAppDetails: React.FC = () => {
     "list"
   );
   const [isAddModalOpen, setAddModalOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const allDeployments = useMemo(
     () =>
@@ -47,6 +50,17 @@ const FunctionAppDetails: React.FC = () => {
       [],
     [app]
   );
+
+  const namespace = useMemo(
+    () => allDeployments[0]?.namespace ?? "",
+    [allDeployments]
+  );
+
+  // Compute the app URL
+  const appUrl = useMemo(() => {
+    if (!app?.id || !namespace) return "";
+    return `app-${app.id}.${namespace}.127.0.0.1.sslip.io`;
+  }, [app, namespace]);
 
   const handleAddComposition = () => {
     setAddModalOpen(true);
@@ -61,6 +75,13 @@ const FunctionAppDetails: React.FC = () => {
     newValue: "list" | "graph" | "results"
   ) => {
     setTabValue(newValue);
+  };
+
+  const handleCopyAppUrl = () => {
+    if (!appUrl) return;
+    navigator.clipboard.writeText(appUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
   };
 
   if (isLoading) {
@@ -120,6 +141,38 @@ const FunctionAppDetails: React.FC = () => {
         <Typography variant="h4" gutterBottom>
           {app.name}({app.id})
         </Typography>
+        {/* App URL with copy button */}
+        {appUrl && (
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{ fontWeight: 700, color: "#388e3c" }}
+            >
+              URL:
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                fontFamily: "monospace",
+                color: "#333",
+                whiteSpace: "nowrap",
+                overflow: "auto",
+                flex: "none",
+              }}
+            >
+              {appUrl}
+              <Tooltip title={copied ? "Copied!" : "Copy"}>
+                <IconButton
+                  size="small"
+                  onClick={handleCopyAppUrl}
+                  sx={{ ml: 0.5 }}
+                >
+                  <ContentCopyIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Typography>
+          </Stack>
+        )}
 
         {/* Latency Limit */}
         <Box mb={3} display="flex" alignItems="center" gap={2}>
