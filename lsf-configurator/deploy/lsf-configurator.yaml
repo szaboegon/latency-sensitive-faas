@@ -30,6 +30,11 @@ rules:
         "taskruns/status",
       ]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Istio VirtualService API
+  - apiGroups: ["networking.istio.io"]
+    resources: ["virtualservices"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---
 apiVersion: v1
 kind: ServiceAccount

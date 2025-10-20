@@ -3,77 +3,109 @@ package kubeclient
 import (
 	"context"
 	"fmt"
+	"log"
+	"reflect"
 
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	networkingv1beta1 "istio.io/api/networking/v1beta1"
+	istionetworking "istio.io/client-go/pkg/apis/networking/v1beta1"
+
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (c *Client) EnsureDNSRecord(ctx context.Context, namespace, appName, targetServiceName string) error {
-	serviceName := generateServiceName(appName)
-	target := fmt.Sprintf("%s.%s.svc.cluster.local", targetServiceName, namespace)
+const knativeLocalGateway = "knative-local-gateway.istio-system.svc.cluster.local"
 
-	svc := &corev1.Service{}
-	err := c.client.Get(ctx, client.ObjectKey{Name: serviceName, Namespace: namespace}, svc)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			// Create new ExternalName service
-			newSvc := &corev1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      serviceName,
-					Namespace: namespace,
-					Labels: map[string]string{
-						"app":  appName,
-						"type": "faas-dns",
+func (c *Client) EnsureDNSRecord(ctx context.Context, namespace, appName, targetServiceName string) error {
+	vsName := generateServiceName(appName)
+	targetHost := fmt.Sprintf("%s.%s.svc.cluster.local", targetServiceName, namespace)
+	hostDomain := fmt.Sprintf("%s.%s.127.0.0.1.sslip.io", vsName, namespace)
+
+	vsClient := c.istio.NetworkingV1beta1().VirtualServices(namespace)
+
+	desiredSpec := networkingv1beta1.VirtualService{
+		Hosts:    []string{hostDomain, fmt.Sprintf("%s.%s.svc", targetServiceName, namespace), targetHost},
+		Gateways: []string{"knative-serving/knative-ingress-gateway", "knative-serving/knative-local-gateway"},
+		Http: []*networkingv1beta1.HTTPRoute{
+			{
+				Route: []*networkingv1beta1.HTTPRouteDestination{
+					{
+						Destination: &networkingv1beta1.Destination{
+							Host: knativeLocalGateway,
+							Port: &networkingv1beta1.PortSelector{Number: 80},
+						},
 					},
 				},
-				Spec: corev1.ServiceSpec{
-					Type:         corev1.ServiceTypeExternalName,
-					ExternalName: target,
+				Rewrite: &networkingv1beta1.HTTPRewrite{
+					Authority: targetHost,
 				},
-			}
-			if err := c.client.Create(ctx, newSvc); err != nil {
-				return fmt.Errorf("failed to create persistent dns service: %w", err)
-			}
-			fmt.Printf("[dns] Created new persistent service %q → %q\n", serviceName, target)
-			return nil
-		}
-		return fmt.Errorf("failed to get service %s: %w", serviceName, err)
+			},
+		},
 	}
 
-	// Update existing one if target changed
-	if svc.Spec.ExternalName != target {
-		svc.Spec.ExternalName = target
-		if err := c.client.Update(ctx, svc); err != nil {
-			return fmt.Errorf("failed to update persistent dns service: %w", err)
+	existing, err := vsClient.Get(ctx, vsName, metav1.GetOptions{})
+
+	if errors.IsNotFound(err) {
+		newVS := &istionetworking.VirtualService{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      vsName,
+				Namespace: namespace,
+				Labels: map[string]string{
+					"app":  appName,
+					"type": "faas-dns",
+				},
+			},
+			Spec: networkingv1beta1.VirtualService{
+				Hosts:    desiredSpec.Hosts,
+				Gateways: desiredSpec.Gateways,
+				Http:     desiredSpec.Http,
+			},
 		}
-		fmt.Printf("[dns] Updated persistent service %q → %q\n", serviceName, target)
+
+		if _, createErr := vsClient.Create(ctx, newVS, metav1.CreateOptions{}); createErr != nil {
+			return fmt.Errorf("failed to create VirtualService: %w", createErr)
+		}
+		log.Printf("Created VirtualService %q → %q\n", hostDomain, targetHost)
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to get VirtualService: %w", err)
+	}
+
+	// Update existing fields only if changed
+	updated := false
+	if !reflect.DeepEqual(existing.Spec.Hosts, desiredSpec.Hosts) {
+		existing.Spec.Hosts = desiredSpec.Hosts
+		updated = true
+	}
+	if !reflect.DeepEqual(existing.Spec.Gateways, desiredSpec.Gateways) {
+		existing.Spec.Gateways = desiredSpec.Gateways
+		updated = true
+	}
+	if !reflect.DeepEqual(existing.Spec.Http, desiredSpec.Http) {
+		existing.Spec.Http = desiredSpec.Http
+		updated = true
+	}
+	if updated {
+		if _, updateErr := vsClient.Update(ctx, existing, metav1.UpdateOptions{}); updateErr != nil {
+			return fmt.Errorf("failed to update VirtualService: %w", updateErr)
+		}
+		fmt.Printf("Updated VirtualService %q → %q\n", hostDomain, targetHost)
 	}
 
 	return nil
 }
 
+// DeleteDNSRecord deletes the VirtualService associated with an app.
 func (c *Client) DeleteDNSRecord(ctx context.Context, namespace, appName string) error {
-	serviceName := generateServiceName(appName)
-
-	svc := &corev1.Service{}
-	err := c.client.Get(ctx, client.ObjectKey{Name: serviceName, Namespace: namespace}, svc)
+	vsName := generateServiceName(appName)
+	err := c.istio.NetworkingV1beta1().VirtualServices(namespace).Delete(ctx, vsName, metav1.DeleteOptions{})
 	if err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil
-		}
-		return fmt.Errorf("failed to get service %s: %w", serviceName, err)
+		return fmt.Errorf("failed to delete VirtualService %q: %w", vsName, err)
 	}
-
-	if err := c.client.Delete(ctx, svc); err != nil {
-		return fmt.Errorf("failed to delete persistent dns service: %w", err)
-	}
-	fmt.Printf("[dns] Deleted persistent service %q\n", serviceName)
-
+	fmt.Printf("Deleted VirtualService %q\n", vsName)
 	return nil
 }
 
 func generateServiceName(appName string) string {
-	return fmt.Sprintf("%s-dns", appName)
+	return fmt.Sprintf("app-%s", appName)
 }

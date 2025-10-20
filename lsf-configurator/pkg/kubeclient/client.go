@@ -2,44 +2,25 @@ package kubeclient
 
 import (
 	"fmt"
-	"os"
 
-	"k8s.io/apimachinery/pkg/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 type Client struct {
-	client client.Client
-	scheme *runtime.Scheme
+	istio istioclient.Interface
 }
 
 func NewKubeclient() (*Client, error) {
-	scheme := runtime.NewScheme()
-	_ = clientgoscheme.AddToScheme(scheme)
-
-	var cfg *rest.Config
-	var err error
-
-	if _, err = os.Stat("/var/run/secrets/kubernetes.io/serviceaccount/token"); err == nil {
-		cfg, err = rest.InClusterConfig()
-	} else {
-		cfg, err = config.GetConfig()
-	}
+	cfg, err := rest.InClusterConfig()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load kube config: %w", err)
+		return nil, fmt.Errorf("failed to load in-cluster config: %w", err)
 	}
 
-	cl, err := client.New(cfg, client.Options{Scheme: scheme})
+	ic, err := istioclient.NewForConfig(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create k8s client: %w", err)
+		return nil, fmt.Errorf("failed to create Istio client: %w", err)
 	}
 
-	return &Client{client: cl, scheme: scheme}, nil
-}
-
-func (c *Client) GetControllerClient() client.Client {
-	return c.client
+	return &Client{istio: ic}, nil
 }

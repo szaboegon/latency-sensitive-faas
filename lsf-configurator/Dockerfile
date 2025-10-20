@@ -1,5 +1,5 @@
 # Build stage: use Debian-based Go image for full CGO support
-FROM golang:1.23.2-bullseye AS build
+FROM golang:1.24.0-bullseye AS build
 
 RUN apt-get update && apt-get install -y build-essential git && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
@@ -13,7 +13,7 @@ COPY ./frontend /frontend
 RUN npm install && npm run build
 
 # Final image: minimal Debian-based Go image with CGO support
-FROM golang:1.23.2-bookworm
+FROM golang:1.24.0-bookworm
 
 RUN apt-get update && \
     # Install Python 3.11 and necessary development headers and pip

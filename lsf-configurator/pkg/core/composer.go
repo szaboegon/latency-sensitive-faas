@@ -152,8 +152,8 @@ func (c *Composer) DeleteFunctionApp(appId string) error {
 
 	if len(deployments) > 0 {
 		go func() {
-			if err := c.dnsClient.DeleteDNSRecord(context.TODO(), deployments[0].Namespace, app.Name); err != nil {
-				log.Errorf("failed to delete DNS record for app %s: %v", app.Name, err)
+			if err := c.dnsClient.DeleteDNSRecord(context.TODO(), deployments[0].Namespace, app.Id); err != nil {
+				log.Errorf("failed to delete DNS record for app %s: %v", app.Id, err)
 			}
 		}()
 	}
