@@ -2,13 +2,20 @@ import numpy as np
 import cv2
 import base64
 
-#TODO to env variable
+# TODO to env variable
 CONFIDENCE_MIN = 0.4
-    
+
+
 def handler(event):
     json_data = event.json
-     # Convert image from string
+    # Convert image from string
     image = base64_to_image(json_data.get("image"))
+
+    # Load serialized model from disk
+    net = cv2.dnn.readNetFromCaffe(
+        "./MobileNetSSD_deploy.prototxt.txt", "./MobileNetSSD_deploy.caffemodel"
+    )
+    assert not net.empty(), "Failed to load Caffe model!"
 
     (h, w) = image.shape[:2]
     blob = cv2.dnn.blobFromImage(image, 0.007843, (h, w), 127.5)
@@ -27,26 +34,46 @@ def handler(event):
                 best_confidence = confidence
                 label = "{}: {:.2f}%".format(CLASSES[idx], confidence * 100)
 
-    label = f"IMG-{json_data.get('cropped_img_id')}: "\
-        f"STAGE-1: {json_data.get('cropped_coords')['label']['name']}; "\
+    label = (
+        f"IMG-{json_data.get('cropped_img_id')}: "
+        f"STAGE-1: {json_data.get('cropped_coords')['label']['name']}; "
         f"STAGE-2: {label}"
+    )
 
-    event_out = {"label": label,
-                 "cropped_img_id": json_data.get('cropped_img_id'),
-                 "cropped_coords": json_data.get("cropped_coords"),
-                 "original_image": json_data.get("original_image")}
-    
+    event_out = {
+        "label": label,
+        "cropped_img_id": json_data.get("cropped_img_id"),
+        "cropped_coords": json_data.get("cropped_coords"),
+        "original_image": json_data.get("original_image"),
+    }
+
     return event_out
 
-CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
-           "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
-           "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
-           "sofa", "train", "tvmonitor"]
 
-# Load serialized model from disk
-net = cv2.dnn.readNetFromCaffe("./MobileNetSSD_deploy.prototxt.txt",
-                               "./MobileNetSSD_deploy.caffemodel")
-assert not net.empty(), "Failed to load Caffe model!"
+CLASSES = [
+    "background",
+    "aeroplane",
+    "bicycle",
+    "bird",
+    "boat",
+    "bottle",
+    "bus",
+    "car",
+    "cat",
+    "chair",
+    "cow",
+    "diningtable",
+    "dog",
+    "horse",
+    "motorbike",
+    "person",
+    "pottedplant",
+    "sheep",
+    "sofa",
+    "train",
+    "tvmonitor",
+]
+
 
 def base64_to_image(text):
     image = base64.b64decode(text)
