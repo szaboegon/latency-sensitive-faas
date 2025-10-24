@@ -1,4 +1,3 @@
-import concurrent.futures
 from parliament import Context  # type: ignore
 import requests
 from opentelemetry.propagate import inject, extract
@@ -22,9 +21,6 @@ faulthandler.enable(file=sys.stderr, all_threads=True)
 
 logger = setup_logging(__name__)
 tracer = tracing.instrument_app(app_name=APP_NAME, service_name=FUNCTION_NAME)
-
-_PROCESS_POOL = concurrent.futures.ProcessPoolExecutor(max_workers=8)
-FuturesTimeout = concurrent.futures.TimeoutError
 
 
 class RouteToProcess(TypedDict):
@@ -82,18 +78,10 @@ def handle_request(
     """
     with tracer.start_as_current_span(component, context=parent_context) as span:
         try:
-            logger.info(
-                f"Submitting handler for component '{component}' to process pool."
-            )
+            logger.info(f"Starting handler for component '{component}'.")
 
             # Submit the job to a worker process
-            future = _PROCESS_POOL.submit(_handler_worker, component, event)
-
-            try:
-                event_out: HandlerReturnType = future.result(timeout=30)
-            except FuturesTimeout:
-                future.cancel()
-                raise TimeoutError(f"Handler '{component}' timed out")
+            event_out = _handler_worker(component, event)
 
             logger.info(f"Component '{component}' processed successfully.")
             span.set_status(Status(StatusCode.OK))

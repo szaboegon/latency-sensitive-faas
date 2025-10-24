@@ -309,7 +309,7 @@ func (c metricsClient) Query95thPercentileAppRuntimes() (map[string]float64, map
 						{
 							Range: map[string]types.RangeQuery{
 								"@timestamp": &types.DateRangeQuery{
-									Gte: strPtr("now-160m"),
+									Gte: strPtr("now-3m"),
 									Lte: strPtr("now"),
 								},
 							},

@@ -127,28 +127,39 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 		return nil, err
 	}
 
-	// Track which component sets we've already created compositions for
 	createdCompositionKeys := make(map[string]bool)
 
-	for _, layout := range app.LayoutCandidates {
+	// Sort layout candidate keys, putting LayoutKeyMin first, so it gets built first
+	var keys []string
+	for k := range app.LayoutCandidates {
+		keys = append(keys, k)
+	}
+	sort.SliceStable(keys, func(i, j int) bool {
+		if keys[i] == app.ActiveLayoutKey {
+			return true
+		}
+		if keys[j] == app.ActiveLayoutKey {
+			return false
+		}
+		return keys[i] < keys[j]
+	})
+
+	for _, key := range keys {
+		layout := app.LayoutCandidates[key]
 		for _, components := range layout {
 			componentNames := make([]string, len(components))
 			for i, cp := range components {
 				componentNames[i] = cp.Name
 			}
-
-			// Skip if we've already created a composition for this set of components
 			fcKey := componentsKey(componentNames)
 			if createdCompositionKeys[fcKey] {
 				continue
 			}
-
 			_, err := c.composer.AddFunctionComposition(app.Id, componentNames)
 			if err != nil {
 				log.Printf("Error adding function composition for app %s: %v", app.Id, err)
 				return nil, err
 			}
-
 			createdCompositionKeys[fcKey] = true
 		}
 	}
@@ -160,8 +171,7 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 			return
 		}
 		log.Printf("Successfully deployed function app with layout %s: %v", appId, layout)
-		// deploy the first layout by default
-	}(app.Id, app.LayoutCandidates[LayoutKeyMin])
+	}(app.Id, app.LayoutCandidates[app.ActiveLayoutKey])
 
 	return app, nil
 }

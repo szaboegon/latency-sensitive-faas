@@ -39,30 +39,30 @@ spec:
         role: master
     spec:
       containers:
-      - name: redis
-        image: redis:7
-        ports:
-        - containerPort: 6379
-        resources:
-          requests:
-            cpu: "50m"
-            memory: "64Mi"
-          limits:
-            cpu: "100m"
-            memory: "128Mi"
-        volumeMounts:
-        - name: redis-data
-          mountPath: /data
+        - name: redis
+          image: redis:7
+          ports:
+            - containerPort: 6379
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
       volumes:
-      - name: redis-data
-        persistentVolumeClaim:
-          claimName: redis-master-pvc
-      - name: config
-        configMap:
-          name: redis-config
-          items:
-          - key: redis.conf
-            path: redis.conf
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: redis-master-pvc
+        - name: config
+          configMap:
+            name: redis-config
+            items:
+              - key: redis.conf
+                path: redis.conf
 ---
 apiVersion: v1
 kind: Service
@@ -75,7 +75,7 @@ spec:
     app: redis
     role: master
   ports:
-  - port: 6379
+    - port: 6379
 ---
 apiVersion: apps/v1
 kind: DaemonSet
@@ -94,31 +94,31 @@ spec:
         role: replica
     spec:
       containers:
-      - name: redis
-        image: redis:7
-        args:
-          - "redis-server"
-          - "/etc/redis/redis.conf"
-          - "--replicaof"
-          - "redis-master.redis.svc.cluster.local"
-          - "6379"
-        ports:
-        - containerPort: 6379
-          hostPort: 6379
-        resources:
-          requests:
-            cpu: "50m"
-            memory: "64Mi"
-          limits:
-            cpu: "100m"
-            memory: "128Mi"
-        volumeMounts:
-        - name: config
-          mountPath: /etc/redis
+        - name: redis
+          image: redis:7
+          args:
+            - "redis-server"
+            - "/etc/redis/redis.conf"
+            - "--replicaof"
+            - "redis-master.redis.svc.cluster.local"
+            - "6379"
+          ports:
+            - containerPort: 6379
+              hostPort: 6379
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/redis
       volumes:
-      - name: config
-        configMap:
-          name: redis-config
-          items:
-          - key: redis.conf
-            path: redis.conf
+        - name: config
+          configMap:
+            name: redis-config
+            items:
+              - key: redis.conf
+                path: redis.conf
