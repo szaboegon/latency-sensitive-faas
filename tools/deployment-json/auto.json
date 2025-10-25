@@ -3,28 +3,28 @@
     "name": "object-detection",
     "runtime": "python",
     "components": [
-      { "name": "resize", "memory": 91, "runtime": 13, "files": [] },
-      { "name": "grayscale", "memory": 74, "runtime": 2, "files": [] },
+      { "name": "resize", "memory": 44, "runtime": 12, "files": [] },
+      { "name": "grayscale", "memory": 33, "runtime": 2, "files": [] },
       {
         "name": "objectdetect",
-        "memory": 107,
-        "runtime": 157,
+        "memory": 104,
+        "runtime": 500,
         "files": [
           "MobileNetSSD_deploy.caffemodel",
           "MobileNetSSD_deploy.prototxt.txt"
         ]
       },
-      { "name": "cut", "memory": 69, "runtime": 14, "files": [] },
+      { "name": "cut", "memory": 44, "runtime": 13, "files": [] },
       {
         "name": "objectdetect2",
-        "memory": 228,
-        "runtime": 506,
+        "memory": 318,
+        "runtime": 2044,
         "files": [
           "MobileNetSSD_deploy.caffemodel",
           "MobileNetSSD_deploy.prototxt.txt"
         ]
       },
-      { "name": "tag", "memory": 47, "runtime": 16, "files": [] }
+      { "name": "tag", "memory": 45, "runtime": 18, "files": [] }
     ],
     "links": [
       {
@@ -73,7 +73,7 @@
         "dataDelay": 3
       }
     ],
-    "latencyLimit": 1000,
+    "latencyLimit": 2800,
     "platformManaged": true
   },
   "functionCompositions": [],

@@ -151,7 +151,7 @@ spec:
               value: "10"
               # currently nodes have 6GB total RAM, we leave 2GB for system processes
             - name: AVAILABLE_NODE_MEMORY_GB
-              value: "4"
+              value: "3"
             - name: LAYOUT_SCRIPT_PATH
               value: "/layout/slambuc_layout.py"
             - name: RESULT_STORE_ADDRESS
