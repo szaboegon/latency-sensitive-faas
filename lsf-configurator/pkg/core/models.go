@@ -5,8 +5,6 @@ import (
 	"mime/multipart"
 )
 
-type Layout = map[string][]ComponentProfile // Key: Node name, Value: List of ComponentProfiles assigned to that node
-
 type Component struct {
 	Name    string   `json:"name"`
 	Memory  int      `json:"memory"`  // in MB
@@ -112,10 +110,13 @@ type FunctionAppCreationData struct {
 }
 
 type LayoutScenario struct {
-	LatencyRequirement  int
-	AvailableNodeMemory int
-	Profiles            []ComponentProfile
-	Links               []ScenarioLink
+	LatencyRequirement          int
+	AvailableNodeMemory         int
+	Profiles                    []ComponentProfile
+	Links                       []ScenarioLink
+	ComponentMCPUAllocation     int
+	TargetConcurrency           int
+	InvocationSharedMemoryRatio float64
 }
 
 type ComponentProfile struct {
@@ -125,8 +126,15 @@ type ComponentProfile struct {
 	RequiredReplicas int    `json:"required_replicas"`
 }
 
-func (cp *ComponentProfile) TotalMemory() int {
-	return cp.Memory * cp.RequiredReplicas
+func (cp *ComponentProfile) EffectiveMemory(invocationSharedMemoryRatio float64, targetConcurrency int) int {
+	sharedPart := invocationSharedMemoryRatio
+	perRequestPart := 1.0 - sharedPart
+
+	// total = shared portion + per-request portion * concurrency
+	effectiveMemory := float64(cp.Memory) * (sharedPart + perRequestPart*float64(targetConcurrency))
+
+	// multiply by number of replicas
+	return int(effectiveMemory) * cp.RequiredReplicas
 }
 
 type ScenarioLink struct {
@@ -134,6 +142,16 @@ type ScenarioLink struct {
 	To             string
 	InvocationRate float64
 	DataDelay      int
+}
+
+type Layout = map[string]CompositionInfo // Key: Node name, Value: CompositionInfo assigned to that node
+
+type CompositionInfo struct {
+	ComponentProfiles    []ComponentProfile
+	RequiredReplicas     int
+	TotalEffectiveMemory int
+	TotalMCPU            int
+	TargetConcurrency    int
 }
 
 type AppResult struct {

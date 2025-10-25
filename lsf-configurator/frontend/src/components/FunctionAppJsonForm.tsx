@@ -23,28 +23,28 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
     "name": "object-detection",
     "runtime": "python",
     "components": [
-      { "name": "resize", "memory": 44, "runtime": 12, "files": [] },
-      { "name": "grayscale", "memory": 33, "runtime": 2, "files": [] },
+      { "name": "resize", "memory": 97, "runtime": 12, "files": [] },
+      { "name": "grayscale", "memory": 86, "runtime": 2, "files": [] },
       {
         "name": "objectdetect",
-        "memory": 104,
-        "runtime": 500,
+        "memory": 153,
+        "runtime": 256,
         "files": [
           "MobileNetSSD_deploy.caffemodel",
           "MobileNetSSD_deploy.prototxt.txt"
         ]
       },
-      { "name": "cut", "memory": 44, "runtime": 13, "files": [] },
+      { "name": "cut", "memory": 80, "runtime": 12, "files": [] },
       {
         "name": "objectdetect2",
-        "memory": 318,
-        "runtime": 2044,
+        "memory": 325,
+        "runtime": 1016,
         "files": [
           "MobileNetSSD_deploy.caffemodel",
           "MobileNetSSD_deploy.prototxt.txt"
         ]
       },
-      { "name": "tag", "memory": 45, "runtime": 18, "files": [] }
+      { "name": "tag", "memory": 72, "runtime": 24, "files": [] }
     ],
     "links": [
       {
@@ -54,7 +54,7 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
           "min": 1.0,
           "max": 2.0
         },
-        "dataDelay": 3
+        "dataDelay": 10
       },
       {
         "from": "grayscale",
@@ -63,7 +63,7 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
           "min": 1.0,
           "max": 2.0
         },
-        "dataDelay": 3
+        "dataDelay": 10
       },
       {
         "from": "objectdetect",
@@ -72,7 +72,7 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
           "min": 1.0,
           "max": 2.0
         },
-        "dataDelay": 3
+        "dataDelay": 10
       },
       {
         "from": "cut",
@@ -81,7 +81,7 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
           "min": 2.0,
           "max": 6.0
         },
-        "dataDelay": 3
+        "dataDelay": 10
       },
       {
         "from": "objectdetect2",
@@ -90,16 +90,15 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
           "min": 2.0,
           "max": 6.0
         },
-        "dataDelay": 3
+        "dataDelay": 10
       }
     ],
-    "latencyLimit": 2800,
+    "latencyLimit": 1500,
     "platformManaged": true
   },
   "functionCompositions": [],
   "deployments": []
-}
-`,
+}`,
     },
   });
   const { mutate: bulkCreateFunctionApp } = useBulkCreateFunctionApp();

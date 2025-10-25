@@ -18,10 +18,6 @@ def main() -> None:
     # Create directed graph
     tree: nx.DiGraph[Any] = nx.DiGraph()
 
-    # Add a dummy root/platform node
-    tree.add_node("P", mem=0, time=0)
-    tree.add_edge("P", params.get("root", 1), rate=1, data=0)  # dummy edge
-
     # Add nodes dynamically
     for node in nodes:
         node_id = node["id"]

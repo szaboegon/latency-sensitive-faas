@@ -13,7 +13,6 @@ import (
 // set target concurrency globally to 1 for now, but this can be different per function composition depending on how CPU-bound they are
 // this should be measured and set accordingly for each function composition)
 const (
-	targetConcurrency = 1
 	minimalTraceCount = 50
 )
 
@@ -146,7 +145,9 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 
 	for _, key := range keys {
 		layout := app.LayoutCandidates[key]
-		for _, components := range layout {
+		for _, compositionInfo := range layout {
+			components := compositionInfo.ComponentProfiles
+
 			componentNames := make([]string, len(components))
 			for i, cp := range components {
 				componentNames[i] = cp.Name
@@ -251,9 +252,11 @@ func (c *latencyController) deployLayout(appId string, layout Layout) error {
 	for _, comp := range app.Components {
 		compRuntimeMap[comp.Name] = comp.Runtime
 	}
-	for node, components := range layout {
+	for node, compositionInfo := range layout {
 		// process each node+components in parallel
-		go func(node string, components []ComponentProfile) {
+		go func(node string, compositionInfo CompositionInfo) {
+			components := compositionInfo.ComponentProfiles
+
 			componentNames := make([]string, len(components))
 			for i, cp := range components {
 				componentNames[i] = cp.Name
@@ -275,10 +278,17 @@ func (c *latencyController) deployLayout(appId string, layout Layout) error {
 
 			// otherwise, create a new deployment, routing table will be set later once all deployments ids are known
 			log.Printf("No existing deployment found for node %s, creating new", node)
-			resources := calculateDeploymentResources(components)
-			scale := calculateDeploymentMaxReplicas(components, targetConcurrency)
 
 			emptyRT := make(RoutingTable)
+			scale := Scale{
+				MinReplicas:       1,
+				MaxReplicas:       compositionInfo.RequiredReplicas,
+				TargetConcurrency: compositionInfo.TargetConcurrency,
+			}
+			resources := Resources{
+				Memory: compositionInfo.TotalEffectiveMemory,
+				CPU:    compositionInfo.TotalMCPU,
+			}
 			newDep, depChan, err := c.composer.CreateFcDeployment(matchedFc.Id, c.deployNamespace, node, emptyRT, scale, resources)
 			if err != nil {
 				resultChan <- depResult{"", nil, fmt.Errorf("failed to create deployment for fc %s on node %s: %w", matchedFc.Id, node, err)}
@@ -294,7 +304,7 @@ func (c *latencyController) deployLayout(appId string, layout Layout) error {
 			matchedFc.Deployments = append(matchedFc.Deployments, newDep) // add to fc's deployments
 			log.Printf("Created new deployment %s for fc %s on node %s", newDep.Id, matchedFc.Id, node)
 			resultChan <- depResult{depKey, newDep, nil}
-		}(node, components)
+		}(node, compositionInfo)
 	}
 
 	// collect results and update the active deployment mapping
@@ -316,7 +326,9 @@ func (c *latencyController) deployLayout(appId string, layout Layout) error {
 
 	// build and apply routing tables
 	referencedDepIDs := make(map[string]bool)
-	for node, comps := range layout {
+	for node, compositionInfo := range layout {
+		comps := compositionInfo.ComponentProfiles
+
 		componentNames := make([]string, len(comps))
 		for i, cp := range comps {
 			componentNames[i] = cp.Name

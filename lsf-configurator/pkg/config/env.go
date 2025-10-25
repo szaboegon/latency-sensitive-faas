@@ -39,6 +39,11 @@ type Configuration struct {
 	PythonPath                 string   `env:"PYTHON_PATH" default:"python3"`
 	LayoutScriptPath           string   `env:"LAYOUT_SCRIPT_PATH"`
 	ResultStoreAddress         string   `env:"RESULT_STORE_ADDRESS"`
+	TargetConcurrency          int      `env:"TARGET_CONCURRENCY" default:"2"`
+	ComponentMCPUAllocation    int      `env:"COMPONENT_MCPU_ALLOCATION" default:"500"`
+	// Indicates the fraction of memory that is shared among concurrent invocations of the same component
+	// E.g. 0.5 means that 50% of the memory is shared, and only the remaining 50% scales with the number concurrent invocations
+	InvocationSharedMemoryRatio float64 `env:"COMPONENT_SHARED_MEMORY_RATIO" default:"0.7"`
 }
 
 func Init() Configuration {
@@ -87,6 +92,14 @@ func Init() Configuration {
 				fieldVal.SetBool(boolValue)
 			} else {
 				log.Fatalf("Invalid bool value for %s: %s", envVar, envValue)
+			}
+
+		case reflect.Float64:
+			floatValue, err := strconv.ParseFloat(envValue, 64)
+			if err == nil {
+				fieldVal.SetFloat(floatValue)
+			} else {
+				log.Fatalf("Invalid float64 value for %s: %s", envVar, envValue)
 			}
 
 		case reflect.Slice:

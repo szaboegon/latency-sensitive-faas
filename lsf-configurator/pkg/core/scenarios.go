@@ -15,11 +15,17 @@ var layoutUpgradePath = map[string]string{
 }
 
 type scenarioManager struct {
-	calculator LayoutCalculator
+	calculator                  LayoutCalculator
+	targetConcurrency           int
+	invocationSharedMemoryRatio float64
 }
 
-func NewScenarioManager(calculator LayoutCalculator) ScenarioManager {
-	return &scenarioManager{calculator: calculator}
+func NewScenarioManager(calculator LayoutCalculator, targetConcurrency int, invocationSharedMemoryRatio float64) ScenarioManager {
+	return &scenarioManager{
+		calculator:                  calculator,
+		targetConcurrency:           targetConcurrency,
+		invocationSharedMemoryRatio: invocationSharedMemoryRatio,
+	}
 }
 
 func (sm *scenarioManager) GenerateLayoutCandidates(
@@ -60,6 +66,8 @@ func (sm *scenarioManager) GenerateLayoutCandidates(
 		layoutScenario := sm.buildLayoutScenario(compMap, links, r.RateFunc)
 		layoutScenario.LatencyRequirement = appLatencyReq
 		layoutScenario.AvailableNodeMemory = memoryAvailable
+		layoutScenario.TargetConcurrency = sm.targetConcurrency
+		layoutScenario.InvocationSharedMemoryRatio = sm.invocationSharedMemoryRatio
 
 		layout, err := sm.calculator.CalculateLayout(*layoutScenario)
 		if err != nil {
@@ -92,13 +100,12 @@ func (sm *scenarioManager) buildLayoutScenario(
 	profiles := make([]ComponentProfile, 0, len(compMap))
 	for _, comp := range sortedComponents {
 		comp := compMap[comp]
-		// Calculate replicas using the provided helper function and the generated ScenarioLinks
-		replicas := calculateComponentMaxReplicas(comp, scenarioLinks, targetConcurrency)
 		profiles = append(profiles, ComponentProfile{
-			Name:             comp.Name,
-			Runtime:          comp.Runtime,
-			Memory:           comp.Memory,
-			RequiredReplicas: replicas,
+			Name:    comp.Name,
+			Runtime: comp.Runtime,
+			Memory:  comp.Memory,
+			// start with 1 replica for each component, this will be adjusted by the layout calculator
+			RequiredReplicas: 1,
 		})
 	}
 
