@@ -65,62 +65,67 @@ const LayoutCandidatesView: React.FC<Props> = ({
                 </Stack>
                 {/* Show layout structure */}
                 <Box mt={1}>
-                  {Object.entries(candidateLayout).map(([group, profiles]) => (
-                    <Box key={group} mb={2}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                        Group: {group}
-                      </Typography>
-                      <Stack
-                        spacing={1}
-                        sx={{
-                          border: `2px solid ${colors.dark}`,
-                          borderRadius: 1,
-                        }}
-                      >
-                        {profiles.map((profile, idx) => (
-                          <Paper
-                            key={profile.name + idx}
-                            variant="outlined"
-                            sx={{
-                              outlineWidth: 0,
-                              p: 1,
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                              background: "#f9f9f9",
-                            }}
-                          >
-                            <Typography
-                              variant="body2"
-                              sx={{ fontWeight: 500 }}
+                  {Object.entries(candidateLayout).map(
+                    ([group, composition]) => (
+                      <Box key={group} mb={2}>
+                        <Typography
+                          variant="subtitle2"
+                          sx={{ fontWeight: 600 }}
+                        >
+                          Group: {group}
+                        </Typography>
+                        <Stack
+                          spacing={1}
+                          sx={{
+                            border: `2px solid ${colors.dark}`,
+                            borderRadius: 1,
+                          }}
+                        >
+                          {composition.componentProfiles.map((profile, idx) => (
+                            <Paper
+                              key={profile.name + idx}
+                              variant="outlined"
+                              sx={{
+                                outlineWidth: 0,
+                                p: 1,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                background: "#f9f9f9",
+                              }}
                             >
-                              {profile.name}
-                            </Typography>
-                            <Chip
-                              icon={<MemoryIcon />}
-                              label={`${profile.memory} MB`}
-                              size="small"
-                              color="secondary"
-                              sx={{ fontWeight: 500 }}
-                            />
-                            <Chip
-                              icon={<SpeedIcon />}
-                              label={`${profile.runtime} ms`}
-                              size="small"
-                              color="info"
-                              sx={{ fontWeight: 500 }}
-                            />
-                            <Chip
-                              label={`Maximum Replicas: ${profile.requiredReplicas}`}
-                              size="small"
-                              color="default"
-                              sx={{ fontWeight: 500 }}
-                            />
-                          </Paper>
-                        ))}
-                      </Stack>
-                    </Box>
-                  ))}
+                              <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 500 }}
+                              >
+                                {profile.name}
+                              </Typography>
+                              <Chip
+                                icon={<MemoryIcon />}
+                                label={`${profile.memory} MB`}
+                                size="small"
+                                color="secondary"
+                                sx={{ fontWeight: 500 }}
+                              />
+                              <Chip
+                                icon={<SpeedIcon />}
+                                label={`${profile.runtime} ms`}
+                                size="small"
+                                color="info"
+                                sx={{ fontWeight: 500 }}
+                              />
+                              <Chip
+                                label={`Maximum Replicas: ${profile.requiredReplicas}`}
+                                size="small"
+                                color="default"
+                                sx={{ fontWeight: 500 }}
+                              />
+                            </Paper>
+                          ))}
+                        </Stack>
+                      </Box>
+                    )
+                  )}
                 </Box>
               </Paper>
             </Grid>

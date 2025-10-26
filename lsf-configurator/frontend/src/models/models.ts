@@ -68,7 +68,15 @@ export interface ComponentProfile {
   requiredReplicas: number;
 }
 
-export type Layout = Record<string, ComponentProfile[]>; // key: node name
+export interface CompositionInfo {
+  componentProfiles: ComponentProfile[];
+  requiredReplicas: number;
+  totalEffectiveMemory: number;
+  totalMCPU: number;
+  targetConcurrency: number;
+}
+
+export type Layout = Record<string, CompositionInfo>; // key: node name
 
 export interface AppResult {
   timestamp: string;

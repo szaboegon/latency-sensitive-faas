@@ -7,14 +7,15 @@ import (
 
 const (
 	LayoutKeyMin = "min_rate"
-	LayoutKeyAvg = "avg_rate"
+	// LayoutKeyAvg = "avg_rate"
 	LayoutKeyMax = "max_rate"
 )
 
 var layoutUpgradePath = map[string]string{
-	LayoutKeyMin: LayoutKeyAvg,
-	LayoutKeyAvg: LayoutKeyMax,
-	LayoutKeyMax: "", // No upgrade from Max
+	// LayoutKeyMin: LayoutKeyAvg,
+	// LayoutKeyAvg: LayoutKeyMax,
+	LayoutKeyMin: LayoutKeyMax,
+	LayoutKeyMax: "",
 }
 
 type scenarioManager struct {
@@ -46,11 +47,11 @@ func (sm *scenarioManager) GenerateLayoutCandidates(
 			Key:      LayoutKeyMin,
 			RateFunc: func(min, max float64) float64 { return min },
 		},
-		{
-			Name:     "Average Rate Layout",
-			Key:      LayoutKeyAvg,
-			RateFunc: func(min, max float64) float64 { return (min + max) * 0.5 },
-		},
+		// {
+		// 	Name:     "Average Rate Layout",
+		// 	Key:      LayoutKeyAvg,
+		// 	RateFunc: func(min, max float64) float64 { return (min + max) * 0.5 },
+		// },
 		{
 			Name:     "Maximum Rate Layout",
 			Key:      LayoutKeyMax,
