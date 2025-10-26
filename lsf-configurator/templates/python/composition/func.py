@@ -3,7 +3,7 @@ import requests
 from opentelemetry.propagate import inject, extract
 import tracing
 from opentelemetry import trace
-from opentelemetry.context import Context as OtelContext, get_current, attach, detach
+from opentelemetry.context import Context as OtelContext
 from config import APP_NAME, FUNCTION_NAME, read_config
 from route import Route
 from typing import Any, Dict, Deque, List, Tuple, Optional, TypedDict, Union
@@ -108,31 +108,23 @@ def forward_request(
         return
 
     headers = get_headers(route["component"], span_context)
-    parent_otel_context = get_current()
 
     def send_async_request() -> None:
-        token = attach(parent_otel_context)
+        with tracer.start_span("forward_request", context=span_context) as span:
+            try:
+                requests.post(url=route["url"], json=event_out, headers=headers)
+                logger.info(
+                    f"Request forwarded to component '{route['component']}' at URL '{route['url']}'."
+                )
+                span.set_status(Status(StatusCode.OK))
+            except Exception as e:
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                span.record_exception(e)
+                logger.error(
+                    f"Error forwarding request to '{route['component']}' at '{route['url']}': {e}"
+                )
+                raise e
 
-        try:
-            with tracer.start_as_current_span(
-                "forward_request", context=span_context
-            ) as span:
-                try:
-                    requests.post(url=route["url"], json=event_out, headers=headers)
-                    logger.info(
-                        f"Request forwarded to component '{route['component']}' at URL '{route['url']}'."
-                    )
-                except Exception as e:
-                    span.set_status(Status(StatusCode.ERROR, str(e)))
-                    span.record_exception(e)
-                    logger.error(
-                        f"Error forwarding request to '{route['component']}' at '{route['url']}': {e}"
-                    )
-                    raise e
-        finally:
-            detach(token)
-
-    # Start the async thread
     t = threading.Thread(target=send_async_request)
     t.start()
     forward_threads.append(t)

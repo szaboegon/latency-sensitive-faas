@@ -144,7 +144,7 @@ spec:
             - name: LOCAL_MODE
               value: "false"
             - name: CONTROLLER_TICK_DELAY_SECONDS
-              value: "60"
+              value: "2"
             - name: PLATFORM_NODES
               value: "knative,knative-m02,knative-m03"
             - name: PLATFORM_DELAY_MS

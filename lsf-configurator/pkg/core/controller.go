@@ -17,29 +17,31 @@ const (
 )
 
 type latencyController struct {
-	composer              *Composer
-	metrics               MetricsReader
-	scenarioManager       ScenarioManager
-	delay                 time.Duration
-	deployNamespace       string
-	lastReconfigs         map[string]time.Time
-	cooldownPeriod        time.Duration
-	availableNodeMemoryGb int // same for all nodes for now, in GB
-	lastReconfigsMu       sync.Mutex
+	composer               *Composer
+	metrics                MetricsReader
+	scenarioManager        ScenarioManager
+	delay                  time.Duration
+	deployNamespace        string
+	lastReconfigs          map[string]time.Time
+	cooldownPeriod         time.Duration
+	availableNodeMemoryGb  int // same for all nodes for now, in GB
+	lastReconfigsMu        sync.Mutex
+	latencyDowngradeFactor float64
 }
 
 func NewController(composer *Composer, metrics MetricsReader, scenarioManager ScenarioManager,
 	delay time.Duration, deployNamespace string, availableNodeMemoryGb int) Controller {
 	return &latencyController{
-		composer:              composer,
-		metrics:               metrics,
-		scenarioManager:       scenarioManager,
-		delay:                 delay,
-		deployNamespace:       deployNamespace,
-		lastReconfigs:         make(map[string]time.Time),
-		cooldownPeriod:        60 * time.Second,
-		availableNodeMemoryGb: availableNodeMemoryGb,
-		lastReconfigsMu:       sync.Mutex{},
+		composer:               composer,
+		metrics:                metrics,
+		scenarioManager:        scenarioManager,
+		delay:                  delay,
+		deployNamespace:        deployNamespace,
+		lastReconfigs:          make(map[string]time.Time),
+		cooldownPeriod:         60 * time.Second,
+		availableNodeMemoryGb:  availableNodeMemoryGb,
+		lastReconfigsMu:        sync.Mutex{},
+		latencyDowngradeFactor: 0.7,
 	}
 }
 
@@ -77,24 +79,44 @@ func (c *latencyController) Start(ctx context.Context) error {
 					log.Printf("Found traces for app %s, but app is not registered in the database. Skipping", appId)
 					continue
 				}
-				if app.LatencyLimit > 0 && runtime > float64(app.LatencyLimit) {
-					c.lastReconfigsMu.Lock()
-					last, ok := c.lastReconfigs[app.Id]
 
-					if ok && time.Since(last) < c.cooldownPeriod {
-						log.Printf("Skipping reconfiguration for app %s due to cooldown (last at %v)", app.Id, last)
-						c.lastReconfigsMu.Unlock()
-						continue
+				if app.LatencyLimit <= 0 {
+					continue
+				}
+
+				c.lastReconfigsMu.Lock()
+				last, ok := c.lastReconfigs[app.Id]
+				if ok && time.Since(last) < c.cooldownPeriod {
+					log.Printf("Skipping reconfiguration for app %s due to cooldown (last at %v)", app.Id, last)
+					c.lastReconfigsMu.Unlock()
+					continue
+				}
+				c.lastReconfigsMu.Unlock()
+
+				// Determine action based on runtime
+				var handler func(*FunctionApp) error
+				if runtime > float64(app.LatencyLimit) {
+					handler = c.handleLatencyViolation
+				} else if runtime < float64(app.LatencyLimit)*c.latencyDowngradeFactor {
+					handler = c.handleLayoutDowngrade
+				} else {
+					log.Printf("App %s latency within threshold. No action required.", app.Id)
+					continue
+				}
+
+				c.lastReconfigsMu.Lock()
+				c.lastReconfigs[app.Id] = time.Now()
+				c.lastReconfigsMu.Unlock()
+
+				go func(app *FunctionApp, handler func(*FunctionApp) error) {
+					err := handler(app)
+					if err != nil {
+						log.Printf("Error handling reconfiguration for app %s: %v", app.Id, err)
+						return
 					}
 
-					c.lastReconfigs[app.Id] = time.Now()
-					c.lastReconfigsMu.Unlock()
-					go func(a *FunctionApp) {
-						if err := c.handleLatencyViolation(a); err != nil {
-							log.Printf("Error handling latency violation for app %s: %v", a.Id, err)
-						}
-					}(app)
-				}
+					log.Printf("Successfully handled reconfiguration for app %s", app.Id)
+				}(app, handler)
 			}
 		}
 	}
@@ -177,11 +199,18 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 	return app, nil
 }
 
-// TODO think about a backwards direction: if the best layout is already active, and the app is still over the limit, should we try a less resource-intensive layout?
 func (c *latencyController) handleLatencyViolation(app *FunctionApp) error {
 	log.Printf("App %s exceeds latency threshold (%d ms). Triggering reconfiguration.", app.Id, app.LatencyLimit)
+	return c.handleLayoutChange(app, layoutUpgradePath)
+}
 
-	nextLayoutKey := layoutUpgradePath[app.ActiveLayoutKey]
+func (c *latencyController) handleLayoutDowngrade(app *FunctionApp) error {
+	log.Printf("App %s is below latency threshold. Considering layout downgrade.", app.Id)
+	return c.handleLayoutChange(app, layoutDowngradePath)
+}
+
+func (c *latencyController) handleLayoutChange(app *FunctionApp, path map[string]string) error {
+	nextLayoutKey := path[app.ActiveLayoutKey]
 	if nextLayoutKey == "" {
 		log.Printf("No further layout candidates available for app %s. Skipping reconfiguration.", app.Id)
 		return nil
@@ -193,8 +222,7 @@ func (c *latencyController) handleLatencyViolation(app *FunctionApp) error {
 	}
 
 	app.ActiveLayoutKey = nextLayoutKey
-	err := c.composer.functionAppRepo.Save(app)
-	if err != nil {
+	if err := c.composer.functionAppRepo.Save(app); err != nil {
 		return fmt.Errorf("failed to update active layout key for app %s: %w", app.Id, err)
 	}
 
@@ -202,6 +230,7 @@ func (c *latencyController) handleLatencyViolation(app *FunctionApp) error {
 		return fmt.Errorf("failed to deploy new layout for app %s: %w", app.Id, err)
 	}
 
+	log.Printf("App %s successfully transitioned to layout %s", app.Id, nextLayoutKey)
 	return nil
 }
 

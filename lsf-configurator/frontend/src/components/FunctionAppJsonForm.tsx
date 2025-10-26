@@ -44,7 +44,7 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
           "MobileNetSSD_deploy.prototxt.txt"
         ]
       },
-      { "name": "tag", "memory": 72, "runtime": 24, "files": [] }
+      { "name": "tag", "memory": 120, "runtime": 24, "files": [] }
     ],
     "links": [
       {
@@ -93,7 +93,7 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
         "dataDelay": 10
       }
     ],
-    "latencyLimit": 1500,
+    "latencyLimit": 1800,
     "platformManaged": true
   },
   "functionCompositions": [],

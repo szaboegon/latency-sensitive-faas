@@ -18,6 +18,13 @@ var layoutUpgradePath = map[string]string{
 	LayoutKeyMax: "",
 }
 
+var layoutDowngradePath = map[string]string{
+	// LayoutKeyMax: LayoutKeyAvg,
+	// LayoutKeyAvg: LayoutKeyMin,
+	LayoutKeyMax: LayoutKeyMin,
+	LayoutKeyMin: "",
+}
+
 type scenarioManager struct {
 	calculator                  LayoutCalculator
 	targetConcurrency           int

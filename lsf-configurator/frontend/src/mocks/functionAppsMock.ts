@@ -92,52 +92,76 @@ export const functionAppsMock: FunctionApp[] = [
     ],
     layoutCandidates: {
       strategyA: {
-        Node1: [
-          {
-            name: "Component A1",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-          {
-            name: "Component B1",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
-        Node2: [
-          {
-            name: "Component C1",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
+        Node1: {
+          componentProfiles: [
+            {
+              name: "Component A1",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+            {
+              name: "Component B1",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 2,
+          totalEffectiveMemory: 256,
+          totalMCPU: 200,
+          targetConcurrency: 10,
+        },
+        Node2: {
+          componentProfiles: [
+            {
+              name: "Component C1",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 1,
+          totalEffectiveMemory: 128,
+          totalMCPU: 100,
+          targetConcurrency: 10,
+        },
       },
       strategyB: {
-        Node1: [
-          {
-            name: "Component A1",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
-        Node2: [
-          {
-            name: "Component B1",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-          {
-            name: "Component C1",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
+        Node1: {
+          componentProfiles: [
+            {
+              name: "Component A1",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 1,
+          totalEffectiveMemory: 128,
+          totalMCPU: 100,
+          targetConcurrency: 10,
+        },
+        Node2: {
+          componentProfiles: [
+            {
+              name: "Component B1",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+            {
+              name: "Component C1",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 2,
+          totalEffectiveMemory: 256,
+          totalMCPU: 200,
+          targetConcurrency: 10,
+        },
       },
     },
     activeLayoutKey: "strategyA",
@@ -227,54 +251,84 @@ export const functionAppsMock: FunctionApp[] = [
     ],
     layoutCandidates: {
       default: {
-        NodeX: [
-          {
-            name: "Component X2",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
-        NodeY: [
-          {
-            name: "Component Y2",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
-        NodeZ: [
-          {
-            name: "Component Z2",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
+        NodeX: {
+          componentProfiles: [
+            {
+              name: "Component X2",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 1,
+          totalEffectiveMemory: 128,
+          totalMCPU: 100,
+          targetConcurrency: 10,
+        },
+        NodeY: {
+          componentProfiles: [
+            {
+              name: "Component Y2",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 1,
+          totalEffectiveMemory: 128,
+          totalMCPU: 100,
+          targetConcurrency: 10,
+        },
+        NodeZ: {
+          componentProfiles: [
+            {
+              name: "Component Z2",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 1,
+          totalEffectiveMemory: 128,
+          totalMCPU: 100,
+          targetConcurrency: 10,
+        },
       },
       compact: {
-        NodeX: [
-          {
-            name: "Component X2",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-          {
-            name: "Component Y2",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
-        NodeZ: [
-          {
-            name: "Component Z2",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
+        NodeX: {
+          componentProfiles: [
+            {
+              name: "Component X2",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+            {
+              name: "Component Y2",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 2,
+          totalEffectiveMemory: 256,
+          totalMCPU: 200,
+          targetConcurrency: 10,
+        },
+        NodeZ: {
+          componentProfiles: [
+            {
+              name: "Component Z2",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 1,
+          totalEffectiveMemory: 128,
+          totalMCPU: 100,
+          targetConcurrency: 10,
+        },
       },
     },
     activeLayoutKey: "default",
@@ -364,54 +418,84 @@ export const functionAppsMock: FunctionApp[] = [
     ],
     layoutCandidates: {
       spread: {
-        NodeM: [
-          {
-            name: "Component M3",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
-        NodeN: [
-          {
-            name: "Component N3",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
-        NodeO: [
-          {
-            name: "Component O3",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
+        NodeM: {
+          componentProfiles: [
+            {
+              name: "Component M3",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 1,
+          totalEffectiveMemory: 128,
+          totalMCPU: 100,
+          targetConcurrency: 10,
+        },
+        NodeN: {
+          componentProfiles: [
+            {
+              name: "Component N3",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 1,
+          totalEffectiveMemory: 128,
+          totalMCPU: 100,
+          targetConcurrency: 10,
+        },
+        NodeO: {
+          componentProfiles: [
+            {
+              name: "Component O3",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 1,
+          totalEffectiveMemory: 128,
+          totalMCPU: 100,
+          targetConcurrency: 10,
+        },
       },
       grouped: {
-        NodeMN: [
-          {
-            name: "Component M3",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-          {
-            name: "Component N3",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
-        NodeO: [
-          {
-            name: "Component O3",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
+        NodeMN: {
+          componentProfiles: [
+            {
+              name: "Component M3",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+            {
+              name: "Component N3",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 2,
+          totalEffectiveMemory: 256,
+          totalMCPU: 200,
+          targetConcurrency: 10,
+        },
+        NodeO: {
+          componentProfiles: [
+            {
+              name: "Component O3",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 1,
+          totalEffectiveMemory: 128,
+          totalMCPU: 100,
+          targetConcurrency: 10,
+        },
       },
     },
     activeLayoutKey: "spread",
@@ -484,38 +568,56 @@ export const functionAppsMock: FunctionApp[] = [
     ],
     layoutCandidates: {
       single: {
-        NodeP: [
-          {
-            name: "Component P4",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-          {
-            name: "Component Q4",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
+        NodeP: {
+          componentProfiles: [
+            {
+              name: "Component P4",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+            {
+              name: "Component Q4",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 2,
+          totalEffectiveMemory: 256,
+          totalMCPU: 200,
+          targetConcurrency: 10,
+        },
       },
       split: {
-        NodeP: [
-          {
-            name: "Component P4",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
-        NodeQ: [
-          {
-            name: "Component Q4",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
+        NodeP: {
+          componentProfiles: [
+            {
+              name: "Component P4",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 1,
+          totalEffectiveMemory: 128,
+          totalMCPU: 100,
+          targetConcurrency: 10,
+        },
+        NodeQ: {
+          componentProfiles: [
+            {
+              name: "Component Q4",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 1,
+          totalEffectiveMemory: 128,
+          totalMCPU: 100,
+          targetConcurrency: 10,
+        },
       },
     },
     activeLayoutKey: "single",
@@ -652,66 +754,96 @@ export const functionAppsMock: FunctionApp[] = [
     ],
     layoutCandidates: {
       chain: {
-        NodeR: [
-          {
-            name: "Component R5",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
-        NodeS: [
-          {
-            name: "Component S5",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
-        NodeT: [
-          {
-            name: "Component T5",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
-        NodeU: [
-          {
-            name: "Component U5",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
+        NodeR: {
+          componentProfiles: [
+            {
+              name: "Component R5",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 1,
+          totalEffectiveMemory: 128,
+          totalMCPU: 100,
+          targetConcurrency: 10,
+        },
+        NodeS: {
+          componentProfiles: [
+            {
+              name: "Component S5",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 1,
+          totalEffectiveMemory: 128,
+          totalMCPU: 100,
+          targetConcurrency: 10,
+        },
+        NodeT: {
+          componentProfiles: [
+            {
+              name: "Component T5",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 1,
+          totalEffectiveMemory: 128,
+          totalMCPU: 100,
+          targetConcurrency: 10,
+        },
+        NodeU: {
+          componentProfiles: [
+            {
+              name: "Component U5",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 1,
+          totalEffectiveMemory: 128,
+          totalMCPU: 100,
+          targetConcurrency: 10,
+        },
       },
       "all-in-one": {
-        NodeRSTU: [
-          {
-            name: "Component R5",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-          {
-            name: "Component S5",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-          {
-            name: "Component T5",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-          {
-            name: "Component U5",
-            runtime: 100,
-            memory: 128,
-            requiredReplicas: 1,
-          },
-        ],
+        NodeRSTU: {
+          componentProfiles: [
+            {
+              name: "Component R5",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+            {
+              name: "Component S5",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+            {
+              name: "Component T5",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+            {
+              name: "Component U5",
+              runtime: 100,
+              memory: 128,
+              requiredReplicas: 1,
+            },
+          ],
+          requiredReplicas: 4,
+          totalEffectiveMemory: 512,
+          totalMCPU: 400,
+          targetConcurrency: 10,
+        },
       },
     },
     activeLayoutKey: "chain",
