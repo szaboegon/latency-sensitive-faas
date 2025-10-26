@@ -1,6 +1,9 @@
 package core
 
-import "sort"
+import (
+	"fmt"
+	"sort"
+)
 
 const (
 	LayoutKeyMin = "min_rate"
@@ -71,7 +74,7 @@ func (sm *scenarioManager) GenerateLayoutCandidates(
 
 		layout, err := sm.calculator.CalculateLayout(*layoutScenario)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to calculate layout for %s: %w", r.Name, err)
 		}
 		candidates[r.Key] = layout
 	}

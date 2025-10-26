@@ -28,6 +28,9 @@ func NewLayoutCalculator(pythonCmd, script string, platformNodes []string, platf
 
 func (c *slambucCalculator) CalculateLayout(scenario core.LayoutScenario) (core.Layout, error) {
 	prevLayoutKey := ""
+	// tracks max replicas seen per component to avoid oscillations
+	maxReplicasSeen := initializeMaxReplicas(scenario.Profiles)
+
 	for iter := 0; iter < c.maxIterations; iter++ {
 		layout, optCost, latency, err := c.runSLAMBUC(scenario)
 		if err != nil {
@@ -38,36 +41,17 @@ func (c *slambucCalculator) CalculateLayout(scenario core.LayoutScenario) (core.
 		}
 
 		// Estimate replicas per composition group
-		updatedProfiles := make([]core.ComponentProfile, 0, len(scenario.Profiles))
-		compMap := make(map[string]core.ComponentProfile)
-		for _, cp := range scenario.Profiles {
-			compMap[cp.Name] = cp
+		updatedProfiles := c.estimateReplicasPerGroup(layout, scenario)
+
+		// Anti oscillation: always run next iteration with max replicas seen so far, so it is monotonous
+		for i, cp := range updatedProfiles {
+			if cp.RequiredReplicas > maxReplicasSeen[cp.Name] {
+				maxReplicasSeen[cp.Name] = cp.RequiredReplicas
+			}
+			cp.RequiredReplicas = maxReplicasSeen[cp.Name]
+			updatedProfiles[i] = cp
 		}
 
-		for _, node := range c.platformNodes {
-			group := layout[node]
-			if len(group) == 0 {
-				continue
-			}
-
-			totalRuntime := 0
-			totalMemory := 0
-			for _, comp := range group {
-				totalRuntime += comp.Runtime
-				totalMemory += comp.Memory
-			}
-			arrivalRate := calculateTotalArrivalRate(group, scenario.Links)
-			replicas := calculateRequiredReplicas(totalRuntime, scenario.TargetConcurrency, arrivalRate)
-
-			// assign updated replicas to each component in this composition
-			for _, comp := range group {
-				cp := compMap[comp.Name]
-				cp.RequiredReplicas = replicas
-				updatedProfiles = append(updatedProfiles, cp)
-			}
-		}
-
-		// Recompute per-component memory weights
 		memSum := 0
 		for _, cp := range updatedProfiles {
 			memSum += cp.EffectiveMemory(scenario.InvocationSharedMemoryRatio, scenario.TargetConcurrency)
@@ -75,24 +59,14 @@ func (c *slambucCalculator) CalculateLayout(scenario core.LayoutScenario) (core.
 
 		layoutKey := fmt.Sprintf("%d-%d-%d", len(layout), int(optCost), memSum)
 		if layoutKey == prevLayoutKey {
-			finalLayout := make(core.Layout)
-			for node, comps := range layout {
-				totalEffectiveMemory := 0
-				for _, cp := range comps {
-					totalEffectiveMemory += cp.EffectiveMemory(scenario.InvocationSharedMemoryRatio, scenario.TargetConcurrency)
-				}
-
-				finalLayout[node] = core.CompositionInfo{
-					ComponentProfiles:    comps,
-					RequiredReplicas:     comps[0].RequiredReplicas,
-					TotalEffectiveMemory: totalEffectiveMemory,
-					TotalMCPU:            scenario.ComponentMCPUAllocation * scenario.TargetConcurrency,
-					TargetConcurrency:    scenario.TargetConcurrency,
-				}
-			}
-
+			// Convergence reached: recalc final replicas for accuracy, because calculation always uses max seen replicas,
+			// real count may be lower
+			finalProfiles := c.estimateReplicasPerGroup(layout, scenario)
+			scenario.Profiles = finalProfiles
+			finalLayout := c.buildFinalLayout(layout, scenario)
 			return finalLayout, nil
 		}
+
 		prevLayoutKey = layoutKey
 		scenario.Profiles = updatedProfiles
 	}
@@ -214,6 +188,84 @@ func (c *slambucCalculator) runSLAMBUC(scenario core.LayoutScenario) (map[string
 	}
 	//log.Default().Printf("SLAMBUC layout result: %+v, cost: %f, latency: %d", layout, pyOutput.OptCost, pyOutput.Latency)
 	return layout, pyOutput.OptCost, pyOutput.Latency, nil
+}
+
+func (c *slambucCalculator) estimateReplicasPerGroup(layout map[string][]core.ComponentProfile, scenario core.LayoutScenario) []core.ComponentProfile {
+	updatedProfiles := make([]core.ComponentProfile, 0, len(scenario.Profiles))
+	compMap := make(map[string]core.ComponentProfile)
+	for _, cp := range scenario.Profiles {
+		compMap[cp.Name] = cp
+	}
+
+	for _, node := range c.platformNodes {
+		group := layout[node]
+		if len(group) == 0 {
+			continue
+		}
+
+		totalRuntime := 0
+		totalMemory := 0
+		for _, comp := range group {
+			totalRuntime += comp.Runtime
+			totalMemory += comp.Memory
+		}
+		arrivalRate := calculateTotalArrivalRate(group, scenario.Links)
+		replicas := calculateRequiredReplicas(totalRuntime, scenario.TargetConcurrency, arrivalRate)
+
+		// assign updated replicas to each component in this composition
+		for _, comp := range group {
+			cp := compMap[comp.Name]
+			cp.RequiredReplicas = replicas
+			updatedProfiles = append(updatedProfiles, cp)
+		}
+	}
+
+	return updatedProfiles
+}
+
+func (c *slambucCalculator) buildFinalLayout(
+	layout map[string][]core.ComponentProfile,
+	scenario core.LayoutScenario,
+) core.Layout {
+	finalLayout := make(core.Layout)
+
+	profileMap := make(map[string]core.ComponentProfile)
+	for _, p := range scenario.Profiles {
+		profileMap[p.Name] = p
+	}
+
+	for node, comps := range layout {
+		totalEffectiveMemory := 0
+		var groupReplicas int
+
+		finalComps := make([]core.ComponentProfile, 0, len(comps))
+		for _, cp := range comps {
+			fp := profileMap[cp.Name]
+			finalComps = append(finalComps, fp)
+			totalEffectiveMemory += fp.EffectiveMemory(scenario.InvocationSharedMemoryRatio, scenario.TargetConcurrency)
+			if fp.RequiredReplicas > groupReplicas {
+				groupReplicas = fp.RequiredReplicas
+			}
+		}
+
+		finalLayout[node] = core.CompositionInfo{
+			ComponentProfiles:    finalComps,
+			RequiredReplicas:     groupReplicas,
+			TotalEffectiveMemory: totalEffectiveMemory,
+			TotalMCPU:            scenario.ComponentMCPUAllocation * scenario.TargetConcurrency,
+			TargetConcurrency:    scenario.TargetConcurrency,
+		}
+	}
+
+	return finalLayout
+}
+
+func initializeMaxReplicas(profiles []core.ComponentProfile) map[string]int {
+	maxMap := make(map[string]int)
+	for _, cp := range profiles {
+		maxMap[cp.Name] = cp.RequiredReplicas
+	}
+	return maxMap
 }
 
 func MBToGB(mb int) float64 {
