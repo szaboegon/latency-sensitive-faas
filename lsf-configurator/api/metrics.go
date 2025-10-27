@@ -25,7 +25,6 @@ func NewHandlerMetrics(metricsClient core.MetricsReader, conf config.Configurati
 		mux:           http.NewServeMux(),
 	}
 
-	h.mux.HandleFunc("GET /apps/{app_id}", h.getAppMetrics)
 	h.mux.HandleFunc("GET /apps", h.getAllAppMetrics)
 
 	return h
@@ -33,20 +32,6 @@ func NewHandlerMetrics(metricsClient core.MetricsReader, conf config.Configurati
 
 func (h *HandlerMetrics) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	LoggingMiddleware(h.mux).ServeHTTP(w, r)
-}
-
-func (h *HandlerMetrics) getAppMetrics(w http.ResponseWriter, r *http.Request) {
-	appId := r.PathValue("app_id")
-
-	metrics, err := h.metricsClient.QueryAverageAppRuntime(appId)
-	if err != nil {
-		log.Printf("Error querying metrics: %v", err)
-		http.Error(w, "Failed to query metrics", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(metrics)
 }
 
 func (h *HandlerMetrics) getAllAppMetrics(w http.ResponseWriter, r *http.Request) {

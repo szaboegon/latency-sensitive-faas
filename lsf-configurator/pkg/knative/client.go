@@ -102,6 +102,8 @@ func (c *Client) Deploy(ctx context.Context, deployment core.Deployment, image, 
 					Limits: &fn.ResourcesLimitsOptions{
 						Memory: strPtr(fmt.Sprintf("%dMi", deployment.Resources.Memory)),
 						CPU:    strPtr(fmt.Sprintf("%dm", deployment.Resources.CPU)),
+						// Hard concurrency limit to avoid OOM kills
+						Concurrency: int64Ptr((deployment.Scale.TargetConcurrency)),
 					},
 				},
 			},

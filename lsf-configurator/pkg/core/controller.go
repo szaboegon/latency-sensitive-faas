@@ -38,7 +38,7 @@ func NewController(composer *Composer, metrics MetricsReader, scenarioManager Sc
 		delay:                  delay,
 		deployNamespace:        deployNamespace,
 		lastReconfigs:          make(map[string]time.Time),
-		cooldownPeriod:         60 * time.Second,
+		cooldownPeriod:         120 * time.Second,
 		availableNodeMemoryGb:  availableNodeMemoryGb,
 		lastReconfigsMu:        sync.Mutex{},
 		latencyDowngradeFactor: 0.7,
