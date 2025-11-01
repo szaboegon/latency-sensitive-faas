@@ -18,5 +18,6 @@ spec:
           request_headers_to_add:
             - header:
                 key: "x-request-start-time"
-                value: "%START_TIME(%s.%3f)%"
+                # Inject the request start time in nanoseconds since epoch
+                value: "%START_TIME(%s%9f)%"
               append: false

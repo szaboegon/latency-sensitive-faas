@@ -15,6 +15,7 @@ from logger import setup_logging
 from results import write_result
 import faulthandler
 import sys
+import time
 
 faulthandler.enable(file=sys.stderr, all_threads=True)
 
@@ -38,7 +39,13 @@ def get_headers(
     """
     Generates headers for the next component, including trace context.
     """
-    headers = {"X-Forward-To": component, "Content-Type": "application/json"}
+    current_time_epoch = f"{time.time_ns()}"
+    headers = {
+        "X-Forward-To": component,
+        "Content-Type": "application/json",
+        QUEUE_START_TIME_HEADER: current_time_epoch,
+    }
+
     if span_context:
         inject(headers, context=span_context)
     return headers
@@ -130,6 +137,9 @@ def forward_request(
     forward_threads.append(t)
 
 
+QUEUE_START_TIME_HEADER = "X-Request-Start-Time"
+
+
 def main(context: Context) -> Tuple[str, int]:
     """
     Entry point of the function. Processes the routing table using parallel processing.
@@ -155,11 +165,35 @@ def main(context: Context) -> Tuple[str, int]:
     span_context: Optional[OtelContext] = None
     output, span_context = None, extract(context.request.headers)
 
+    queue_start_epoch_str = context.request.headers.get(QUEUE_START_TIME_HEADER)
+    logger.info(
+        f"Queue start time header '{QUEUE_START_TIME_HEADER}': {queue_start_epoch_str}"
+    )
+
+    try:
+        queue_start_time_ns = int(queue_start_epoch_str)
+
+        queue_end_time_ns = time.time_ns()
+        queue_span = tracer.start_span(
+            name="queue",
+            context=span_context,
+            start_time=queue_start_time_ns,
+        )
+        span_context = trace.set_span_in_context(queue_span)
+
+        queue_span.end(end_time=queue_end_time_ns)
+        logger.info(
+            f"'queue' span created. Queue time: {(queue_end_time_ns - queue_start_time_ns)/1_000_000:.3f}ms"
+        )
+    except ValueError as e:
+        logger.error(f"Could not parse queue start time '{queue_start_epoch_str}': {e}")
+    except Exception as e:
+        logger.error(f"Error creating 'queue' span: {e}")
+
     # Read routing table from redis
     with tracer.start_as_current_span("read_config", context=span_context) as span:
         try:
             routing_table = read_config()
-            span_context = trace.set_span_in_context(span)
             logger.info("Routing table read from Redis successfully.")
         except Exception as e:
             span.set_status(Status(StatusCode.ERROR, str(e)))
