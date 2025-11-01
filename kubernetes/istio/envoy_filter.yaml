@@ -11,24 +11,12 @@ spec:
     labels:
       istio: ingressgateway
   configPatches:
-    - applyTo: HTTP_FILTER
-      match:
-        context: GATEWAY
-        listener:
-          filterChain:
-            filter:
-              name: envoy.filters.network.http_connection_manager
+    - applyTo: ROUTE_CONFIGURATION
       patch:
-        operation: INSERT_FIRST
+        operation: MERGE
         value:
-          name: envoy.filters.http.luatimestamp
-          typed_config:
-            "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
-            inlineCode: |
-              function envoy_on_request(request_handle)
-                local now = os.time()
-                local ms = now * 1000
-                request_handle:headers():add("x-request-start", tostring(ms))
-                request_handle:headers():add("x-lua-test", "lua-ran")
-                request_handle:logInfo("Lua filter executed: x-request-start=" .. tostring(ms))
-              end
+          request_headers_to_add:
+            - header:
+                key: "x-request-start-time"
+                value: "%START_TIME(%s.%3f)%"
+              append: false
