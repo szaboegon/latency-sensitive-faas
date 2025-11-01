@@ -8,6 +8,7 @@ set SCALE_CONFIG_PATH="knative\disable_scale_to_zero.yaml"
 set APP_NAMESPACE_PATH="otel\application_namespace.yaml"
 set METRICS_SERVER_PATH="metrics-server\metrics-server.yaml"
 set STORAGECLASS_YAML_PATH="storageclass.yaml"
+set ISTIO_ENVOY_FILTER_PATH="istio\envoy_filter.yaml"
 
 echo %cd%
 echo Starting minikube cluster with %NUM_NODES% nodes...
@@ -109,6 +110,13 @@ if errorlevel 1 (
 kubectl apply -f %STORAGECLASS_YAML_PATH%
 if errorlevel 1 (
     echo Failed to install storage class.
+    exit /b 1
+)
+
+echo Adding Istio envoy filter...
+kubectl apply -f %ISTIO_ENVOY_FILTER_PATH%
+if errorlevel 1 (
+    echo Failed to apply Istio envoy filter.
     exit /b 1
 )
 
