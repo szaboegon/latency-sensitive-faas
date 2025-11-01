@@ -137,6 +137,8 @@ def main(context: Context) -> Tuple[str, int]:
     global forward_threads
     forward_threads = []
 
+    logger.info("Headers received: " + str(context.request.headers))
+
     component = context.request.headers.get("X-Forward-To")
     if not component:
         logger.error(f"No component found with name {component}")

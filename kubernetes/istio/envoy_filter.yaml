@@ -1,0 +1,34 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: knative-timestamp-filter
+  namespace: istio-system
+  labels:
+    app: knative-faas
+    type: faas-dns-timestamp
+spec:
+  workloadSelector:
+    labels:
+      istio: ingressgateway
+  configPatches:
+    - applyTo: HTTP_FILTER
+      match:
+        context: GATEWAY
+        listener:
+          filterChain:
+            filter:
+              name: envoy.filters.network.http_connection_manager
+      patch:
+        operation: INSERT_FIRST
+        value:
+          name: envoy.filters.http.luatimestamp
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+            inlineCode: |
+              function envoy_on_request(request_handle)
+                local now = os.time()
+                local ms = now * 1000
+                request_handle:headers():add("x-request-start", tostring(ms))
+                request_handle:headers():add("x-lua-test", "lua-ran")
+                request_handle:logInfo("Lua filter executed: x-request-start=" .. tostring(ms))
+              end

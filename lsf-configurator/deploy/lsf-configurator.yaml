@@ -33,7 +33,7 @@ rules:
 
   # Istio VirtualService API
   - apiGroups: ["networking.istio.io"]
-    resources: ["virtualservices"]
+    resources: ["virtualservices", "envoyfilters"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---
 apiVersion: v1
