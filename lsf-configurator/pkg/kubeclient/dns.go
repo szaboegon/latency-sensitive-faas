@@ -89,7 +89,7 @@ func (c *Client) EnsureDNSRecord(ctx context.Context, namespace, appName, target
 		if _, updateErr := vsClient.Update(ctx, existing, metav1.UpdateOptions{}); updateErr != nil {
 			return fmt.Errorf("failed to update VirtualService: %w", updateErr)
 		}
-		fmt.Printf("Updated VirtualService %q → %q\n", hostDomain, targetHost)
+		log.Printf("Updated VirtualService %q → %q\n", hostDomain, targetHost)
 	}
 
 	return nil
@@ -102,7 +102,7 @@ func (c *Client) DeleteDNSRecord(ctx context.Context, namespace, appName string)
 	if err != nil {
 		return fmt.Errorf("failed to delete VirtualService %q: %w", vsName, err)
 	}
-	fmt.Printf("Deleted VirtualService %q\n", vsName)
+	log.Printf("Deleted VirtualService %q\n", vsName)
 	return nil
 }
 
