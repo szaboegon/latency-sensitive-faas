@@ -35,8 +35,10 @@ func main() {
 	logFile := configureLogging()
 	defer logFile.Close()
 
-	disableStdOut()
 	conf = config.Init()
+	if !conf.VerboseLogs {
+		disableStdOut()
+	}
 
 	knClient := knative.NewClient(conf)
 	routingClient := routing.NewRouteConfigurator(conf.RedisUrl)

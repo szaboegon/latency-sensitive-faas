@@ -231,7 +231,17 @@ func (c *Composer) AddFunctionComposition(appId string, components []string) (*F
 		return nil, fmt.Errorf("failed to update function app: %w", err)
 	}
 
-	c.scheduler.AddTask(c.buildTask(*fc, fcApp.Runtime, fcApp.SourcePath), MaxRetries)
+	go func() {
+		resultChan := c.scheduler.AddTask(c.buildTask(*fc, fcApp.Runtime, fcApp.SourcePath), MaxRetries)
+		r := <-resultChan
+		if r.Err != nil {
+			log.Errorf("Building of function composition with id %v failed: %v", fc.Id, r.Err)
+			fc.Status = BuildStatusError
+			c.fcRepo.Save(fc)
+			return
+		}
+		log.Infof("Successfully submitted build for function composition with id %v", fc.Id)
+	}()
 	return fc, nil
 }
 
