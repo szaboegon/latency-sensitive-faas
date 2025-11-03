@@ -3,17 +3,18 @@ package api
 import "lsf-configurator/pkg/core"
 
 type FunctionAppCreateDto struct {
-	Name         string               `json:"name"`
-	Runtime      string               `json:"runtime"`
-	Components   []core.Component     `json:"components"`
-	Links        []core.ComponentLink `json:"links"`
-	LatencyLimit int                  `json:"latency_limit"`
-	PlatformManaged bool              `json:"platform_managed"`
+	Name            string               `json:"name"`
+	Runtime         string               `json:"runtime"`
+	Components      []core.Component     `json:"components"`
+	Links           []core.ComponentLink `json:"links"`
+	LatencyLimit    int                  `json:"latency_limit"`
+	PlatformManaged bool                 `json:"platform_managed"`
 }
 
 type FunctionCompositionCreateDto struct {
 	FunctionAppId string   `json:"function_app_id"`
 	Components    []string `json:"components"`
+	Image         string   `json:"image"`
 }
 
 type DeploymentCreateDto struct {
@@ -33,6 +34,7 @@ type FunctionCompositionBulkCreateDto struct {
 	TempId     string   `json:"id"`
 	Components []string `json:"components"`
 	Files      []string `json:"files"`
+	Image      string   `json:"image"`
 }
 
 type DeploymentBulkCreateDto struct {

@@ -194,7 +194,7 @@ func (c *Composer) UpdateDNSRecord(appId, namespace, targetDeploymentId string) 
 
 // --- FUNCTION COMPOSITIONS ---
 
-func (c *Composer) AddFunctionComposition(appId string, components []string) (*FunctionComposition, error) {
+func (c *Composer) AddFunctionComposition(appId string, components []string, image string) (*FunctionComposition, error) {
 	fcApp, err := c.functionAppRepo.GetByID(appId)
 	if err != nil || fcApp == nil {
 		log.Errorf("function app with id %s does not exist", appId)
@@ -227,21 +227,28 @@ func (c *Composer) AddFunctionComposition(appId string, components []string) (*F
 		Status:        BuildStatusPending,
 	}
 
-	if err := c.fcRepo.Save(fc); err != nil {
-		return nil, fmt.Errorf("failed to update function app: %w", err)
+	if image != "" {
+		fc.Build.Image = image
+		fc.Build.Timestamp = createBuildTimestamp()
+		fc.Status = BuildStatusBuilt
+	} else {
+		go func() {
+			resultChan := c.scheduler.AddTask(c.buildTask(*fc, fcApp.Runtime, fcApp.SourcePath), MaxRetries)
+			r := <-resultChan
+			if r.Err != nil {
+				log.Errorf("Building of function composition with id %v failed: %v", fc.Id, r.Err)
+				fc.Status = BuildStatusError
+				c.fcRepo.Save(fc)
+				return
+			}
+			log.Infof("Successfully submitted build for function composition with id %v", fc.Id)
+		}()
 	}
 
-	go func() {
-		resultChan := c.scheduler.AddTask(c.buildTask(*fc, fcApp.Runtime, fcApp.SourcePath), MaxRetries)
-		r := <-resultChan
-		if r.Err != nil {
-			log.Errorf("Building of function composition with id %v failed: %v", fc.Id, r.Err)
-			fc.Status = BuildStatusError
-			c.fcRepo.Save(fc)
-			return
-		}
-		log.Infof("Successfully submitted build for function composition with id %v", fc.Id)
-	}()
+	if err := c.fcRepo.Save(fc); err != nil {
+		return nil, fmt.Errorf("failed to save function composition: %w", err)
+	}
+
 	return fc, nil
 }
 
@@ -278,6 +285,15 @@ func (c *Composer) CreateFcDeployment(fcId, namespace, node string, routingTable
 	fc, err := c.fcRepo.GetByID(fcId)
 	if err != nil || fc == nil {
 		return nil, nil, fmt.Errorf("function composition with id %s does not exist", fcId)
+	}
+
+	if scale.MinReplicas == 0 && scale.MaxReplicas == 0 && scale.TargetConcurrency == 0 {
+		log.Warnf("Scale was not provided for deployment of function composition %s, using default values", fcId)
+		scale = DefaultScaleValues()
+	}
+	if resources.Memory == 0 && resources.CPU == 0 {
+		log.Warnf("Resources were not provided for deployment of function composition %s, using default values", fcId)
+		resources = DefaultResources()
 	}
 
 	deployment := Deployment{
@@ -499,4 +515,27 @@ func containsComponent(components []Component, name string) bool {
 func isComponent(fileName string, runtime string) bool {
 	extension := filepath.Ext(fileName)
 	return runtimeExtensions[runtime] == extension
+}
+
+const (
+	DefaultMinReplicas       = 1
+	DefaultMaxReplicas       = 3
+	DefaultTargetConcurrency = 2
+	DefaultMemoryMB          = 256
+	DefaultCPUmCores         = 250
+)
+
+func DefaultScaleValues() Scale {
+	return Scale{
+		MinReplicas:       DefaultMinReplicas,
+		MaxReplicas:       DefaultMaxReplicas,
+		TargetConcurrency: DefaultTargetConcurrency,
+	}
+}
+
+func DefaultResources() Resources {
+	return Resources{
+		Memory: DefaultMemoryMB,
+		CPU:    DefaultCPUmCores,
+	}
 }

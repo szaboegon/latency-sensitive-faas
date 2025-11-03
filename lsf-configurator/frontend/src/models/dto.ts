@@ -24,6 +24,7 @@ export interface FunctionAppCreateDto {
 export interface FunctionCompositionCreateDto {
   functionAppId: string;
   components: string[];
+  image?: string;
 }
 
 export interface DeploymentCreateDto {
@@ -43,6 +44,7 @@ export interface FunctionCompositionBulkCreateDto {
   id: string; // here ID is a temporary ID, given by the user for finding matching objects in bulk requests
   components: string[];
   files: string[];
+  image?: string;
 }
 
 export interface DeploymentBulkCreateDto {

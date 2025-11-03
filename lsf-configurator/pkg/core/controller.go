@@ -57,8 +57,8 @@ func (c *latencyController) Start(ctx context.Context) error {
 			return nil
 		case <-ticker.C:
 			runtimes, traceCounts, err := c.metrics.Query95thPercentileAppRuntimes()
-			log.Printf("Debug: runtimes: %v", runtimes)
-			log.Printf("Debug: traceCounts: %v", traceCounts)
+			//log.Printf("Debug: runtimes: %v", runtimes)
+			//log.Printf("Debug: traceCounts: %v", traceCounts)
 			if err != nil {
 				log.Printf("Error querying 95th percentile app runtimes: %v", err)
 				continue
@@ -178,7 +178,7 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 			if createdCompositionKeys[fcKey] {
 				continue
 			}
-			_, err := c.composer.AddFunctionComposition(app.Id, componentNames)
+			_, err := c.composer.AddFunctionComposition(app.Id, componentNames, "")
 			if err != nil {
 				log.Printf("Error adding function composition for app %s: %v", app.Id, err)
 				return nil, err

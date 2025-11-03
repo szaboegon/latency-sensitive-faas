@@ -154,7 +154,7 @@ func (h *HandlerApps) bulkCreate(w http.ResponseWriter, r *http.Request) {
 	compositionIdMap := make(map[string]string)
 
 	for _, composition := range payload.FunctionCompositions {
-		fc, err := h.composer.AddFunctionComposition(app.Id, composition.Components)
+		fc, err := h.composer.AddFunctionComposition(app.Id, composition.Components, composition.Image)
 		if err != nil {
 			h.composer.RollbackBulk(createdApp, createdCompositions, createdDeployments)
 			http.Error(w, err.Error(), http.StatusInternalServerError)

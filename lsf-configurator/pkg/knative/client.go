@@ -23,11 +23,13 @@ type Client struct {
 }
 
 func NewClient(conf config.Configuration) *Client {
-	o := []fn.Option{fn.WithRepository(conf.TemplatesPath)}
+	o := []fn.Option{fn.WithRepository(conf.TemplatesPath), fn.WithVerbose(conf.VerboseLogs)}
 
 	o = append(o,
 		fn.WithDeployer(knativefunc.NewDeployer(
 			knativefunc.WithDeployerVerbose(conf.VerboseLogs))))
+
+	o = append(o, fn.WithRemover(knativefunc.NewRemover(conf.VerboseLogs)))
 
 	fnClient := fn.New(o...)
 
