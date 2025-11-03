@@ -298,7 +298,128 @@ func (c metricsClient) Query95thPercentileAppRuntimes() (map[string]float64, map
 
 	return p95Result, countResult, nil
 }
+func (c metricsClient) QueryAverageAppRuntimes() (map[string]float64, map[string]int, error) {
+	size := 1000
+	appNameField := "labels.app_name"
 
+	res, err := c.client.Search().
+		Index(tracesIndex).
+		Request(&search.Request{
+			Size: intPtr(size),
+			Query: &types.Query{
+				Bool: &types.BoolQuery{
+					Filter: []types.Query{
+						{
+							Range: map[string]types.RangeQuery{
+								"@timestamp": &types.DateRangeQuery{
+									Gte: strPtr("now-20m"),
+									Lte: strPtr("now"),
+								},
+							},
+						},
+						{
+							Term: map[string]types.TermQuery{
+								"processor.event": {
+									Value: "span",
+								},
+							},
+						},
+					},
+				},
+			},
+			Aggregations: map[string]types.Aggregations{
+				"apps": {
+					Terms: &types.TermsAggregation{
+						Field: &appNameField,
+						Size:  &size,
+					},
+					Aggregations: map[string]types.Aggregations{
+						"trace_count": {
+							Cardinality: &types.CardinalityAggregation{
+								Field: strPtr("trace.id"),
+							},
+						},
+						"traces": {
+							Terms: &types.TermsAggregation{
+								Field: strPtr("trace.id"),
+								Size:  &size,
+							},
+							Aggregations: map[string]types.Aggregations{
+								"min_start": {
+									Min: &types.MinAggregation{
+										Field: strPtr("@timestamp"),
+									},
+								},
+								"max_end": {
+									Max: &types.MaxAggregation{
+										Script: &types.Script{
+											Source: strPtr("doc['@timestamp'].value.toInstant().toEpochMilli() + doc['span.duration.us'].value / 1000"),
+										},
+									},
+								},
+								"trace_duration_ms": {
+									BucketScript: &types.BucketScriptAggregation{
+										BucketsPath: map[string]string{
+											"min_start": "min_start.value",
+											"max_end":   "max_end.value",
+										},
+										Script: &types.Script{
+											Source: strPtr("params.max_end - params.min_start"),
+										},
+									},
+								},
+							},
+						},
+						"avg_trace_duration": {
+							AvgBucket: &types.AverageBucketAggregation{
+								BucketsPath: strPtr("traces>trace_duration_ms"),
+							},
+						},
+					},
+				},
+			},
+		}).
+		Do(context.Background())
+
+	if err != nil {
+		return nil, nil, fmt.Errorf("error querying metrics: %w", err)
+	}
+
+	appsInterface, exists := res.Aggregations["apps"]
+	if !exists || appsInterface == nil {
+		return make(map[string]float64), make(map[string]int), nil // no records yet
+	}
+
+	appsAgg, ok := appsInterface.(*types.StringTermsAggregate)
+	if !ok {
+		return nil, nil, errors.New("incorrect aggregation type for apps")
+	}
+
+	avgResult := make(map[string]float64)
+	countResult := make(map[string]int)
+
+	for _, appBucket := range appsAgg.Buckets.([]types.StringTermsBucket) {
+		appName := appBucket.Key.(string)
+
+		avgInterface, ok := appBucket.Aggregations["avg_trace_duration"]
+		if ok && avgInterface != nil {
+			if avgAgg, ok := avgInterface.(*types.SimpleValueAggregate); ok {
+				if avgAgg.Value != nil {
+					avgResult[appName] = float64(*avgAgg.Value)
+				}
+			}
+		}
+
+		countInterface, ok := appBucket.Aggregations["trace_count"]
+		if ok && countInterface != nil {
+			if countAgg, ok := countInterface.(*types.CardinalityAggregate); ok {
+				countResult[appName] = int(countAgg.Value)
+			}
+		}
+	}
+
+	return avgResult, countResult, nil
+}
 func strPtr(s string) *string { return &s }
 func intPtr(v int) *int       { return &v }
 
