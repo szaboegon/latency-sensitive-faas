@@ -33,6 +33,7 @@ type Configuration struct {
 	LocalMode                  bool     `env:"LOCAL_MODE" default:"false"`
 	DeployNamespace            string   `env:"DEPLOY_NAMESPACE" default:"application"`
 	ControllerTickDelaySeconds int      `env:"CONTROLLER_TICK_DELAY_SECONDS" default:"1"`
+	ControllerMetricType       string   `env:"CONTROLLER_METRIC_TYPE" default:"AVG"`
 	PlatformNodes              []string `env:"PLATFORM_NODES"`
 	PlatformDelayMs            int      `env:"PLATFORM_DELAY_MS"`
 	AvailableNodeMemoryGb      int      `env:"AVAILABLE_NODE_MEMORY_GB"`

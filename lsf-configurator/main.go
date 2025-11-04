@@ -86,7 +86,8 @@ func main() {
 
 	controllerCtx, controllerCancel := context.WithCancel(context.Background())
 	controller = core.NewController(composer, metricsReader, scenarioManager,
-		time.Duration(conf.ControllerTickDelaySeconds)*time.Second, conf.DeployNamespace, conf.AvailableNodeMemoryGb)
+		time.Duration(conf.ControllerTickDelaySeconds)*time.Second, conf.DeployNamespace,
+		conf.AvailableNodeMemoryGb, core.MetricType(conf.ControllerMetricType))
 
 	if !conf.LocalMode {
 		go func() {

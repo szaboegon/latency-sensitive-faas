@@ -16,6 +16,15 @@ const (
 	minimalTraceCount = 50
 )
 
+type MetricType string
+
+const (
+	MetricTypeP95     MetricType = "P95"
+	MetricTypeAverage MetricType = "AVG"
+)
+
+type MetricQueryFunc func() (map[string]float64, map[string]int, error)
+
 type latencyController struct {
 	composer               *Composer
 	metrics                MetricsReader
@@ -27,10 +36,26 @@ type latencyController struct {
 	availableNodeMemoryGb  int // same for all nodes for now, in GB
 	lastReconfigsMu        sync.Mutex
 	latencyDowngradeFactor float64
+	aggMetricType          MetricType
+	metricQueryFunc        MetricQueryFunc
 }
 
 func NewController(composer *Composer, metrics MetricsReader, scenarioManager ScenarioManager,
-	delay time.Duration, deployNamespace string, availableNodeMemoryGb int) Controller {
+	delay time.Duration, deployNamespace string, availableNodeMemoryGb int, aggMetricType MetricType) Controller {
+
+	if aggMetricType != MetricTypeP95 && aggMetricType != MetricTypeAverage {
+		log.Printf("Warning: Invalid metric type '%s' provided. Defaulting to P95.", aggMetricType)
+		aggMetricType = MetricTypeP95
+	}
+
+	var queryFunc MetricQueryFunc
+	switch aggMetricType {
+	case MetricTypeP95:
+		queryFunc = metrics.Query95thPercentileAppRuntimes
+	case MetricTypeAverage:
+		queryFunc = metrics.QueryAverageAppRuntimes
+	}
+
 	return &latencyController{
 		composer:               composer,
 		metrics:                metrics,
@@ -42,6 +67,8 @@ func NewController(composer *Composer, metrics MetricsReader, scenarioManager Sc
 		availableNodeMemoryGb:  availableNodeMemoryGb,
 		lastReconfigsMu:        sync.Mutex{},
 		latencyDowngradeFactor: 0.7,
+		aggMetricType:          aggMetricType,
+		metricQueryFunc:        queryFunc,
 	}
 }
 
@@ -56,7 +83,7 @@ func (c *latencyController) Start(ctx context.Context) error {
 			log.Println("Latency Controller received cancellation signal")
 			return nil
 		case <-ticker.C:
-			runtimes, traceCounts, err := c.metrics.Query95thPercentileAppRuntimes()
+			runtimes, traceCounts, err := c.metricQueryFunc()
 			//log.Printf("Debug: runtimes: %v", runtimes)
 			//log.Printf("Debug: traceCounts: %v", traceCounts)
 			if err != nil {

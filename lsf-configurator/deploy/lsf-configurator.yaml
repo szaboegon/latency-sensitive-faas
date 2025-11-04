@@ -145,6 +145,8 @@ spec:
               value: "false"
             - name: CONTROLLER_TICK_DELAY_SECONDS
               value: "1"
+            - name: CONTROLLER_METRIC_TYPE
+              value: "AVG"
             - name: PLATFORM_NODES
               value: "knative,knative-m02,knative-m03"
             - name: PLATFORM_DELAY_MS
