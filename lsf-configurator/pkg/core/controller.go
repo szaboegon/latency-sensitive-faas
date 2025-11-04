@@ -38,6 +38,7 @@ type latencyController struct {
 	latencyDowngradeFactor float64
 	aggMetricType          MetricType
 	metricQueryFunc        MetricQueryFunc
+	reconfigStartTimes     map[string]time.Time
 }
 
 func NewController(composer *Composer, metrics MetricsReader, scenarioManager ScenarioManager,
@@ -130,6 +131,11 @@ func (c *latencyController) Start(ctx context.Context) error {
 					log.Printf("App %s latency within threshold. No action required.", app.Id)
 					continue
 				}
+
+				// Only for testing: measure reconfiguration duration
+				c.lastReconfigsMu.Lock()
+				c.reconfigStartTimes[app.Id] = time.Now()
+				c.lastReconfigsMu.Unlock()
 
 				ok, err = handler(app)
 				if err != nil {
@@ -451,6 +457,19 @@ func (c *latencyController) deployLayout(appId string, layout Layout) error {
 		return fmt.Errorf("failed to update DNS record for app %s: %w", app.Id, err)
 	}
 	log.Printf("Updated DNS record for app %s to deployment %s (first component: %s)", app.Id, firstDepID, firstComponent)
+
+	// Measure and log reconfiguration end-to-end latency
+	c.lastReconfigsMu.Lock()
+	startTime, ok := c.reconfigStartTimes[appId]
+	if ok {
+		duration := time.Since(startTime)
+		durationMs := float64(duration) / float64(time.Millisecond)
+		log.Printf("App %s reconfiguration **END-TO-END LATENCY**: %.0f ms (from violation to DNS update)", appId, durationMs)
+		delete(c.reconfigStartTimes, appId)
+	} else {
+		log.Printf("Warning: Missing start time for app %s in reconfigStartTime map.", appId)
+	}
+	c.lastReconfigsMu.Unlock()
 
 	// cleanup: remove unused deployments asynchronously
 	go func() {
