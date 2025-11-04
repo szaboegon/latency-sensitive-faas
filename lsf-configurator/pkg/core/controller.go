@@ -121,7 +121,7 @@ func (c *latencyController) Start(ctx context.Context) error {
 				c.lastReconfigsMu.Unlock()
 
 				// Determine action based on runtime
-				var handler func(*FunctionApp) error
+				var handler func(*FunctionApp) (bool, error)
 				if runtime > float64(app.LatencyLimit) {
 					handler = c.handleLatencyViolation
 				} else if runtime < float64(app.LatencyLimit)*c.latencyDowngradeFactor {
@@ -131,19 +131,19 @@ func (c *latencyController) Start(ctx context.Context) error {
 					continue
 				}
 
+				ok, err = handler(app)
+				if err != nil {
+					log.Printf("Error handling reconfiguration for app %s: %v", app.Id, err)
+					continue
+				}
+				if !ok {
+					log.Printf("No further layout candidates available for app %s. Skipping reconfiguration.", app.Id)
+				}
 				c.lastReconfigsMu.Lock()
 				c.lastReconfigs[app.Id] = time.Now()
 				c.lastReconfigsMu.Unlock()
 
-				go func(app *FunctionApp, handler func(*FunctionApp) error) {
-					err := handler(app)
-					if err != nil {
-						log.Printf("Error handling reconfiguration for app %s: %v", app.Id, err)
-						return
-					}
-
-					log.Printf("Successfully handled reconfiguration for app %s", app.Id)
-				}(app, handler)
+				log.Printf("Reconfiguration in progress for app %s, applying cooldown period", app.Id)
 			}
 		}
 	}
@@ -226,39 +226,41 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 	return app, nil
 }
 
-func (c *latencyController) handleLatencyViolation(app *FunctionApp) error {
+func (c *latencyController) handleLatencyViolation(app *FunctionApp) (bool, error) {
 	log.Printf("App %s exceeds latency threshold (%d ms). Triggering reconfiguration.", app.Id, app.LatencyLimit)
 	return c.handleLayoutChange(app, layoutUpgradePath)
 }
 
-func (c *latencyController) handleLayoutDowngrade(app *FunctionApp) error {
+func (c *latencyController) handleLayoutDowngrade(app *FunctionApp) (bool, error) {
 	log.Printf("App %s is below latency threshold. Considering layout downgrade.", app.Id)
 	return c.handleLayoutChange(app, layoutDowngradePath)
 }
 
-func (c *latencyController) handleLayoutChange(app *FunctionApp, path map[string]string) error {
+func (c *latencyController) handleLayoutChange(app *FunctionApp, path map[string]string) (bool, error) {
 	nextLayoutKey := path[app.ActiveLayoutKey]
 	if nextLayoutKey == "" {
-		log.Printf("No further layout candidates available for app %s. Skipping reconfiguration.", app.Id)
-		return nil
+		// No further layout candidates available
+		return false, nil
 	}
 
 	nextLayout, ok := app.LayoutCandidates[nextLayoutKey]
 	if !ok {
-		return fmt.Errorf("no layout candidate found for key %s in app %s", nextLayoutKey, app.Id)
+		return false, fmt.Errorf("no layout candidate found for key %s in app %s", nextLayoutKey, app.Id)
 	}
 
 	app.ActiveLayoutKey = nextLayoutKey
 	if err := c.composer.functionAppRepo.Save(app); err != nil {
-		return fmt.Errorf("failed to update active layout key for app %s: %w", app.Id, err)
+		return false, fmt.Errorf("failed to update active layout key for app %s: %w", app.Id, err)
 	}
 
-	if err := c.deployLayout(app.Id, nextLayout); err != nil {
-		return fmt.Errorf("failed to deploy new layout for app %s: %w", app.Id, err)
-	}
+	go func() {
+		if err := c.deployLayout(app.Id, nextLayout); err != nil {
+			log.Printf("Failed to deploy new layout for app %s: %v", app.Id, err)
+		}
+	}()
 
 	log.Printf("App %s successfully transitioned to layout %s", app.Id, nextLayoutKey)
-	return nil
+	return true, nil
 }
 
 func (c *latencyController) deployLayout(appId string, layout Layout) error {
