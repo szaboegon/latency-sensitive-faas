@@ -17,3 +17,5 @@ def write_result(event: Any) -> None:
         "event": event,
     }
     redis_client.rpush(key, json.dumps(value))
+    # Keep only the last 10 results for memory efficiency
+    redis_client.ltrim(key, -10, -1)
