@@ -23,7 +23,7 @@ const (
 	MetricTypeAverage MetricType = "AVG"
 )
 
-type MetricQueryFunc func() (map[string]float64, map[string]int, error)
+type MetricQueryFunc func(timeRangeGte string) (map[string]float64, map[string]int, error)
 
 type latencyController struct {
 	composer               *Composer
@@ -38,11 +38,12 @@ type latencyController struct {
 	latencyDowngradeFactor float64
 	aggMetricType          MetricType
 	metricQueryFunc        MetricQueryFunc
+	metricQueryTimeRange   string
 	reconfigStartTimes     map[string]time.Time
 }
 
 func NewController(composer *Composer, metrics MetricsReader, scenarioManager ScenarioManager,
-	delay time.Duration, deployNamespace string, availableNodeMemoryGb int, aggMetricType MetricType) Controller {
+	delay time.Duration, deployNamespace string, availableNodeMemoryGb int, aggMetricType MetricType, metricQueryTimeRange string) Controller {
 
 	if aggMetricType != MetricTypeP95 && aggMetricType != MetricTypeAverage {
 		log.Printf("Warning: Invalid metric type '%s' provided. Defaulting to P95.", aggMetricType)
@@ -70,6 +71,8 @@ func NewController(composer *Composer, metrics MetricsReader, scenarioManager Sc
 		latencyDowngradeFactor: 0.7,
 		aggMetricType:          aggMetricType,
 		metricQueryFunc:        queryFunc,
+		metricQueryTimeRange:   metricQueryTimeRange,
+		reconfigStartTimes:     make(map[string]time.Time),
 	}
 }
 
@@ -84,20 +87,18 @@ func (c *latencyController) Start(ctx context.Context) error {
 			log.Println("Latency Controller received cancellation signal")
 			return nil
 		case <-ticker.C:
-			runtimes, traceCounts, err := c.metricQueryFunc()
-			//log.Printf("Debug: runtimes: %v", runtimes)
-			//log.Printf("Debug: traceCounts: %v", traceCounts)
+			runtimes, traceCounts, err := c.metricQueryFunc(c.metricQueryTimeRange)
 			if err != nil {
-				log.Printf("Error querying 95th percentile app runtimes: %v", err)
+				log.Printf("Error querying app runtime metrics: %v", err)
 				continue
 			}
 			for appId, runtime := range runtimes {
 				count, ok := traceCounts[appId]
 				if !ok || count < minimalTraceCount {
-					log.Printf("Skipping app %s reconfiguration due to insufficient trace count (%d < %d)", appId, count, minimalTraceCount)
+					// log.Printf("Skipping app %s reconfiguration due to insufficient trace count (%d < %d)", appId, count, minimalTraceCount)
 					continue
 				}
-				log.Printf("App %s 95th percentile runtime: %.0f ms", appId, runtime)
+				// log.Printf("App %s metrics with runtime agg func %s: %.0f ms", appId, c.aggMetricType, runtime)
 				app, err := c.composer.GetFunctionApp(appId)
 				if err != nil {
 					log.Printf("Error retrieving function app %s: %v", appId, err)
@@ -115,7 +116,7 @@ func (c *latencyController) Start(ctx context.Context) error {
 				c.lastReconfigsMu.Lock()
 				last, ok := c.lastReconfigs[app.Id]
 				if ok && time.Since(last) < c.cooldownPeriod {
-					log.Printf("Skipping reconfiguration for app %s due to cooldown (last at %v)", app.Id, last)
+					// log.Printf("Skipping reconfiguration for app %s due to cooldown (last at %v)", app.Id, last)
 					c.lastReconfigsMu.Unlock()
 					continue
 				}
@@ -128,7 +129,7 @@ func (c *latencyController) Start(ctx context.Context) error {
 				} else if runtime < float64(app.LatencyLimit)*c.latencyDowngradeFactor {
 					handler = c.handleLayoutDowngrade
 				} else {
-					log.Printf("App %s latency within threshold. No action required.", app.Id)
+					// log.Printf("App %s latency within threshold. No action required.", app.Id)
 					continue
 				}
 

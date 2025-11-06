@@ -34,8 +34,8 @@ type AlertClient interface {
 
 type MetricsReader interface {
 	QueryNodeMetrics() ([]NodeMetrics, error)
-	Query95thPercentileAppRuntimes() (map[string]float64, map[string]int, error)
-	QueryAverageAppRuntimes() (map[string]float64, map[string]int, error)
+	Query95thPercentileAppRuntimes(timeRangeGte string) (map[string]float64, map[string]int, error)
+	QueryAverageAppRuntimes(timeRangeGte string) (map[string]float64, map[string]int, error)
 	EnsureIndex(ctx context.Context, indexName string) error
 }
 

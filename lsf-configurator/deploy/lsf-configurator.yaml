@@ -147,6 +147,8 @@ spec:
               value: "1"
             - name: CONTROLLER_METRIC_TYPE
               value: "AVG"
+            - name: CONTROLLER_METRIC_QUERY_TIME_RANGE
+              value: "now-5m"
             - name: PLATFORM_NODES
               value: "knative,knative-m02,knative-m03"
             - name: PLATFORM_DELAY_MS

@@ -35,7 +35,7 @@ func (h *HandlerMetrics) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *HandlerMetrics) getAllAppMetrics(w http.ResponseWriter, r *http.Request) {
-	metrics, _, err := h.metricsClient.Query95thPercentileAppRuntimes()
+	metrics, _, err := h.metricsClient.Query95thPercentileAppRuntimes("now-5m")
 	if err != nil {
 		log.Printf("Error querying metrics: %v", err)
 		http.Error(w, "Failed to query metrics", http.StatusInternalServerError)

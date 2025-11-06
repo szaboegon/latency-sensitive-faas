@@ -11,37 +11,38 @@ import (
 )
 
 type Configuration struct {
-	UploadDir                  string   `env:"UPLOAD_DIR"`
-	TemplatesPath              string   `env:"TEMPLATES_PATH"`
-	ImageRegistry              string   `env:"IMAGE_REGISTRY"`
-	ImageRepository            string   `env:"IMAGE_REPOSITORY"`
-	RedisUrl                   string   `env:"REDIS_URL"`
-	VerboseLogs                bool     `env:"VERBOSE_LOGS"`
-	MetricsBackendAddress      string   `env:"METRICS_BACKEND_ADDRESS"`
-	TektonNamespace            string   `env:"TEKTON_NAMESPACE"`
-	TektonPipeline             string   `env:"TEKTON_PIPELINE"`
-	TektonNotifyURL            string   `env:"TEKTON_NOTIFY_URL"`
-	TektonWorkspacePVC         string   `env:"TEKTON_WORKSPACE_PVC"`
-	TektonServiceAccount       string   `env:"TEKTON_SERVICE_ACCOUNT"`
-	TektonConcurrencyLimit     int      `env:"TEKTON_CONCURRENCY_LIMIT"`
-	DatabasePath               string   `env:"DATABASE_PATH"`
-	AlertingApiUrl             string   `env:"ALERTING_API_URL"`
-	AlertingUsername           string   `env:"ALERTING_USERNAME"`
-	AlertingPassword           string   `env:"ALERTING_PASSWORD"`
-	AlertsIndex                string   `env:"ALERTS_INDEX" default:"latency-alerts"`
-	AlertingConnector          string   `env:"ALERTING_CONNECTOR" default:"lsf-alerts-connector"`
-	LocalMode                  bool     `env:"LOCAL_MODE" default:"false"`
-	DeployNamespace            string   `env:"DEPLOY_NAMESPACE" default:"application"`
-	ControllerTickDelaySeconds int      `env:"CONTROLLER_TICK_DELAY_SECONDS" default:"1"`
-	ControllerMetricType       string   `env:"CONTROLLER_METRIC_TYPE" default:"AVG"`
-	PlatformNodes              []string `env:"PLATFORM_NODES"`
-	PlatformDelayMs            int      `env:"PLATFORM_DELAY_MS"`
-	AvailableNodeMemoryGb      int      `env:"AVAILABLE_NODE_MEMORY_GB"`
-	PythonPath                 string   `env:"PYTHON_PATH" default:"python3"`
-	LayoutScriptPath           string   `env:"LAYOUT_SCRIPT_PATH"`
-	ResultStoreAddress         string   `env:"RESULT_STORE_ADDRESS"`
-	TargetConcurrency          int      `env:"TARGET_CONCURRENCY" default:"2"`
-	ComponentMCPUAllocation    int      `env:"COMPONENT_MCPU_ALLOCATION" default:"500"`
+	UploadDir                      string   `env:"UPLOAD_DIR"`
+	TemplatesPath                  string   `env:"TEMPLATES_PATH"`
+	ImageRegistry                  string   `env:"IMAGE_REGISTRY"`
+	ImageRepository                string   `env:"IMAGE_REPOSITORY"`
+	RedisUrl                       string   `env:"REDIS_URL"`
+	VerboseLogs                    bool     `env:"VERBOSE_LOGS"`
+	MetricsBackendAddress          string   `env:"METRICS_BACKEND_ADDRESS"`
+	TektonNamespace                string   `env:"TEKTON_NAMESPACE"`
+	TektonPipeline                 string   `env:"TEKTON_PIPELINE"`
+	TektonNotifyURL                string   `env:"TEKTON_NOTIFY_URL"`
+	TektonWorkspacePVC             string   `env:"TEKTON_WORKSPACE_PVC"`
+	TektonServiceAccount           string   `env:"TEKTON_SERVICE_ACCOUNT"`
+	TektonConcurrencyLimit         int      `env:"TEKTON_CONCURRENCY_LIMIT"`
+	DatabasePath                   string   `env:"DATABASE_PATH"`
+	AlertingApiUrl                 string   `env:"ALERTING_API_URL"`
+	AlertingUsername               string   `env:"ALERTING_USERNAME"`
+	AlertingPassword               string   `env:"ALERTING_PASSWORD"`
+	AlertsIndex                    string   `env:"ALERTS_INDEX" default:"latency-alerts"`
+	AlertingConnector              string   `env:"ALERTING_CONNECTOR" default:"lsf-alerts-connector"`
+	LocalMode                      bool     `env:"LOCAL_MODE" default:"false"`
+	DeployNamespace                string   `env:"DEPLOY_NAMESPACE" default:"application"`
+	ControllerTickDelaySeconds     int      `env:"CONTROLLER_TICK_DELAY_SECONDS" default:"1"`
+	ControllerMetricType           string   `env:"CONTROLLER_METRIC_TYPE" default:"AVG"`
+	ControllerMetricQueryTimeRange string   `env:"CONTROLLER_METRIC_QUERY_TIME_RANGE" default:"now-5m"`
+	PlatformNodes                  []string `env:"PLATFORM_NODES"`
+	PlatformDelayMs                int      `env:"PLATFORM_DELAY_MS"`
+	AvailableNodeMemoryGb          int      `env:"AVAILABLE_NODE_MEMORY_GB"`
+	PythonPath                     string   `env:"PYTHON_PATH" default:"python3"`
+	LayoutScriptPath               string   `env:"LAYOUT_SCRIPT_PATH"`
+	ResultStoreAddress             string   `env:"RESULT_STORE_ADDRESS"`
+	TargetConcurrency              int      `env:"TARGET_CONCURRENCY" default:"2"`
+	ComponentMCPUAllocation        int      `env:"COMPONENT_MCPU_ALLOCATION" default:"500"`
 	// Indicates the fraction of memory that is shared among concurrent invocations of the same component
 	// E.g. 0.5 means that 50% of the memory is shared, and only the remaining 50% scales with the number concurrent invocations
 	InvocationSharedMemoryRatio float64 `env:"COMPONENT_SHARED_MEMORY_RATIO" default:"0.5"`

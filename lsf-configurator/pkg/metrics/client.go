@@ -169,7 +169,7 @@ func (c metricsClient) QueryNodeMetrics() ([]core.NodeMetrics, error) {
 
 type metricExtractorFunc func(agg types.Aggregate) (float64, bool)
 
-func (c metricsClient) Query95thPercentileAppRuntimes() (map[string]float64, map[string]int, error) {
+func (c metricsClient) Query95thPercentileAppRuntimes(timeRangeGte string) (map[string]float64, map[string]int, error) {
 
 	const metricAggName = "p95_trace_duration"
 	metricAgg := types.Aggregations{
@@ -194,11 +194,11 @@ func (c metricsClient) Query95thPercentileAppRuntimes() (map[string]float64, map
 		return 0, false
 	}
 
-	return c.queryAppRuntimes("now-1d", metricAggName, metricAgg, extractorFunc)
+	return c.queryAppRuntimes(timeRangeGte, metricAggName, metricAgg, extractorFunc)
 
 }
 
-func (c metricsClient) QueryAverageAppRuntimes() (map[string]float64, map[string]int, error) {
+func (c metricsClient) QueryAverageAppRuntimes(timeRangeGte string) (map[string]float64, map[string]int, error) {
 	const metricAggName = "avg_trace_duration"
 
 	metricAgg := types.Aggregations{
@@ -217,7 +217,7 @@ func (c metricsClient) QueryAverageAppRuntimes() (map[string]float64, map[string
 		return 0, false
 	}
 
-	return c.queryAppRuntimes("now-1d", metricAggName, metricAgg, extractorFunc)
+	return c.queryAppRuntimes(timeRangeGte, metricAggName, metricAgg, extractorFunc)
 }
 
 func (c metricsClient) queryAppRuntimes(
