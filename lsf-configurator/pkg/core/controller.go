@@ -14,6 +14,7 @@ import (
 // this should be measured and set accordingly for each function composition)
 const (
 	minimalTraceCount = 50
+	logInterval       = 1 * time.Minute
 )
 
 type MetricType string
@@ -40,6 +41,7 @@ type latencyController struct {
 	metricQueryFunc        MetricQueryFunc
 	metricQueryTimeRange   string
 	reconfigStartTimes     map[string]time.Time
+	lastLogTime            time.Time
 }
 
 func NewController(composer *Composer, metrics MetricsReader, scenarioManager ScenarioManager,
@@ -92,12 +94,23 @@ func (c *latencyController) Start(ctx context.Context) error {
 				log.Printf("Error querying app runtime metrics: %v", err)
 				continue
 			}
-			for appId, runtime := range runtimes {
-				count, ok := traceCounts[appId]
-				if !ok || count < minimalTraceCount {
-					// log.Printf("Skipping app %s reconfiguration due to insufficient trace count (%d < %d)", appId, count, minimalTraceCount)
-					continue
+			// Log runtimes at defined intervals
+			now := time.Now()
+			if now.Sub(c.lastLogTime) >= logInterval {
+				if len(runtimes) > 0 {
+					var runtimeStrings []string
+					for appID, rt := range runtimes {
+						runtimeStrings = append(runtimeStrings, fmt.Sprintf("%s: %.0fms", appID, rt))
+					}
+					sort.Strings(runtimeStrings)
+					log.Printf("Current app runtimes (%s): [%s]", c.aggMetricType, strings.Join(runtimeStrings, ", "))
+				} else {
+					log.Printf("No app runtimes reported in this interval.")
 				}
+				c.lastLogTime = now
+			}
+
+			for appId, runtime := range runtimes {
 				// log.Printf("App %s metrics with runtime agg func %s: %.0f ms", appId, c.aggMetricType, runtime)
 				app, err := c.composer.GetFunctionApp(appId)
 				if err != nil {
@@ -123,8 +136,14 @@ func (c *latencyController) Start(ctx context.Context) error {
 				c.lastReconfigsMu.Unlock()
 
 				// Determine action based on runtime
-				var handler func(*FunctionApp) (bool, error)
+				var handler func(*FunctionApp) (string, error)
 				if runtime > float64(app.LatencyLimit) {
+					// Check trace count for upgrades to avoid reconfigurations based on insufficient data
+					count, ok := traceCounts[appId]
+					if !ok || count < minimalTraceCount {
+						// log.Printf("Skipping app %s reconfiguration due to insufficient trace count (%d < %d)", appId, count, minimalTraceCount)
+						continue
+					}
 					handler = c.handleLatencyViolation
 				} else if runtime < float64(app.LatencyLimit)*c.latencyDowngradeFactor {
 					handler = c.handleLayoutDowngrade
@@ -138,13 +157,15 @@ func (c *latencyController) Start(ctx context.Context) error {
 				c.reconfigStartTimes[app.Id] = time.Now()
 				c.lastReconfigsMu.Unlock()
 
-				ok, err = handler(app)
+				nextLayoutKey, err := handler(app)
 				if err != nil {
 					log.Printf("Error handling reconfiguration for app %s: %v", app.Id, err)
 					continue
 				}
-				if !ok {
+				if nextLayoutKey == "" {
 					log.Printf("No further layout candidates available for app %s. Skipping reconfiguration.", app.Id)
+				} else {
+					log.Printf("App %s transitioned to layout %s. Deploying...", app.Id, nextLayoutKey)
 				}
 				c.lastReconfigsMu.Lock()
 				c.lastReconfigs[app.Id] = time.Now()
@@ -233,31 +254,31 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 	return app, nil
 }
 
-func (c *latencyController) handleLatencyViolation(app *FunctionApp) (bool, error) {
+func (c *latencyController) handleLatencyViolation(app *FunctionApp) (string, error) {
 	log.Printf("App %s exceeds latency threshold (%d ms). Triggering reconfiguration.", app.Id, app.LatencyLimit)
 	return c.handleLayoutChange(app, layoutUpgradePath)
 }
 
-func (c *latencyController) handleLayoutDowngrade(app *FunctionApp) (bool, error) {
+func (c *latencyController) handleLayoutDowngrade(app *FunctionApp) (string, error) {
 	log.Printf("App %s is below latency threshold. Considering layout downgrade.", app.Id)
 	return c.handleLayoutChange(app, layoutDowngradePath)
 }
 
-func (c *latencyController) handleLayoutChange(app *FunctionApp, path map[string]string) (bool, error) {
+func (c *latencyController) handleLayoutChange(app *FunctionApp, path map[string]string) (string, error) {
 	nextLayoutKey := path[app.ActiveLayoutKey]
 	if nextLayoutKey == "" {
 		// No further layout candidates available
-		return false, nil
+		return "", nil
 	}
 
 	nextLayout, ok := app.LayoutCandidates[nextLayoutKey]
 	if !ok {
-		return false, fmt.Errorf("no layout candidate found for key %s in app %s", nextLayoutKey, app.Id)
+		return "", fmt.Errorf("no layout candidate found for key %s in app %s", nextLayoutKey, app.Id)
 	}
 
 	app.ActiveLayoutKey = nextLayoutKey
 	if err := c.composer.functionAppRepo.Save(app); err != nil {
-		return false, fmt.Errorf("failed to update active layout key for app %s: %w", app.Id, err)
+		return "", fmt.Errorf("failed to update active layout key for app %s: %w", app.Id, err)
 	}
 
 	go func() {
@@ -267,7 +288,7 @@ func (c *latencyController) handleLayoutChange(app *FunctionApp, path map[string
 	}()
 
 	log.Printf("App %s successfully transitioned to layout %s", app.Id, nextLayoutKey)
-	return true, nil
+	return nextLayoutKey, nil
 }
 
 func (c *latencyController) deployLayout(appId string, layout Layout) error {

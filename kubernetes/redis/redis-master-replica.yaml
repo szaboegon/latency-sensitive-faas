@@ -46,10 +46,10 @@ spec:
           resources:
             requests:
               cpu: "100m"
-              memory: "64Mi"
+              memory: "512Mi"
             limits:
               cpu: "500m"
-              memory: "512Mi"
+              memory: "1024Mi"
           volumeMounts:
             - name: redis-data
               mountPath: /data
@@ -108,10 +108,10 @@ spec:
           resources:
             requests:
               cpu: "100m"
-              memory: "64Mi"
+              memory: "512Mi"
             limits:
               cpu: "500m"
-              memory: "512Mi"
+              memory: "1024Mi"
           volumeMounts:
             - name: config
               mountPath: /etc/redis
