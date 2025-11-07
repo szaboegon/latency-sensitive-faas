@@ -229,6 +229,8 @@ func (c metricsClient) queryAppRuntimes(
 
 	size := 1000
 	appNameField := "labels.app_name"
+	startSpanLabelField := "labels.trace_boundary_start"
+	endSpanLabelField := "labels.trace_boundary_end"
 
 	appAggregations := map[string]types.Aggregations{
 		"trace_count": {
@@ -242,6 +244,32 @@ func (c metricsClient) queryAppRuntimes(
 				Size:  &size,
 			},
 			Aggregations: map[string]types.Aggregations{
+				"has_start_span": {
+					Filter: &types.Query{
+						Exists: &types.ExistsQuery{
+							Field: startSpanLabelField,
+						},
+					},
+				},
+				"has_end_span": {
+					Filter: &types.Query{
+						Exists: &types.ExistsQuery{
+							Field: endSpanLabelField,
+						},
+					},
+				},
+				"completeness_filter": {
+					BucketSelector: &types.BucketSelectorAggregation{
+						BucketsPath: map[string]string{
+							"start_count": "has_start_span._count",
+							"end_count":   "has_end_span._count",
+						},
+						Script: &types.Script{
+							// Only include traces that have both a start span AND at least one end span.
+							Source: strPtr("params.start_count >= 1 && params.end_count >= 1"),
+						},
+					},
+				},
 				"min_start": {
 					Min: &types.MinAggregation{
 						Field: strPtr("@timestamp"),

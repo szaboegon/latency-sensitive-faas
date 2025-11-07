@@ -138,6 +138,8 @@ def forward_request(
 
 
 QUEUE_START_TIME_HEADER = "X-Request-Start-Time"
+TRACE_BOUNDARY_START_LABEL = "trace_boundary_start"
+TRACE_BOUNDARY_END_LABEL = "trace_boundary_end"
 
 
 def main(context: Context) -> Tuple[str, int]:
@@ -162,8 +164,17 @@ def main(context: Context) -> Tuple[str, int]:
             )
         ]
     )
-    span_context: Optional[OtelContext] = None
-    output, span_context = None, extract(context.request.headers)
+    span_context: Optional[OtelContext] = extract(context.request.headers)
+    is_trace_start = not bool(
+        span_context
+        and trace.get_current_span(span_context).get_span_context().is_valid
+    )
+
+    if is_trace_start:
+        with tracer.start_as_current_span(
+            "workflow",
+        ) as workflow_span:
+            span_context = trace.set_span_in_context(workflow_span)
 
     queue_start_epoch_str = context.request.headers.get(QUEUE_START_TIME_HEADER)
     logger.info(
@@ -172,13 +183,21 @@ def main(context: Context) -> Tuple[str, int]:
 
     try:
         queue_start_time_ns = int(queue_start_epoch_str)
-
         queue_end_time_ns = time.time_ns()
+
+        attributes: Dict[str, bool] = {}
+        if is_trace_start:
+            attributes = {
+                TRACE_BOUNDARY_START_LABEL: True,
+            }
+
         queue_span = tracer.start_span(
             name="queue",
             context=span_context,
             start_time=queue_start_time_ns,
         )
+
+        queue_span.set_attributes(attributes)
         span_context = trace.set_span_in_context(queue_span)
 
         queue_span.end(end_time=queue_end_time_ns)
@@ -220,7 +239,9 @@ def main(context: Context) -> Tuple[str, int]:
                 if not next_routes:
                     # No next components, write result to Redis
                     with tracer.start_as_current_span(
-                        "write_result", context=span_context
+                        "write_result",
+                        context=span_context,
+                        attributes={TRACE_BOUNDARY_END_LABEL: True},
                     ) as span:
                         try:
                             write_result(o)
