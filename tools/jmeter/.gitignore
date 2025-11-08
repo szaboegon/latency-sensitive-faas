@@ -1,5 +1,5 @@
 jmeter.log
-results.csv
-results.jtl
+*.csv
+*.jtl
 dashboard-report
 *.png

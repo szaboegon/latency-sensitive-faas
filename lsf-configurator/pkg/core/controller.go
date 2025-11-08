@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"sort"
@@ -25,6 +26,13 @@ const (
 )
 
 type MetricQueryFunc func(timeRangeGte string) (map[string]float64, map[string]int, error)
+
+type ReconfigEvent struct {
+	EventType  string  `json:"event_type"`
+	AppID      string  `json:"app_id"`
+	EventTime  int64   `json:"event_time"` // Unix timestamp in milliseconds
+	DurationMs float64 `json:"duration_ms"`
+}
 
 type latencyController struct {
 	composer               *Composer
@@ -486,7 +494,20 @@ func (c *latencyController) deployLayout(appId string, layout Layout) error {
 	if ok {
 		duration := time.Since(startTime)
 		durationMs := float64(duration) / float64(time.Millisecond)
-		log.Printf("App %s reconfiguration **END-TO-END LATENCY**: %.0f ms (from violation to DNS update)", appId, durationMs)
+		event := ReconfigEvent{
+			EventType:  "RECONFIG_COMPLETE",
+			AppID:      appId,
+			EventTime:  startTime.UnixMilli(),
+			DurationMs: durationMs,
+		}
+
+		jsonBytes, err := json.Marshal(event)
+		if err != nil {
+			log.Printf("Error marshalling reconfig event: %v", err)
+		} else {
+			log.Printf("[RECONFIG_EVENT] %s", string(jsonBytes))
+		}
+
 		delete(c.reconfigStartTimes, appId)
 	} else {
 		log.Printf("Warning: Missing start time for app %s in reconfigStartTime map.", appId)

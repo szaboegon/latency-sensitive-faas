@@ -11,26 +11,12 @@
     <hashTree>
       <kg.apc.jmeter.threads.UltimateThreadGroup guiclass="kg.apc.jmeter.threads.UltimateThreadGroupGui" testclass="kg.apc.jmeter.threads.UltimateThreadGroup" testname="jp@gc - Ultimate Thread Group">
         <collectionProp name="ultimatethreadgroupdata">
-          <collectionProp name="867256131">
-            <stringProp name="49">1</stringProp>
-            <stringProp name="48">0</stringProp>
-            <stringProp name="48">0</stringProp>
-            <stringProp name="49648">220</stringProp>
-            <stringProp name="49">1</stringProp>
-          </collectionProp>
-          <collectionProp name="-281733916">
-            <stringProp name="49">1</stringProp>
-            <stringProp name="1567">10</stringProp>
-            <stringProp name="48">0</stringProp>
-            <stringProp name="49617">210</stringProp>
-            <stringProp name="49">1</stringProp>
-          </collectionProp>
-          <collectionProp name="-178052773">
-            <stringProp name="49">1</stringProp>
-            <stringProp name="1598">20</stringProp>
-            <stringProp name="48">0</stringProp>
-            <stringProp name="49586">200</stringProp>
-            <stringProp name="49">1</stringProp>
+          <collectionProp name="725964805">
+            <stringProp name="53">5</stringProp>
+            <stringProp name="0"></stringProp>
+            <stringProp name="50">2</stringProp>
+            <stringProp name="51731">476</stringProp>
+            <stringProp name="50">2</stringProp>
           </collectionProp>
         </collectionProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
@@ -40,42 +26,42 @@
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
       </kg.apc.jmeter.threads.UltimateThreadGroup>
       <hashTree>
-        <kg.apc.jmeter.timers.VariableThroughputTimer guiclass="kg.apc.jmeter.timers.VariableThroughputTimerGui" testclass="kg.apc.jmeter.timers.VariableThroughputTimer" testname="jp@gc - Throughput Shaping Timer" enabled="true">
+        <kg.apc.jmeter.timers.VariableThroughputTimer guiclass="kg.apc.jmeter.timers.VariableThroughputTimerGui" testclass="kg.apc.jmeter.timers.VariableThroughputTimer" testname="jp@gc - Throughput Shaping Timer">
           <collectionProp name="load_profile">
-            <collectionProp name="140372090">
+            <collectionProp name="140403195">
               <stringProp name="48">0</stringProp>
               <stringProp name="49">1</stringProp>
-              <stringProp name="1567">10</stringProp>
+              <stringProp name="1629">30</stringProp>
             </collectionProp>
-            <collectionProp name="82872764">
+            <collectionProp name="1867461512">
               <stringProp name="1">1</stringProp>
               <stringProp name="49">1</stringProp>
-              <stringProp name="1722">60</stringProp>
+              <stringProp name="48687">120</stringProp>
             </collectionProp>
-            <collectionProp name="140433873">
+            <collectionProp name="140464978">
               <stringProp name="49">1</stringProp>
               <stringProp name="50">2</stringProp>
-              <stringProp name="1567">10</stringProp>
+              <stringProp name="1629">30</stringProp>
             </collectionProp>
-            <collectionProp name="141283584">
+            <collectionProp name="1925872332">
               <stringProp name="50">2</stringProp>
               <stringProp name="50">2</stringProp>
-              <stringProp name="1722">60</stringProp>
+              <stringProp name="48687">120</stringProp>
             </collectionProp>
-            <collectionProp name="141191823">
+            <collectionProp name="141222928">
               <stringProp name="50">2</stringProp>
               <stringProp name="49">1</stringProp>
-              <stringProp name="1567">10</stringProp>
+              <stringProp name="1629">30</stringProp>
             </collectionProp>
-            <collectionProp name="82872764">
+            <collectionProp name="1867461512">
               <stringProp name="1">1</stringProp>
               <stringProp name="49">1</stringProp>
-              <stringProp name="1722">60</stringProp>
+              <stringProp name="48687">120</stringProp>
             </collectionProp>
-            <collectionProp name="82805090">
+            <collectionProp name="82836195">
               <stringProp name="1">1</stringProp>
               <stringProp name="48">0</stringProp>
-              <stringProp name="1567">10</stringProp>
+              <stringProp name="1629">30</stringProp>
             </collectionProp>
           </collectionProp>
         </kg.apc.jmeter.timers.VariableThroughputTimer>
@@ -262,7 +248,7 @@ vars.put(&apos;payload&apos;, new groovy.json.JsonBuilder(payload).toPrettyStrin
             </value>
           </objProp>
           <stringProp name="filename"></stringProp>
-          <longProp name="interval_grouping">500</longProp>
+          <longProp name="interval_grouping">1000</longProp>
           <boolProp name="graph_aggregated">false</boolProp>
           <stringProp name="include_sample_labels"></stringProp>
           <stringProp name="exclude_sample_labels">HTTP Request-\d+</stringProp>
@@ -272,7 +258,7 @@ vars.put(&apos;payload&apos;, new groovy.json.JsonBuilder(payload).toPrettyStrin
           <boolProp name="exclude_checkbox_state">false</boolProp>
         </kg.apc.jmeter.vizualizers.CorrectedResultCollector>
         <hashTree/>
-        <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.TransactionsPerSecondGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="jp@gc - Transactions per Second">
+        <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.TransactionsPerSecondGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="jp@gc - Transactions per Second" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>
@@ -307,7 +293,7 @@ vars.put(&apos;payload&apos;, new groovy.json.JsonBuilder(payload).toPrettyStrin
             </value>
           </objProp>
           <stringProp name="filename"></stringProp>
-          <longProp name="interval_grouping">1000</longProp>
+          <longProp name="interval_grouping">10000</longProp>
           <boolProp name="graph_aggregated">false</boolProp>
           <stringProp name="include_sample_labels"></stringProp>
           <stringProp name="exclude_sample_labels"></stringProp>
@@ -317,7 +303,7 @@ vars.put(&apos;payload&apos;, new groovy.json.JsonBuilder(payload).toPrettyStrin
           <boolProp name="exclude_checkbox_state">false</boolProp>
         </kg.apc.jmeter.vizualizers.CorrectedResultCollector>
         <hashTree/>
-        <ResultCollector guiclass="SimpleDataWriter" testclass="ResultCollector" testname="Simple Data Writer">
+        <ResultCollector guiclass="SimpleDataWriter" testclass="ResultCollector" testname="Simple Data Writer" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>
