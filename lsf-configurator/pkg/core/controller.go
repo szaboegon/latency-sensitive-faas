@@ -35,23 +35,21 @@ type ReconfigEvent struct {
 }
 
 type latencyController struct {
-	composer                     *Composer
-	metrics                      MetricsReader
-	scenarioManager              ScenarioManager
-	delay                        time.Duration
-	deployNamespace              string
-	lastReconfigs                map[string]time.Time
-	cooldownPeriod               time.Duration
-	availableNodeMemoryGb        int // same for all nodes for now, in GB
-	lastReconfigsMu              sync.Mutex
-	latencyDowngradeFactor       float64
-	aggMetricType                MetricType
-	metricQueryFunc              MetricQueryFunc
-	metricQueryTimeRange         string
-	reconfigStartTimes           map[string]time.Time
-	lastLogTime                  time.Time
-	lowLatencyStartTimes         map[string]time.Time
-	downgradeConsistencyDuration time.Duration
+	composer               *Composer
+	metrics                MetricsReader
+	scenarioManager        ScenarioManager
+	delay                  time.Duration
+	deployNamespace        string
+	lastReconfigs          map[string]time.Time
+	cooldownPeriod         time.Duration
+	availableNodeMemoryGb  int // same for all nodes for now, in GB
+	lastReconfigsMu        sync.Mutex
+	latencyDowngradeFactor float64
+	aggMetricType          MetricType
+	metricQueryFunc        MetricQueryFunc
+	metricQueryTimeRange   string
+	reconfigStartTimes     map[string]time.Time
+	lastLogTime            time.Time
 }
 
 func NewController(composer *Composer, metrics MetricsReader, scenarioManager ScenarioManager,
@@ -71,23 +69,21 @@ func NewController(composer *Composer, metrics MetricsReader, scenarioManager Sc
 	}
 
 	return &latencyController{
-		composer:                     composer,
-		metrics:                      metrics,
-		scenarioManager:              scenarioManager,
-		delay:                        delay,
-		deployNamespace:              deployNamespace,
-		lastReconfigs:                make(map[string]time.Time),
-		cooldownPeriod:               120 * time.Second,
-		availableNodeMemoryGb:        availableNodeMemoryGb,
-		lastReconfigsMu:              sync.Mutex{},
-		latencyDowngradeFactor:       0.7,
-		aggMetricType:                aggMetricType,
-		metricQueryFunc:              queryFunc,
-		metricQueryTimeRange:         metricQueryTimeRange,
-		reconfigStartTimes:           make(map[string]time.Time),
-		lastLogTime:                  time.Now(),
-		lowLatencyStartTimes:         make(map[string]time.Time),
-		downgradeConsistencyDuration: 5 * time.Minute,
+		composer:               composer,
+		metrics:                metrics,
+		scenarioManager:        scenarioManager,
+		delay:                  delay,
+		deployNamespace:        deployNamespace,
+		lastReconfigs:          make(map[string]time.Time),
+		cooldownPeriod:         120 * time.Second,
+		availableNodeMemoryGb:  availableNodeMemoryGb,
+		lastReconfigsMu:        sync.Mutex{},
+		latencyDowngradeFactor: 0.7,
+		aggMetricType:          aggMetricType,
+		metricQueryFunc:        queryFunc,
+		metricQueryTimeRange:   metricQueryTimeRange,
+		reconfigStartTimes:     make(map[string]time.Time),
+		lastLogTime:            time.Now(),
 	}
 }
 
