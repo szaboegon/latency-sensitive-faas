@@ -93,7 +93,7 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
         "dataDelay": 10
       }
     ],
-    "latencyLimit": 1800,
+    "latencyLimit": 1500,
     "platformManaged": true
   },
   "functionCompositions": [],

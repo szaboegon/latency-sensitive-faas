@@ -15,7 +15,10 @@ const FunctionAppService = {
     return response.data;
   },
 
-  async createFunctionApp(newApp: FunctionAppCreateDto, files: FileList): Promise<void> {
+  async createFunctionApp(
+    newApp: FunctionAppCreateDto,
+    files: FileList
+  ): Promise<void> {
     const formData = new FormData();
     formData.append("json", JSON.stringify(keysToSnakeCase(newApp)));
     Array.from(files).forEach((file) => {
@@ -29,7 +32,10 @@ const FunctionAppService = {
     });
   },
 
-  async bulkCreateFunctionApp(req: BulkCreateRequest, files: FileList): Promise<void> {
+  async bulkCreateFunctionApp(
+    req: BulkCreateRequest,
+    files: FileList
+  ): Promise<void> {
     const formData = new FormData();
     formData.append("json", JSON.stringify(keysToSnakeCase(req)));
     Array.from(files).forEach((file) => {
@@ -45,7 +51,16 @@ const FunctionAppService = {
 
   async deleteFunctionApp(id: string): Promise<void> {
     await axiosInstance.delete(`${paths.functionApps}/${id}`);
-  }
+  },
+
+  async updateFunctionAppLatencyLimit(
+    id: string,
+    latencyLimit: number
+  ): Promise<void> {
+    await axiosInstance.patch(`${paths.functionApps}/${id}/latency_limit`, {
+      latency_limit: latencyLimit,
+    });
+  },
 };
 
 export default FunctionAppService;

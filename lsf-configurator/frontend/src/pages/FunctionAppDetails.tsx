@@ -10,10 +10,14 @@ import {
   Chip,
   Divider,
   Stack,
+  TextField,
 } from "@mui/material";
 import { useParams } from "react-router";
 import FunctionCompositionCard from "../components/FunctionCompositionCard";
-import { useFunctionAppById } from "../hooks/functionAppsHooks";
+import {
+  useFunctionAppById,
+  useUpdateFunctionAppLatencyLimit,
+} from "../hooks/functionAppsHooks";
 import type {
   FunctionComposition,
   Component,
@@ -32,11 +36,18 @@ import LayoutCandidatesView from "../components/LayoutCandidatesView";
 import ResultsView from "../components/ResultsView";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import { IconButton, Tooltip } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import SaveIcon from "@mui/icons-material/Save";
+import CancelIcon from "@mui/icons-material/Cancel";
 
 const FunctionAppDetails: React.FC = () => {
   const { id } = useParams();
   const { data: app, isLoading, error } = useFunctionAppById(id ?? "");
   const { mutate: deleteComposition } = useDeleteFunctionComposition();
+  const { mutate: updateLatencyLimit } = useUpdateFunctionAppLatencyLimit();
+
+  const [editingLatency, setEditingLatency] = useState(false);
+  const [latencyValue, setLatencyValue] = useState(app?.latencyLimit ?? 0);
 
   const [tabValue, setTabValue] = useState<"list" | "graph" | "results">(
     "list"
@@ -180,11 +191,58 @@ const FunctionAppDetails: React.FC = () => {
           <Typography variant="subtitle1" color="text.secondary">
             Latency Limit:
           </Typography>
-          <Chip
-            label={`${app.latencyLimit ?? "N/A"} ms`}
-            color="primary"
-            sx={{ fontWeight: "bold", fontSize: 16 }}
-          />
+          {editingLatency ? (
+            <>
+              <TextField
+                size="small"
+                type="number"
+                value={latencyValue}
+                onChange={(e) => setLatencyValue(Number(e.target.value))}
+                sx={{ width: 100 }}
+                inputProps={{ min: 1 }}
+              />
+              <IconButton
+                color="primary"
+                onClick={() => {
+                  if (app?.id && latencyValue > 0) {
+                    updateLatencyLimit({
+                      id: app.id,
+                      latencyLimit: latencyValue,
+                    });
+                    setEditingLatency(false);
+                  }
+                }}
+                aria-label="Save"
+              >
+                <SaveIcon />
+              </IconButton>
+              <IconButton
+                color="inherit"
+                onClick={() => {
+                  setLatencyValue(app.latencyLimit ?? 0);
+                  setEditingLatency(false);
+                }}
+                aria-label="Cancel"
+              >
+                <CancelIcon />
+              </IconButton>
+            </>
+          ) : (
+            <>
+              <Chip
+                label={`${app.latencyLimit ?? "N/A"} ms`}
+                color="primary"
+                sx={{ fontWeight: "bold", fontSize: 16 }}
+              />
+              <IconButton
+                size="small"
+                onClick={() => setEditingLatency(true)}
+                aria-label="Edit"
+              >
+                <EditIcon />
+              </IconButton>
+            </>
+          )}
         </Box>
 
         {/* Components section */}

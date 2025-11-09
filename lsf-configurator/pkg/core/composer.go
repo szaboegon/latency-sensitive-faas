@@ -116,6 +116,16 @@ func (c *Composer) CreateFunctionApp(creationData FunctionAppCreationData) (*Fun
 	return &fcApp, nil
 }
 
+func (c *Composer) UpdateFunctionApp(app *FunctionApp) error {
+	if app == nil {
+		return fmt.Errorf("function app is nil")
+	}
+	if err := c.functionAppRepo.Save(app); err != nil {
+		return fmt.Errorf("failed to update function app: %w", err)
+	}
+	return nil
+}
+
 func (c *Composer) DeleteFunctionApp(appId string) error {
 	app, err := c.functionAppRepo.GetByID(appId)
 	if err != nil || app == nil {

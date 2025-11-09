@@ -27,8 +27,10 @@ export const useFunctionAppById = (id: string) => {
 export const useCreateFunctionApp = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (vars: { functionApp: FunctionAppCreateDto; files: FileList }) =>
-      FunctionAppService.createFunctionApp(vars.functionApp, vars.files),
+    mutationFn: (vars: {
+      functionApp: FunctionAppCreateDto;
+      files: FileList;
+    }) => FunctionAppService.createFunctionApp(vars.functionApp, vars.files),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["functionApps"] });
     },
@@ -57,10 +59,27 @@ export const useDeleteFunctionApp = () => {
   return useMutation({
     mutationFn: FunctionAppService.deleteFunctionApp,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["functionApps"] }); 
+      queryClient.invalidateQueries({ queryKey: ["functionApps"] });
     },
     meta: {
       successMessage: "Function app deleted successfully!",
+    },
+  });
+};
+
+export const useUpdateFunctionAppLatencyLimit = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: string; latencyLimit: number }) =>
+      FunctionAppService.updateFunctionAppLatencyLimit(
+        vars.id,
+        vars.latencyLimit
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["functionApps"] });
+    },
+    meta: {
+      successMessage: "Function app latency limit updated successfully!",
     },
   });
 };

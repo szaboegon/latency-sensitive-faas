@@ -31,6 +31,7 @@ func NewHandlerApps(composer *core.Composer, controller core.Controller, conf co
 	h.mux.HandleFunc("POST /", h.create)
 	h.mux.HandleFunc("POST /bulk", h.bulkCreate)
 	h.mux.HandleFunc("DELETE /{id}", h.delete)
+	h.mux.HandleFunc("PATCH /{id}/latency_limit", h.updateLatencyLimit)
 
 	return h
 }
@@ -238,6 +239,33 @@ func (h *HandlerApps) delete(w http.ResponseWriter, r *http.Request) {
 	err := h.composer.DeleteFunctionApp(appId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *HandlerApps) updateLatencyLimit(w http.ResponseWriter, r *http.Request) {
+	appId := r.PathValue("id")
+	var req UpdateLatencyLimitRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+	if req.LatencyLimit <= 0 {
+		http.Error(w, "Latency limit must be positive", http.StatusBadRequest)
+		return
+	}
+
+	app, err := h.composer.GetFunctionApp(appId)
+	if err != nil || app == nil {
+		http.Error(w, "App not found", http.StatusNotFound)
+		return
+	}
+
+	app.LatencyLimit = req.LatencyLimit
+	if err := h.composer.UpdateFunctionApp(app); err != nil {
+		http.Error(w, "Failed to update latency limit", http.StatusInternalServerError)
 		return
 	}
 

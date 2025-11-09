@@ -14,7 +14,7 @@ import (
 // set target concurrency globally to 1 for now, but this can be different per function composition depending on how CPU-bound they are
 // this should be measured and set accordingly for each function composition)
 const (
-	minimalTraceCount = 50
+	minimalTraceCount = 20
 	logInterval       = 1 * time.Minute
 )
 
@@ -172,6 +172,7 @@ func (c *latencyController) Start(ctx context.Context) error {
 				}
 				if nextLayoutKey == "" {
 					log.Printf("No further layout candidates available for app %s. Skipping reconfiguration.", app.Id)
+					continue
 				} else {
 					log.Printf("App %s transitioned to layout %s. Deploying...", app.Id, nextLayoutKey)
 				}

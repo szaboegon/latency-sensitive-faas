@@ -44,3 +44,7 @@ type DeploymentBulkCreateDto struct {
 	Namespace                 string            `json:"namespace"`
 	RoutingTable              core.RoutingTable `json:"routing_table"`
 }
+
+type UpdateLatencyLimitRequest struct {
+	LatencyLimit int `json:"latency_limit"`
+}
