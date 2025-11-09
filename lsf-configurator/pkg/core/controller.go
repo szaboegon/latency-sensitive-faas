@@ -14,7 +14,7 @@ import (
 // set target concurrency globally to 1 for now, but this can be different per function composition depending on how CPU-bound they are
 // this should be measured and set accordingly for each function composition)
 const (
-	minimalTraceCount = 20
+	minimalTraceCount = 8
 	logInterval       = 1 * time.Minute
 )
 
@@ -252,7 +252,7 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 	}
 
 	go func(appId string, layout Layout) {
-		err = c.deployLayout(appId, layout)
+		err = c.deployLayout(appId, layout, false)
 		if err != nil {
 			log.Printf("Error deploying layout for app %s: %v", appId, err)
 			return
@@ -265,15 +265,15 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 
 func (c *latencyController) handleLatencyViolation(app *FunctionApp) (string, error) {
 	log.Printf("App %s exceeds latency threshold (%d ms). Triggering reconfiguration.", app.Id, app.LatencyLimit)
-	return c.handleLayoutChange(app, layoutUpgradePath)
+	return c.handleLayoutChange(app, layoutUpgradePath, true)
 }
 
 func (c *latencyController) handleLayoutDowngrade(app *FunctionApp) (string, error) {
 	log.Printf("App %s is below latency threshold. Considering layout downgrade.", app.Id)
-	return c.handleLayoutChange(app, layoutDowngradePath)
+	return c.handleLayoutChange(app, layoutDowngradePath, false)
 }
 
-func (c *latencyController) handleLayoutChange(app *FunctionApp, path map[string]string) (string, error) {
+func (c *latencyController) handleLayoutChange(app *FunctionApp, path map[string]string, isUpgrade bool) (string, error) {
 	nextLayoutKey := path[app.ActiveLayoutKey]
 	if nextLayoutKey == "" {
 		// No further layout candidates available
@@ -291,7 +291,7 @@ func (c *latencyController) handleLayoutChange(app *FunctionApp, path map[string
 	}
 
 	go func() {
-		if err := c.deployLayout(app.Id, nextLayout); err != nil {
+		if err := c.deployLayout(app.Id, nextLayout, isUpgrade); err != nil {
 			log.Printf("Failed to deploy new layout for app %s: %v", app.Id, err)
 		}
 	}()
@@ -300,7 +300,7 @@ func (c *latencyController) handleLayoutChange(app *FunctionApp, path map[string
 	return nextLayoutKey, nil
 }
 
-func (c *latencyController) deployLayout(appId string, layout Layout) error {
+func (c *latencyController) deployLayout(appId string, layout Layout, isUpgrade bool) error {
 	log.Printf("Deploying layout for app %s: %v", appId, layout)
 
 	app, err := c.composer.GetFunctionApp(appId)
@@ -375,8 +375,13 @@ func (c *latencyController) deployLayout(appId string, layout Layout) error {
 			log.Printf("No existing deployment found for node %s, creating new", node)
 
 			emptyRT := make(RoutingTable)
+			minReplicas := 1
+			// For upgrades, set minReplicas to requiredReplicas to avoid cold starts
+			if isUpgrade {
+				minReplicas = compositionInfo.RequiredReplicas
+			}
 			scale := Scale{
-				MinReplicas:       1,
+				MinReplicas:       minReplicas,
 				MaxReplicas:       compositionInfo.RequiredReplicas,
 				TargetConcurrency: compositionInfo.TargetConcurrency,
 			}

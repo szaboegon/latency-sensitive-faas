@@ -43,20 +43,20 @@
               <stringProp name="50">2</stringProp>
               <stringProp name="1629">30</stringProp>
             </collectionProp>
-            <collectionProp name="1925872332">
+            <collectionProp name="1925942337">
               <stringProp name="50">2</stringProp>
               <stringProp name="50">2</stringProp>
-              <stringProp name="48687">120</stringProp>
+              <stringProp name="48873">180</stringProp>
             </collectionProp>
             <collectionProp name="141222928">
               <stringProp name="50">2</stringProp>
               <stringProp name="49">1</stringProp>
               <stringProp name="1629">30</stringProp>
             </collectionProp>
-            <collectionProp name="1867461512">
+            <collectionProp name="82872764">
               <stringProp name="1">1</stringProp>
               <stringProp name="49">1</stringProp>
-              <stringProp name="48687">120</stringProp>
+              <stringProp name="1722">60</stringProp>
             </collectionProp>
             <collectionProp name="82836195">
               <stringProp name="1">1</stringProp>
@@ -66,10 +66,10 @@
           </collectionProp>
         </kg.apc.jmeter.timers.VariableThroughputTimer>
         <hashTree/>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP Request" enabled="true">
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP Request">
           <intProp name="HTTPSampler.connect_timeout">600000</intProp>
           <intProp name="HTTPSampler.response_timeout">600000</intProp>
-          <stringProp name="HTTPSampler.domain">app-179tioskq3brt7kpnbpzxtlfs.application.127.0.0.1.sslip.io</stringProp>
+          <stringProp name="HTTPSampler.domain">app-bsb8eb0y3omxvawcb3l689tes.application.127.0.0.1.sslip.io</stringProp>
           <stringProp name="HTTPSampler.port">80</stringProp>
           <stringProp name="HTTPSampler.protocol">http</stringProp>
           <stringProp name="HTTPSampler.contentEncoding">UTF-8</stringProp>
@@ -213,7 +213,7 @@ vars.put(&apos;payload&apos;, new groovy.json.JsonBuilder(payload).toPrettyStrin
           <stringProp name="exclude_sample_labels">HTTP Request-\d+</stringProp>
         </ResultCollector>
         <hashTree/>
-        <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.ResponseTimesOverTimeGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="jp@gc - Response Times Over Time">
+        <kg.apc.jmeter.vizualizers.CorrectedResultCollector guiclass="kg.apc.jmeter.vizualizers.ResponseTimesOverTimeGui" testclass="kg.apc.jmeter.vizualizers.CorrectedResultCollector" testname="jp@gc - Response Times Over Time" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>

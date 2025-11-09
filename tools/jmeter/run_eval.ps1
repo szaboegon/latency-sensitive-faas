@@ -26,6 +26,7 @@ $JtlFile = "results.csv"
 $EventsFile = "reconfig_events.csv"
 $JmeterTestFile = "eval.jmx"
 $PythonPlotter = "plot_rps_latency.py" 
+$TargetLatencyMs = 1500
 # ---------------------
 
 
@@ -80,6 +81,6 @@ try {
 }
 
 Write-Host "--- 5. Running Python Plotting Script: $PythonPlotter ---"
-python $PythonPlotter $JtlFile $EventsFile
+python $PythonPlotter $JtlFile $EventsFile $TargetLatencyMs
 
 Write-Host "--- Workflow Complete ---"

@@ -8,7 +8,6 @@ from opentelemetry.context import Context as OtelContext
 from config import APP_NAME, FUNCTION_NAME, read_config
 from route import Route
 from typing import Any, Dict, Deque, List, Tuple, Optional, TypedDict, Union
-import threading
 from collections import deque
 from event import Event, extract_event, create_event
 from opentelemetry.trace.status import Status, StatusCode  # Add this import
@@ -107,9 +106,6 @@ def handle_request(
             raise e
 
 
-forward_threads: List[threading.Thread] = []
-
-
 def _send_async_request(
     route: Route, event_out: Any, span_context: Optional[OtelContext]
 ) -> None:
@@ -155,9 +151,6 @@ def main(context: Context) -> Tuple[str, int]:
     """
     Entry point of the function. Processes the routing table using parallel processing.
     """
-    global forward_threads
-    forward_threads = []
-
     logger.info("Headers received: " + str(context.request.headers))
 
     component = context.request.headers.get("X-Forward-To")
