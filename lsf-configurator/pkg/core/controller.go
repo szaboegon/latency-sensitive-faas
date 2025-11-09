@@ -14,7 +14,7 @@ import (
 // set target concurrency globally to 1 for now, but this can be different per function composition depending on how CPU-bound they are
 // this should be measured and set accordingly for each function composition)
 const (
-	minimalTraceCount = 8
+	minimalTraceCount = 10
 	logInterval       = 1 * time.Minute
 )
 
@@ -35,21 +35,23 @@ type ReconfigEvent struct {
 }
 
 type latencyController struct {
-	composer               *Composer
-	metrics                MetricsReader
-	scenarioManager        ScenarioManager
-	delay                  time.Duration
-	deployNamespace        string
-	lastReconfigs          map[string]time.Time
-	cooldownPeriod         time.Duration
-	availableNodeMemoryGb  int // same for all nodes for now, in GB
-	lastReconfigsMu        sync.Mutex
-	latencyDowngradeFactor float64
-	aggMetricType          MetricType
-	metricQueryFunc        MetricQueryFunc
-	metricQueryTimeRange   string
-	reconfigStartTimes     map[string]time.Time
-	lastLogTime            time.Time
+	composer                     *Composer
+	metrics                      MetricsReader
+	scenarioManager              ScenarioManager
+	delay                        time.Duration
+	deployNamespace              string
+	lastReconfigs                map[string]time.Time
+	cooldownPeriod               time.Duration
+	availableNodeMemoryGb        int // same for all nodes for now, in GB
+	lastReconfigsMu              sync.Mutex
+	latencyDowngradeFactor       float64
+	aggMetricType                MetricType
+	metricQueryFunc              MetricQueryFunc
+	metricQueryTimeRange         string
+	reconfigStartTimes           map[string]time.Time
+	lastLogTime                  time.Time
+	lowLatencyStartTimes         map[string]time.Time
+	downgradeConsistencyDuration time.Duration
 }
 
 func NewController(composer *Composer, metrics MetricsReader, scenarioManager ScenarioManager,
@@ -69,20 +71,23 @@ func NewController(composer *Composer, metrics MetricsReader, scenarioManager Sc
 	}
 
 	return &latencyController{
-		composer:               composer,
-		metrics:                metrics,
-		scenarioManager:        scenarioManager,
-		delay:                  delay,
-		deployNamespace:        deployNamespace,
-		lastReconfigs:          make(map[string]time.Time),
-		cooldownPeriod:         120 * time.Second,
-		availableNodeMemoryGb:  availableNodeMemoryGb,
-		lastReconfigsMu:        sync.Mutex{},
-		latencyDowngradeFactor: 0.7,
-		aggMetricType:          aggMetricType,
-		metricQueryFunc:        queryFunc,
-		metricQueryTimeRange:   metricQueryTimeRange,
-		reconfigStartTimes:     make(map[string]time.Time),
+		composer:                     composer,
+		metrics:                      metrics,
+		scenarioManager:              scenarioManager,
+		delay:                        delay,
+		deployNamespace:              deployNamespace,
+		lastReconfigs:                make(map[string]time.Time),
+		cooldownPeriod:               120 * time.Second,
+		availableNodeMemoryGb:        availableNodeMemoryGb,
+		lastReconfigsMu:              sync.Mutex{},
+		latencyDowngradeFactor:       0.7,
+		aggMetricType:                aggMetricType,
+		metricQueryFunc:              queryFunc,
+		metricQueryTimeRange:         metricQueryTimeRange,
+		reconfigStartTimes:           make(map[string]time.Time),
+		lastLogTime:                  time.Now(),
+		lowLatencyStartTimes:         make(map[string]time.Time),
+		downgradeConsistencyDuration: 5 * time.Minute,
 	}
 }
 
@@ -118,7 +123,9 @@ func (c *latencyController) Start(ctx context.Context) error {
 				c.lastLogTime = now
 			}
 
+			handledApps := make(map[string]bool)
 			for appId, runtime := range runtimes {
+				handledApps[appId] = true
 				// log.Printf("App %s metrics with runtime agg func %s: %.0f ms", appId, c.aggMetricType, runtime)
 				app, err := c.composer.GetFunctionApp(appId)
 				if err != nil {
@@ -171,7 +178,7 @@ func (c *latencyController) Start(ctx context.Context) error {
 					continue
 				}
 				if nextLayoutKey == "" {
-					log.Printf("No further layout candidates available for app %s. Skipping reconfiguration.", app.Id)
+					//log.Printf("No further layout candidates available for app %s. Skipping reconfiguration.", app.Id)
 					continue
 				} else {
 					log.Printf("App %s transitioned to layout %s. Deploying...", app.Id, nextLayoutKey)
@@ -181,6 +188,45 @@ func (c *latencyController) Start(ctx context.Context) error {
 				c.lastReconfigsMu.Unlock()
 
 				log.Printf("Reconfiguration in progress for app %s, applying cooldown period", app.Id)
+			}
+
+			// Handle apps with no reported runtimes (possible downgrade)
+			apps, err := c.composer.functionAppRepo.GetAll()
+			if err != nil {
+				log.Printf("Error retrieving all function apps: %v", err)
+				continue
+			}
+			for _, app := range apps {
+				if handledApps[app.Id] {
+					continue
+				}
+				if app.LatencyLimit <= 0 {
+					continue
+				}
+				if app.ActiveLayoutKey == LayoutKeyMin {
+					continue
+				}
+				c.lastReconfigsMu.Lock()
+				last, ok := c.lastReconfigs[app.Id]
+				if ok && time.Since(last) < c.cooldownPeriod {
+					c.lastReconfigsMu.Unlock()
+					continue
+				}
+				c.reconfigStartTimes[app.Id] = time.Now()
+				c.lastReconfigsMu.Unlock()
+
+				log.Printf("No runtime reported for app %s, downgrading to minimal layout.", app.Id)
+				nextLayoutKey, err := c.handleLayoutChange(app, layoutDowngradePath, false)
+				if err != nil {
+					log.Printf("Error downgrading app %s to minimal layout: %v", app.Id, err)
+					continue
+				}
+				if nextLayoutKey != "" {
+					log.Printf("App %s transitioned to layout %s due to missing runtimes. Deploying...", app.Id, nextLayoutKey)
+					c.lastReconfigsMu.Lock()
+					c.lastReconfigs[app.Id] = time.Now()
+					c.lastReconfigsMu.Unlock()
+				}
 			}
 		}
 	}
@@ -264,12 +310,12 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 }
 
 func (c *latencyController) handleLatencyViolation(app *FunctionApp) (string, error) {
-	log.Printf("App %s exceeds latency threshold (%d ms). Triggering reconfiguration.", app.Id, app.LatencyLimit)
+	//log.Printf("App %s exceeds latency threshold (%d ms). Triggering reconfiguration.", app.Id, app.LatencyLimit)
 	return c.handleLayoutChange(app, layoutUpgradePath, true)
 }
 
 func (c *latencyController) handleLayoutDowngrade(app *FunctionApp) (string, error) {
-	log.Printf("App %s is below latency threshold. Considering layout downgrade.", app.Id)
+	//log.Printf("App %s is below latency threshold. Considering layout downgrade.", app.Id)
 	return c.handleLayoutChange(app, layoutDowngradePath, false)
 }
 

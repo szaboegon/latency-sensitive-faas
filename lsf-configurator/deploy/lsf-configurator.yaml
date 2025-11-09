@@ -148,12 +148,12 @@ spec:
             - name: CONTROLLER_METRIC_TYPE
               value: "AVG"
             - name: CONTROLLER_METRIC_QUERY_TIME_RANGE
-              value: "now-10s"
+              value: "now-15s"
             - name: PLATFORM_NODES
               value: "knative,knative-m02,knative-m03"
             - name: PLATFORM_DELAY_MS
               value: "10"
-              # currently nodes have 6GB total RAM, we leave 2GB for system processes
+              # currently nodes have 8GB total RAM, we leave 2GB for system processes
             - name: AVAILABLE_NODE_MEMORY_GB
               value: "2"
             - name: LAYOUT_SCRIPT_PATH
@@ -165,7 +165,7 @@ spec:
             - name: COMPONENT_MCPU_ALLOCATION
               value: "500"
             - name: OVERHEAD_MCPU_ALLOCATION
-              value: "0"
+              value: "50"
             - name: COMPONENT_SHARED_MEMORY_RATIO
               value: "0.5"
           volumeMounts:

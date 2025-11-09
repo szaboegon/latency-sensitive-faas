@@ -1,6 +1,6 @@
 @echo off
 set NUM_NODES=3
-set MEMORY_LIMIT="7g"
+set MEMORY_LIMIT="8g"
 set CPUS=4
 
 set SERVING_YAML_PATH="knative\serving.yaml"

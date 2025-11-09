@@ -1,6 +1,8 @@
+# type: ignore
 import pandas as pd
 import matplotlib.pyplot as plt
 import sys
+import os
 from typing import Optional
 
 # ---- Config ----
@@ -117,7 +119,8 @@ if reconfig_events is not None and not reconfig_events.empty:
     # Determine a suitable y-position for event duration labels
     # This places labels near the top of the latency axis, adjusted dynamically
     y_min, y_max = ax1.get_ylim()
-    label_y_pos = y_max * 0.95  # Start 95% up the y-axis
+    y_range = y_max - y_min
+    label_y_pos = y_min + (y_range * 0.05)  # Start 95% up the y-axis
 
     for i, app_id in enumerate(app_ids):
         app_events = reconfig_events[reconfig_events["app_id"] == app_id]
@@ -201,4 +204,24 @@ unique_labels.extend(labels2)
 ax1.legend(unique_lines, unique_labels, loc="upper right")
 
 fig.tight_layout()
+
+
+def save_plot_to_file(fig, base_filename="result.png"):
+    """Saves the figure to a file, handling name collisions."""
+    name, ext = os.path.splitext(base_filename)
+    counter = 0
+    filename = base_filename
+
+    while os.path.exists(filename):
+        counter += 1
+        filename = f"{name}-{counter}{ext}"
+
+    try:
+        fig.savefig(filename)
+        print(f"\n✅ Plot successfully saved to: {filename}")
+    except Exception as e:
+        print(f"\n❌ Error saving figure to {filename}: {e}")
+
+
+save_plot_to_file(fig)
 plt.show()
