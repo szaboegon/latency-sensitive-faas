@@ -252,7 +252,7 @@ func (c *slambucCalculator) buildFinalLayout(
 			ComponentProfiles:    finalComps,
 			RequiredReplicas:     groupReplicas,
 			TotalEffectiveMemory: totalEffectiveMemory,
-			TotalMCPU:            scenario.ComponentMCPUAllocation * scenario.TargetConcurrency,
+			TotalMCPU:            (scenario.ComponentMCPUAllocation + scenario.OverheadMCPUAllocation) * scenario.TargetConcurrency,
 			TargetConcurrency:    scenario.TargetConcurrency,
 		}
 	}

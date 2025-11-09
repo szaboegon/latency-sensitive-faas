@@ -1,3 +1,4 @@
+import concurrent.futures
 from parliament import Context  # type: ignore
 import requests
 from opentelemetry.propagate import inject, extract
@@ -19,6 +20,11 @@ import time
 
 faulthandler.enable(file=sys.stderr, all_threads=True)
 
+MAX_FORWARD_WORKERS = 4
+forward_executor: concurrent.futures.ThreadPoolExecutor = (
+    concurrent.futures.ThreadPoolExecutor(max_workers=MAX_FORWARD_WORKERS)
+)
+forward_futures: List[concurrent.futures.Future[None]] = []
 
 logger = setup_logging(__name__)
 tracer = tracing.instrument_app(app_name=APP_NAME, service_name=FUNCTION_NAME)
@@ -104,6 +110,26 @@ def handle_request(
 forward_threads: List[threading.Thread] = []
 
 
+def _send_async_request(
+    route: Route, event_out: Any, span_context: Optional[OtelContext]
+) -> None:
+    headers = get_headers(route["component"], span_context)
+    with tracer.start_span("forward_request", context=span_context) as span:
+        try:
+            requests.post(url=route["url"], json=event_out, headers=headers)
+            logger.info(
+                f"Request forwarded to component '{route['component']}' at URL '{route['url']}'."
+            )
+            span.set_status(Status(StatusCode.OK))
+        except Exception as e:
+            span.set_status(Status(StatusCode.ERROR, str(e)))
+            span.record_exception(e)
+            logger.error(
+                f"Error forwarding request to '{route['component']}' at '{route['url']}': {e}"
+            )
+            raise e
+
+
 def forward_request(
     route: Route, event_out: Any, span_context: Optional[OtelContext]
 ) -> None:
@@ -114,27 +140,10 @@ def forward_request(
         logger.warning("Attempted to forward request with empty component.")
         return
 
-    headers = get_headers(route["component"], span_context)
-
-    def send_async_request() -> None:
-        with tracer.start_span("forward_request", context=span_context) as span:
-            try:
-                requests.post(url=route["url"], json=event_out, headers=headers)
-                logger.info(
-                    f"Request forwarded to component '{route['component']}' at URL '{route['url']}'."
-                )
-                span.set_status(Status(StatusCode.OK))
-            except Exception as e:
-                span.set_status(Status(StatusCode.ERROR, str(e)))
-                span.record_exception(e)
-                logger.error(
-                    f"Error forwarding request to '{route['component']}' at '{route['url']}': {e}"
-                )
-                raise e
-
-    t = threading.Thread(target=send_async_request)
-    t.start()
-    forward_threads.append(t)
+    future: concurrent.futures.Future[None] = forward_executor.submit(
+        _send_async_request, route, event_out, span_context
+    )
+    forward_futures.append(future)
 
 
 QUEUE_START_TIME_HEADER = "X-Request-Start-Time"
@@ -272,8 +281,15 @@ def main(context: Context) -> Tuple[str, int]:
         logger.error(f"Invalid routing table entry: {e} is missing")
         return f"Invalid routing table entry: {e} is missing", 400
 
-    for t in forward_threads:
-        t.join()
+    if forward_futures:
+        done, _ = concurrent.futures.wait(forward_futures, timeout=None)
+        # Check for exceptions in the completed futures
+        for future in done:
+            try:
+                future.result()
+            except Exception as e:
+                logger.error(f"An error occurred in a forwarded request thread: {e}")
+                pass
 
     logger.info("All components processed successfully.")
     return "ok", 200

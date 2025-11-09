@@ -115,6 +115,7 @@ type LayoutScenario struct {
 	Profiles                    []ComponentProfile
 	Links                       []ScenarioLink
 	ComponentMCPUAllocation     int
+	OverheadMCPUAllocation      int
 	TargetConcurrency           int
 	InvocationSharedMemoryRatio float64
 }

@@ -43,6 +43,7 @@ type Configuration struct {
 	ResultStoreAddress             string   `env:"RESULT_STORE_ADDRESS"`
 	TargetConcurrency              int      `env:"TARGET_CONCURRENCY" default:"2"`
 	ComponentMCPUAllocation        int      `env:"COMPONENT_MCPU_ALLOCATION" default:"500"`
+	OverheadMCPUAllocation         int      `env:"OVERHEAD_MCPU_ALLOCATION" default:"200"`
 	// Indicates the fraction of memory that is shared among concurrent invocations of the same component
 	// E.g. 0.5 means that 50% of the memory is shared, and only the remaining 50% scales with the number concurrent invocations
 	InvocationSharedMemoryRatio float64 `env:"COMPONENT_SHARED_MEMORY_RATIO" default:"0.5"`

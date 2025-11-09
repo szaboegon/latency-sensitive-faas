@@ -29,13 +29,18 @@ type scenarioManager struct {
 	calculator                  LayoutCalculator
 	targetConcurrency           int
 	invocationSharedMemoryRatio float64
+	componentMCPUAllocation     int
+	overheadMCPUAllocation      int
 }
 
-func NewScenarioManager(calculator LayoutCalculator, targetConcurrency int, invocationSharedMemoryRatio float64) ScenarioManager {
+func NewScenarioManager(calculator LayoutCalculator, targetConcurrency int, invocationSharedMemoryRatio float64,
+	componentMCPUAllocation int, overheadMCPUAllocation int) ScenarioManager {
 	return &scenarioManager{
 		calculator:                  calculator,
 		targetConcurrency:           targetConcurrency,
 		invocationSharedMemoryRatio: invocationSharedMemoryRatio,
+		componentMCPUAllocation:     componentMCPUAllocation,
+		overheadMCPUAllocation:      overheadMCPUAllocation,
 	}
 }
 
@@ -79,6 +84,8 @@ func (sm *scenarioManager) GenerateLayoutCandidates(
 		layoutScenario.AvailableNodeMemory = memoryAvailable
 		layoutScenario.TargetConcurrency = sm.targetConcurrency
 		layoutScenario.InvocationSharedMemoryRatio = sm.invocationSharedMemoryRatio
+		layoutScenario.ComponentMCPUAllocation = sm.componentMCPUAllocation
+		layoutScenario.OverheadMCPUAllocation = sm.overheadMCPUAllocation
 
 		layout, err := sm.calculator.CalculateLayout(*layoutScenario)
 		if err != nil {

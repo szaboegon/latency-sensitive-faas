@@ -160,6 +160,14 @@ spec:
               value: "/layout/slambuc_layout.py"
             - name: RESULT_STORE_ADDRESS
               value: "redis-master.redis.svc.cluster.local"
+            - name: TARGET_CONCURRENCY
+              value: "2"
+            - name: COMPONENT_MCPU_ALLOCATION
+              value: "500"
+            - name: OVERHEAD_MCPU_ALLOCATION
+              value: "200"
+            - name: COMPONENT_SHARED_MEMORY_RATIO
+              value: "0.5"
           volumeMounts:
             - name: uploads-pvc
               mountPath: /uploads
