@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"math"
 	"sort"
 	"strings"
 	"sync"
@@ -15,8 +14,9 @@ import (
 // set target concurrency globally to 1 for now, but this can be different per function composition depending on how CPU-bound they are
 // this should be measured and set accordingly for each function composition)
 const (
-	minimalTraceCount = 10
-	logInterval       = 1 * time.Minute
+	minimalTraceCount       = 10
+	logInterval             = 1 * time.Minute
+	minConsecutiveDowngrade = 60
 )
 
 type MetricType string
@@ -36,25 +36,27 @@ type ReconfigEvent struct {
 }
 
 type latencyController struct {
-	composer               *Composer
-	metrics                MetricsReader
-	scenarioManager        ScenarioManager
-	delay                  time.Duration
-	deployNamespace        string
-	lastReconfigs          map[string]time.Time
-	cooldownPeriod         time.Duration
-	availableNodeMemoryGb  int // same for all nodes for now, in GB
-	lastReconfigsMu        sync.Mutex
-	latencyDowngradeFactor float64
-	aggMetricType          MetricType
-	metricQueryFunc        MetricQueryFunc
-	metricQueryTimeRange   string
-	reconfigStartTimes     map[string]time.Time
-	lastLogTime            time.Time
+	composer                     *Composer
+	metrics                      MetricsReader
+	scenarioManager              ScenarioManager
+	delay                        time.Duration
+	deployNamespace              string
+	lastReconfigs                map[string]time.Time
+	cooldownPeriod               time.Duration
+	availableNodeMemoryGb        int // same for all nodes for now, in GB
+	lastReconfigsMu              sync.Mutex
+	latencyDowngradeFactor       float64
+	aggMetricType                MetricType
+	metricQueryFunc              MetricQueryFunc
+	metricQueryTimeRange         string
+	reconfigStartTimes           map[string]time.Time
+	lastLogTime                  time.Time
+	consecutiveDowngradeEligible map[string]int // appId -> count of consecutive eligible downgrade intervals
 }
 
 func NewController(composer *Composer, metrics MetricsReader, scenarioManager ScenarioManager,
-	delay time.Duration, deployNamespace string, availableNodeMemoryGb int, aggMetricType MetricType, metricQueryTimeRange string) Controller {
+	delay time.Duration, deployNamespace string, availableNodeMemoryGb int, aggMetricType MetricType,
+	metricQueryTimeRange string, latencyDowngradeFactor float64) Controller {
 
 	if aggMetricType != MetricTypeP95 && aggMetricType != MetricTypeAverage {
 		log.Printf("Warning: Invalid metric type '%s' provided. Defaulting to P95.", aggMetricType)
@@ -70,21 +72,22 @@ func NewController(composer *Composer, metrics MetricsReader, scenarioManager Sc
 	}
 
 	return &latencyController{
-		composer:               composer,
-		metrics:                metrics,
-		scenarioManager:        scenarioManager,
-		delay:                  delay,
-		deployNamespace:        deployNamespace,
-		lastReconfigs:          make(map[string]time.Time),
-		cooldownPeriod:         120 * time.Second,
-		availableNodeMemoryGb:  availableNodeMemoryGb,
-		lastReconfigsMu:        sync.Mutex{},
-		latencyDowngradeFactor: 0.7,
-		aggMetricType:          aggMetricType,
-		metricQueryFunc:        queryFunc,
-		metricQueryTimeRange:   metricQueryTimeRange,
-		reconfigStartTimes:     make(map[string]time.Time),
-		lastLogTime:            time.Now(),
+		composer:                     composer,
+		metrics:                      metrics,
+		scenarioManager:              scenarioManager,
+		delay:                        delay,
+		deployNamespace:              deployNamespace,
+		lastReconfigs:                make(map[string]time.Time),
+		cooldownPeriod:               120 * time.Second,
+		availableNodeMemoryGb:        availableNodeMemoryGb,
+		lastReconfigsMu:              sync.Mutex{},
+		latencyDowngradeFactor:       latencyDowngradeFactor,
+		aggMetricType:                aggMetricType,
+		metricQueryFunc:              queryFunc,
+		metricQueryTimeRange:         metricQueryTimeRange,
+		reconfigStartTimes:           make(map[string]time.Time),
+		lastLogTime:                  time.Now(),
+		consecutiveDowngradeEligible: make(map[string]int),
 	}
 }
 
@@ -157,10 +160,26 @@ func (c *latencyController) Start(ctx context.Context) error {
 						continue
 					}
 					handler = c.handleLatencyViolation
+					// Reset downgrade counter on upgrade
+					c.lastReconfigsMu.Lock()
+					c.consecutiveDowngradeEligible[app.Id] = 0
+					c.lastReconfigsMu.Unlock()
 				} else if runtime < float64(app.LatencyLimit)*c.latencyDowngradeFactor {
+					// Oscillation defense for downgrade: track consecutive intervals
+					c.lastReconfigsMu.Lock()
+					c.consecutiveDowngradeEligible[app.Id]++
+					count := c.consecutiveDowngradeEligible[app.Id]
+					c.lastReconfigsMu.Unlock()
+					if count < minConsecutiveDowngrade {
+						// log.Printf("App %s eligible for downgrade (%d/%d consecutive intervals)", app.Id, count, minConsecutiveDowngrade)
+						continue
+					}
 					handler = c.handleLayoutDowngrade
 				} else {
-					// log.Printf("App %s latency within threshold. No action required.", app.Id)
+					// Reset counter if not eligible for downgrade
+					c.lastReconfigsMu.Lock()
+					c.consecutiveDowngradeEligible[app.Id] = 0
+					c.lastReconfigsMu.Unlock()
 					continue
 				}
 
@@ -210,6 +229,11 @@ func (c *latencyController) Start(ctx context.Context) error {
 					continue
 				}
 				c.reconfigStartTimes[app.Id] = time.Now()
+				c.lastReconfigsMu.Unlock()
+
+				// Reset downgrade counter for apps with no runtime
+				c.lastReconfigsMu.Lock()
+				c.consecutiveDowngradeEligible[app.Id] = 0
 				c.lastReconfigsMu.Unlock()
 
 				log.Printf("No runtime reported for app %s, downgrading to minimal layout.", app.Id)
@@ -421,7 +445,8 @@ func (c *latencyController) deployLayout(appId string, layout Layout, isUpgrade 
 			minReplicas := 1
 			// For upgrades, set minReplicas to requiredReplicas/2 to reduce cold starts
 			if isUpgrade {
-				minReplicas = int(math.Ceil(float64(compositionInfo.RequiredReplicas) / 2))
+				// minReplicas = int(math.Ceil(float64(compositionInfo.RequiredReplicas) / 2))
+				minReplicas = compositionInfo.RequiredReplicas
 			}
 			scale := Scale{
 				MinReplicas:       minReplicas,

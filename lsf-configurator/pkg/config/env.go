@@ -47,6 +47,7 @@ type Configuration struct {
 	// Indicates the fraction of memory that is shared among concurrent invocations of the same component
 	// E.g. 0.5 means that 50% of the memory is shared, and only the remaining 50% scales with the number concurrent invocations
 	InvocationSharedMemoryRatio float64 `env:"COMPONENT_SHARED_MEMORY_RATIO" default:"0.5"`
+	LatencyDowngradeFactor      float64 `env:"LATENCY_DOWNGRADE_FACTOR" default:"0.5"`
 }
 
 func Init() Configuration {
