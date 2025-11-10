@@ -109,7 +109,7 @@ spec:
             - name: UPLOAD_DIR
               value: "/uploads"
             - name: IMAGE_REGISTRY
-              value: "registry.hub.docker.com/szaboegon"
+              value: "registry.minikube" #"registry.hub.docker.com/szaboegon"
             - name: IMAGE_REPOSITORY
               value: "szaboegon"
             - name: TEMPLATES_PATH

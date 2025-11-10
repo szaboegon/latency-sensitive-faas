@@ -94,11 +94,12 @@ if errorlevel 1 (
     exit /b 1
 )
 
-call %CREATE_REGISTRY_SECRET_PATH%
-if errorlevel 1 (
-    echo Error creating registry secret for lsf-configurator
-    exit /b 1
-)
+@REM needed only for private registries, commented out for local registry without auth
+@REM call %CREATE_REGISTRY_SECRET_PATH%
+@REM if errorlevel 1 (
+@REM     echo Error creating registry secret for lsf-configurator
+@REM     exit /b 1
+@REM )
 
 kubectl apply -f %LSF_CONFIGURATOR_YAML_PATH%
 if errorlevel 1 (

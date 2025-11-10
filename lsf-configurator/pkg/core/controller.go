@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"sort"
 	"strings"
 	"sync"
@@ -418,9 +419,9 @@ func (c *latencyController) deployLayout(appId string, layout Layout, isUpgrade 
 
 			emptyRT := make(RoutingTable)
 			minReplicas := 1
-			// For upgrades, set minReplicas to requiredReplicas to avoid cold starts
+			// For upgrades, set minReplicas to requiredReplicas/2 to reduce cold starts
 			if isUpgrade {
-				minReplicas = compositionInfo.RequiredReplicas
+				minReplicas = int(math.Ceil(float64(compositionInfo.RequiredReplicas) / 2))
 			}
 			scale := Scale{
 				MinReplicas:       minReplicas,

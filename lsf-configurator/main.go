@@ -47,6 +47,7 @@ func main() {
 		Pipeline:       conf.TektonPipeline,
 		NotifyURL:      conf.TektonNotifyURL,
 		WorkspacePVC:   conf.TektonWorkspacePVC,
+		ImageRegistry:  conf.ImageRegistry,
 		ImageRepo:      conf.ImageRepository,
 		ServiceAccount: conf.TektonServiceAccount,
 	}

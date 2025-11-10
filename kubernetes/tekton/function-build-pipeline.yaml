@@ -3,8 +3,8 @@ kind: ServiceAccount
 metadata:
   name: buildpacks-service-account
   namespace: configurator
-secrets:
-  - name: registry-user-pass
+# secrets:
+#   - name: registry-user-pass #Local registry does not need authentication, but it is needed for Docker Hub or other registries
 ---
 apiVersion: tekton.dev/v1
 kind: Task
@@ -20,7 +20,7 @@ spec:
     - name: FC_ID
       type: string
     - name: STATUS
-      type: string 
+      type: string
   steps:
     - name: notify
       image: curlimages/curl:latest
