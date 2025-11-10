@@ -5,7 +5,6 @@ set CPUS=4
 
 set SERVING_YAML_PATH="knative\serving.yaml"
 set SCALE_CONFIG_PATH="knative\disable_scale_to_zero.yaml"
-set DEPLOY_CONFIG_PATH="knative\deploy_config.yaml"
 set APP_NAMESPACE_PATH="otel\application_namespace.yaml"
 set METRICS_SERVER_PATH="metrics-server\metrics-server.yaml"
 set STORAGECLASS_YAML_PATH="storageclass.yaml"
@@ -105,12 +104,6 @@ if errorlevel 1 (
 kubectl apply -f %SCALE_CONFIG_PATH%
 if errorlevel 1 (
     echo Failed to modify knative scale config.
-    exit /b 1
-)
-
-kubectl apply -f %DEPLOY_CONFIG_PATH%
-if errorlevel 1 (
-    echo Failed to apply knative deploy config.
     exit /b 1
 )
 

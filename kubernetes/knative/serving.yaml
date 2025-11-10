@@ -14,6 +14,5 @@ spec:
       kubernetes.podspec-affinity: "enabled"
       kubernetes.podspec-nodeselector: "enabled"
       kubernetes.podspec-fieldref: "enabled"
-
-
-
+    deployment:
+      registries-skipping-tag-resolving: registry.minikube

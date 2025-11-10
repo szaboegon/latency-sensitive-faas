@@ -165,7 +165,7 @@ spec:
             - name: COMPONENT_MCPU_ALLOCATION
               value: "500"
             - name: OVERHEAD_MCPU_ALLOCATION
-              value: "50"
+              value: "20"
             - name: COMPONENT_SHARED_MEMORY_RATIO
               value: "0.5"
           volumeMounts:
