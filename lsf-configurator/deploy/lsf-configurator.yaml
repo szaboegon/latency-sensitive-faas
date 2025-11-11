@@ -155,7 +155,7 @@ spec:
               value: "10"
               # currently nodes have 8GB total RAM, we leave 2GB for system processes
             - name: AVAILABLE_NODE_MEMORY_GB
-              value: "2"
+              value: "3"
             - name: LAYOUT_SCRIPT_PATH
               value: "/layout/slambuc_layout.py"
             - name: RESULT_STORE_ADDRESS
@@ -167,7 +167,9 @@ spec:
             - name: OVERHEAD_MCPU_ALLOCATION
               value: "0"
             - name: COMPONENT_SHARED_MEMORY_RATIO
-              value: "0.5"
+              value: "0.2"
+            - name: TARGET_UTILIZATION
+              value: "0.7"
             - name: LATENCY_DOWNGRADE_FACTOR
               value: "0.5"
           volumeMounts:

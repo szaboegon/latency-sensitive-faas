@@ -118,6 +118,7 @@ type LayoutScenario struct {
 	OverheadMCPUAllocation      int
 	TargetConcurrency           int
 	InvocationSharedMemoryRatio float64
+	TargetUtilization           float64
 }
 
 type ComponentProfile struct {
@@ -134,8 +135,7 @@ func (cp *ComponentProfile) EffectiveMemory(invocationSharedMemoryRatio float64,
 	// total = shared portion + per-request portion * concurrency
 	effectiveMemory := float64(cp.Memory) * (sharedPart + perRequestPart*float64(targetConcurrency))
 
-	// multiply by number of replicas
-	return int(effectiveMemory) * cp.RequiredReplicas
+	return int(effectiveMemory)
 }
 
 type ScenarioLink struct {
@@ -148,11 +148,15 @@ type ScenarioLink struct {
 type Layout = map[string]CompositionInfo // Key: Node name, Value: CompositionInfo assigned to that node
 
 type CompositionInfo struct {
-	ComponentProfiles    []ComponentProfile
-	RequiredReplicas     int
-	TotalEffectiveMemory int
-	TotalMCPU            int
-	TargetConcurrency    int
+	ComponentProfiles []ComponentProfile
+	RequiredReplicas  int
+	Memory            int
+	MCPU              int
+	TargetConcurrency int
+}
+
+func (c CompositionInfo) TotalMemory() int {
+	return c.Memory * c.RequiredReplicas
 }
 
 type AppResult struct {

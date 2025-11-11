@@ -54,7 +54,7 @@ func (c *slambucCalculator) CalculateLayout(scenario core.LayoutScenario) (core.
 
 		memSum := 0
 		for _, cp := range updatedProfiles {
-			memSum += cp.EffectiveMemory(scenario.InvocationSharedMemoryRatio, scenario.TargetConcurrency)
+			memSum += cp.EffectiveMemory(scenario.InvocationSharedMemoryRatio, scenario.TargetConcurrency) * cp.RequiredReplicas
 		}
 
 		layoutKey := fmt.Sprintf("%d-%d-%d", len(layout), int(optCost), memSum)
@@ -95,7 +95,7 @@ func (c *slambucCalculator) runSLAMBUC(scenario core.LayoutScenario) (map[string
 			"mem": p.EffectiveMemory(
 				scenario.InvocationSharedMemoryRatio,
 				scenario.TargetConcurrency,
-			),
+			) * p.RequiredReplicas,
 			"runtime": p.Runtime,
 		})
 	}
@@ -210,7 +210,7 @@ func (c *slambucCalculator) estimateReplicasPerGroup(layout map[string][]core.Co
 			totalMemory += comp.Memory
 		}
 		arrivalRate := calculateTotalArrivalRate(group, scenario.Links)
-		replicas := calculateRequiredReplicas(totalRuntime, scenario.TargetConcurrency, arrivalRate)
+		replicas := calculateRequiredReplicas(totalRuntime, scenario.TargetConcurrency, arrivalRate, scenario.TargetUtilization)
 
 		// assign updated replicas to each component in this composition
 		for _, comp := range group {
@@ -235,25 +235,25 @@ func (c *slambucCalculator) buildFinalLayout(
 	}
 
 	for node, comps := range layout {
-		totalEffectiveMemory := 0
+		memory := 0
 		var groupReplicas int
 
 		finalComps := make([]core.ComponentProfile, 0, len(comps))
 		for _, cp := range comps {
 			fp := profileMap[cp.Name]
 			finalComps = append(finalComps, fp)
-			totalEffectiveMemory += fp.EffectiveMemory(scenario.InvocationSharedMemoryRatio, scenario.TargetConcurrency)
+			memory += fp.EffectiveMemory(scenario.InvocationSharedMemoryRatio, scenario.TargetConcurrency)
 			if fp.RequiredReplicas > groupReplicas {
 				groupReplicas = fp.RequiredReplicas
 			}
 		}
 
 		finalLayout[node] = core.CompositionInfo{
-			ComponentProfiles:    finalComps,
-			RequiredReplicas:     groupReplicas,
-			TotalEffectiveMemory: totalEffectiveMemory,
-			TotalMCPU:            (scenario.ComponentMCPUAllocation + scenario.OverheadMCPUAllocation) * scenario.TargetConcurrency,
-			TargetConcurrency:    scenario.TargetConcurrency,
+			ComponentProfiles: finalComps,
+			RequiredReplicas:  groupReplicas,
+			Memory:            memory,
+			MCPU:              (scenario.ComponentMCPUAllocation + scenario.OverheadMCPUAllocation) * scenario.TargetConcurrency,
+			TargetConcurrency: scenario.TargetConcurrency,
 		}
 	}
 

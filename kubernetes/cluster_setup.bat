@@ -1,6 +1,6 @@
 @echo off
 set NUM_NODES=3
-set MEMORY_LIMIT="8g"
+set MEMORY_LIMIT=9g
 set CPUS=4
 
 set SERVING_YAML_PATH="knative\serving.yaml"
@@ -12,7 +12,7 @@ set ISTIO_ENVOY_FILTER_PATH="istio\envoy_filter.yaml"
 
 echo %cd%
 echo Starting minikube cluster with %NUM_NODES% nodes...
-minikube start --nodes %NUM_NODES% -p knative --memory %MEMORY_LIMIT% --cpus %CPUS% --addons=ingress --driver=docker --insecure-registry="registry.minikube"
+minikube start --nodes %NUM_NODES% -p knative --memory=%MEMORY_LIMIT% --cpus=%CPUS% --addons=ingress --driver=docker --insecure-registry="registry.minikube"
 if errorlevel 1 (
     echo Failed to start Minikube cluster.
     exit /b 1

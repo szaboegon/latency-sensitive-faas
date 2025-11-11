@@ -16,7 +16,7 @@ import (
 const (
 	minimalTraceCount       = 10
 	logInterval             = 1 * time.Minute
-	minConsecutiveDowngrade = 60
+	minConsecutiveDowngrade = 120
 )
 
 type MetricType string
@@ -454,8 +454,8 @@ func (c *latencyController) deployLayout(appId string, layout Layout, isUpgrade 
 				TargetConcurrency: compositionInfo.TargetConcurrency,
 			}
 			resources := Resources{
-				Memory: compositionInfo.TotalEffectiveMemory,
-				CPU:    compositionInfo.TotalMCPU,
+				Memory: compositionInfo.Memory,
+				CPU:    compositionInfo.MCPU,
 			}
 			newDep, depChan, err := c.composer.CreateFcDeployment(matchedFc.Id, c.deployNamespace, node, emptyRT, scale, resources)
 			if err != nil {

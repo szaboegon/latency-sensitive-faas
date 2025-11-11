@@ -84,7 +84,7 @@ func main() {
 
 	layoutCalculator := layout.NewLayoutCalculator(conf.PythonPath, conf.LayoutScriptPath, conf.PlatformNodes, conf.PlatformDelayMs)
 	scenarioManager := core.NewScenarioManager(layoutCalculator, conf.TargetConcurrency,
-		conf.InvocationSharedMemoryRatio, conf.ComponentMCPUAllocation, conf.OverheadMCPUAllocation)
+		conf.InvocationSharedMemoryRatio, conf.ComponentMCPUAllocation, conf.OverheadMCPUAllocation, conf.TargetUtilization)
 
 	controllerCtx, controllerCancel := context.WithCancel(context.Background())
 	controller = core.NewController(composer, metricsReader, scenarioManager,

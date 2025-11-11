@@ -25,11 +25,23 @@ func calculateTotalArrivalRate(comps []core.ComponentProfile, links []core.Scena
 	return totalRate
 }
 
-func calculateRequiredReplicas(runtime, targetConcurrency int, arrivalRate float64) int {
+// calculateRequiredReplicas computes the number of replicas needed to handle the given arrival rate
+// while keeping utilization below targetUtilization to avoid queueing delays.
+// targetUtilization should be between 0 and 1 (e.g., 0.7 for 70% max utilization)
+func calculateRequiredReplicas(runtime, targetConcurrency int, arrivalRate float64, targetUtilization float64) int {
+	// Capacity per replica: requests per second that one replica can handle
 	capacity := (1000.0 / float64(runtime)) * float64(targetConcurrency)
 	if capacity < 1e-6 {
 		capacity = 1e-6
 	}
 
-	return max(int(math.Ceil(arrivalRate/capacity)), 1)
+	// To keep utilization below targetUtilization, we need:
+	// arrivalRate / (replicas * capacity) <= targetUtilization
+	// Therefore: replicas >= arrivalRate / (capacity * targetUtilization)
+	if targetUtilization <= 0 || targetUtilization > 1 {
+		targetUtilization = 0.7 // default to 70% max utilization
+	}
+
+	requiredReplicas := arrivalRate / (capacity * targetUtilization)
+	return max(int(math.Ceil(requiredReplicas)), 1)
 }
