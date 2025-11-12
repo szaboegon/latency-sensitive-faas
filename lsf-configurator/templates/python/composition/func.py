@@ -282,7 +282,7 @@ def main(context: Context) -> Tuple[str, int]:
                 future.result()
             except Exception as e:
                 logger.error(f"An error occurred in a forwarded request thread: {e}")
-                pass
+                return "Error in forwarded request: " + str(e), 500
 
     logger.info("All components processed successfully.")
     return "ok", 200

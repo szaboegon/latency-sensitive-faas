@@ -54,7 +54,7 @@ func (c *slambucCalculator) CalculateLayout(scenario core.LayoutScenario) (core.
 
 		memSum := 0
 		for _, cp := range updatedProfiles {
-			memSum += cp.EffectiveMemory(scenario.InvocationSharedMemoryRatio, scenario.TargetConcurrency) * cp.RequiredReplicas
+			memSum += cp.EffectiveMemory(scenario.InvocationSharedMemoryRatio, scenario.TargetConcurrency, scenario.MemorySafetyBufferRatio) * cp.RequiredReplicas
 		}
 
 		layoutKey := fmt.Sprintf("%d-%d-%d", len(layout), int(optCost), memSum)
@@ -95,6 +95,7 @@ func (c *slambucCalculator) runSLAMBUC(scenario core.LayoutScenario) (map[string
 			"mem": p.EffectiveMemory(
 				scenario.InvocationSharedMemoryRatio,
 				scenario.TargetConcurrency,
+				scenario.MemorySafetyBufferRatio,
 			) * p.RequiredReplicas,
 			"runtime": p.Runtime,
 		})
@@ -242,7 +243,7 @@ func (c *slambucCalculator) buildFinalLayout(
 		for _, cp := range comps {
 			fp := profileMap[cp.Name]
 			finalComps = append(finalComps, fp)
-			memory += fp.EffectiveMemory(scenario.InvocationSharedMemoryRatio, scenario.TargetConcurrency)
+			memory += fp.EffectiveMemory(scenario.InvocationSharedMemoryRatio, scenario.TargetConcurrency, scenario.MemorySafetyBufferRatio)
 			if fp.RequiredReplicas > groupReplicas {
 				groupReplicas = fp.RequiredReplicas
 			}

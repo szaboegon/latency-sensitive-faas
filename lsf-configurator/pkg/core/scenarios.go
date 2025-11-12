@@ -32,10 +32,11 @@ type scenarioManager struct {
 	componentMCPUAllocation     int
 	overheadMCPUAllocation      int
 	targetUtilization           float64
+	memorySafetyBufferRatio     float64
 }
 
 func NewScenarioManager(calculator LayoutCalculator, targetConcurrency int, invocationSharedMemoryRatio float64,
-	componentMCPUAllocation int, overheadMCPUAllocation int, targetUtilization float64) ScenarioManager {
+	componentMCPUAllocation int, overheadMCPUAllocation int, targetUtilization float64, memorySafetyBufferRatio float64) ScenarioManager {
 	return &scenarioManager{
 		calculator:                  calculator,
 		targetConcurrency:           targetConcurrency,
@@ -43,6 +44,7 @@ func NewScenarioManager(calculator LayoutCalculator, targetConcurrency int, invo
 		componentMCPUAllocation:     componentMCPUAllocation,
 		overheadMCPUAllocation:      overheadMCPUAllocation,
 		targetUtilization:           targetUtilization,
+		memorySafetyBufferRatio:     memorySafetyBufferRatio,
 	}
 }
 
@@ -89,6 +91,7 @@ func (sm *scenarioManager) GenerateLayoutCandidates(
 		layoutScenario.ComponentMCPUAllocation = sm.componentMCPUAllocation
 		layoutScenario.OverheadMCPUAllocation = sm.overheadMCPUAllocation
 		layoutScenario.TargetUtilization = sm.targetUtilization
+		layoutScenario.MemorySafetyBufferRatio = sm.memorySafetyBufferRatio
 
 		layout, err := sm.calculator.CalculateLayout(*layoutScenario)
 		if err != nil {

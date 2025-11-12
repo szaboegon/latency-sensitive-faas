@@ -119,6 +119,7 @@ type LayoutScenario struct {
 	TargetConcurrency           int
 	InvocationSharedMemoryRatio float64
 	TargetUtilization           float64
+	MemorySafetyBufferRatio     float64
 }
 
 type ComponentProfile struct {
@@ -128,12 +129,15 @@ type ComponentProfile struct {
 	RequiredReplicas int    `json:"required_replicas"`
 }
 
-func (cp *ComponentProfile) EffectiveMemory(invocationSharedMemoryRatio float64, targetConcurrency int) int {
+func (cp *ComponentProfile) EffectiveMemory(invocationSharedMemoryRatio float64, targetConcurrency int, memorySafetyBufferRatio float64) int {
 	sharedPart := invocationSharedMemoryRatio
 	perRequestPart := 1.0 - sharedPart
 
 	// total = shared portion + per-request portion * concurrency
 	effectiveMemory := float64(cp.Memory) * (sharedPart + perRequestPart*float64(targetConcurrency))
+
+	// Add safety buffer as a percentage of the effective memory
+	effectiveMemory = effectiveMemory * (1.0 + memorySafetyBufferRatio)
 
 	return int(effectiveMemory)
 }

@@ -16,7 +16,7 @@ import (
 const (
 	minimalTraceCount       = 10
 	logInterval             = 1 * time.Minute
-	minConsecutiveDowngrade = 120
+	minConsecutiveDowngrade = 500
 )
 
 type MetricType string
@@ -228,15 +228,25 @@ func (c *latencyController) Start(ctx context.Context) error {
 					c.lastReconfigsMu.Unlock()
 					continue
 				}
-				c.reconfigStartTimes[app.Id] = time.Now()
 				c.lastReconfigsMu.Unlock()
 
-				// Reset downgrade counter for apps with no runtime
+				// Increment downgrade counter for apps with no runtime (same logic as regular downgrade)
 				c.lastReconfigsMu.Lock()
+				c.consecutiveDowngradeEligible[app.Id]++
+				count := c.consecutiveDowngradeEligible[app.Id]
+				c.lastReconfigsMu.Unlock()
+
+				if count < minConsecutiveDowngrade {
+					// log.Printf("App %s has no runtime (%d/%d consecutive intervals)", app.Id, count, minConsecutiveDowngrade)
+					continue
+				}
+
+				c.lastReconfigsMu.Lock()
+				c.reconfigStartTimes[app.Id] = time.Now()
 				c.consecutiveDowngradeEligible[app.Id] = 0
 				c.lastReconfigsMu.Unlock()
 
-				log.Printf("No runtime reported for app %s, downgrading to minimal layout.", app.Id)
+				log.Printf("No runtime reported for app %s for %d consecutive intervals, downgrading to minimal layout.", app.Id, count)
 				nextLayoutKey, err := c.handleLayoutChange(app, layoutDowngradePath, false)
 				if err != nil {
 					log.Printf("Error downgrading app %s to minimal layout: %v", app.Id, err)
