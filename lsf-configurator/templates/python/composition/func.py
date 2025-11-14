@@ -23,7 +23,6 @@ MAX_FORWARD_WORKERS = 4
 forward_executor: concurrent.futures.ThreadPoolExecutor = (
     concurrent.futures.ThreadPoolExecutor(max_workers=MAX_FORWARD_WORKERS)
 )
-forward_futures: List[concurrent.futures.Future[None]] = []
 
 logger = setup_logging(__name__)
 tracer = tracing.instrument_app(app_name=APP_NAME, service_name=FUNCTION_NAME)
@@ -39,7 +38,7 @@ class RouteToProcess(TypedDict):
 
 
 def get_headers(
-    component: str, span_context: Optional[OtelContext] = None
+    component: str, span_context: Optional[OtelContext] = None, correlation_id: str = ""
 ) -> Dict[str, str]:
     """
     Generates headers for the next component, including trace context.
@@ -49,6 +48,7 @@ def get_headers(
         "X-Forward-To": component,
         "Content-Type": "application/json",
         QUEUE_START_TIME_HEADER: current_time_epoch,
+        CORRELATION_ID_HEADER: correlation_id,
     }
 
     if span_context:
@@ -106,17 +106,37 @@ def handle_request(
             raise e
 
 
+FIRE_AND_FORGET_TIMEOUT = (5.0, 0.1)
+
+
 def _send_async_request(
-    route: Route, event_out: Any, span_context: Optional[OtelContext]
+    route: Route,
+    event_out: Any,
+    span_context: Optional[OtelContext],
+    correlation_id: str = "",
 ) -> None:
-    headers = get_headers(route["component"], span_context)
+    headers = get_headers(route["component"], span_context, correlation_id)
     with tracer.start_span("forward_request", context=span_context) as span:
         try:
-            requests.post(url=route["url"], json=event_out, headers=headers)
+            requests.post(
+                url=route["url"],
+                json=event_out,
+                headers=headers,
+                timeout=FIRE_AND_FORGET_TIMEOUT,
+            )
             logger.info(
                 f"Request forwarded to component '{route['component']}' at URL '{route['url']}'."
             )
             span.set_status(Status(StatusCode.OK))
+        except requests.exceptions.ReadTimeout:
+            # THIS IS THE EXPECTED OUTCOME.
+            # We treat this as a success for our "fire-and-forget" model.
+            logger.info(
+                f"Request forwarded (fire-and-forget) to '{route['component']}' at '{route['url']}'. Read timeout occurred as expected."
+            )
+            span.set_status(
+                Status(StatusCode.OK)
+            )  # Set status to OK, this was intended.
         except Exception as e:
             span.set_status(Status(StatusCode.ERROR, str(e)))
             span.record_exception(e)
@@ -127,7 +147,11 @@ def _send_async_request(
 
 
 def forward_request(
-    route: Route, event_out: Any, span_context: Optional[OtelContext]
+    forward_futures: List[concurrent.futures.Future[None]],
+    route: Route,
+    event_out: Any,
+    span_context: Optional[OtelContext],
+    correlation_id: str = "",
 ) -> None:
     """
     Asynchronously forwards the request to the next component if there is one.
@@ -137,12 +161,13 @@ def forward_request(
         return
 
     future: concurrent.futures.Future[None] = forward_executor.submit(
-        _send_async_request, route, event_out, span_context
+        _send_async_request, route, event_out, span_context, correlation_id
     )
     forward_futures.append(future)
 
 
 QUEUE_START_TIME_HEADER = "X-Request-Start-Time"
+CORRELATION_ID_HEADER = "X-Correlation-ID"
 TRACE_BOUNDARY_START_LABEL = "trace_boundary_start"
 TRACE_BOUNDARY_END_LABEL = "trace_boundary_end"
 
@@ -152,6 +177,10 @@ def main(context: Context) -> Tuple[str, int]:
     Entry point of the function. Processes the routing table using parallel processing.
     """
     logger.info("Headers received: " + str(context.request.headers))
+
+    forward_futures: List[concurrent.futures.Future[Any]] = []
+
+    correlation_id = context.request.headers.get(CORRELATION_ID_HEADER, "")
 
     component = context.request.headers.get("X-Forward-To")
     if not component:
@@ -246,7 +275,7 @@ def main(context: Context) -> Tuple[str, int]:
                         attributes={TRACE_BOUNDARY_END_LABEL: True},
                     ) as span:
                         try:
-                            write_result(o)
+                            write_result(o, correlation_id)
                             logger.info(
                                 f"Result for component '{component}' written to Redis."
                             )
@@ -269,7 +298,9 @@ def main(context: Context) -> Tuple[str, int]:
                         )
                         processing_queue.append(route_to_process)
                     else:
-                        forward_request(next_route, o, span_context)
+                        forward_request(
+                            forward_futures, next_route, o, span_context, correlation_id
+                        )
     except KeyError as e:
         logger.error(f"Invalid routing table entry: {e} is missing")
         return f"Invalid routing table entry: {e} is missing", 400

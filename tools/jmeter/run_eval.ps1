@@ -37,7 +37,7 @@ Remove-Item -Force $JtlFile -ErrorAction SilentlyContinue
 Remove-Item -Force $EventsFile -ErrorAction SilentlyContinue
 
 Write-Host "--- 2. Running JMeter Test: $JmeterTestFile ---"
-& "$env:JMETER_HOME\bin\jmeter.bat" -n -t $JmeterTestFile -o "dashboard-report"
+& "$env:JMETER_HOME\bin\jmeter.bat" -Jsample_variables=correlation_id -n -t $JmeterTestFile -o "dashboard-report"
 
 Write-Host "--- 3. Finding Controller Pod for Deployment: $ControllerDeploymentName ---"
 
