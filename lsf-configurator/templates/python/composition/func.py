@@ -19,7 +19,7 @@ import time
 
 faulthandler.enable(file=sys.stderr, all_threads=True)
 
-MAX_FORWARD_WORKERS = 4
+MAX_FORWARD_WORKERS = 10
 forward_executor: concurrent.futures.ThreadPoolExecutor = (
     concurrent.futures.ThreadPoolExecutor(max_workers=MAX_FORWARD_WORKERS)
 )
@@ -106,7 +106,7 @@ def handle_request(
             raise e
 
 
-FIRE_AND_FORGET_TIMEOUT = (5.0, 0.1)
+FIRE_AND_FORGET_TIMEOUT = (5.0, 0.01)
 
 
 def _send_async_request(
@@ -306,7 +306,7 @@ def main(context: Context) -> Tuple[str, int]:
         return f"Invalid routing table entry: {e} is missing", 400
 
     if forward_futures:
-        done, _ = concurrent.futures.wait(forward_futures, timeout=None)
+        done, _ = concurrent.futures.wait(forward_futures, timeout=0.01)
         # Check for exceptions in the completed futures
         for future in done:
             try:

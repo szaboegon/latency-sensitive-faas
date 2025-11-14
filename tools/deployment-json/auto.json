@@ -59,7 +59,7 @@
         "to": "objectdetect2",
         "invocationRate": {
           "min": 2.0,
-          "max": 6.0
+          "max": 4.0
         },
         "dataDelay": 10
       },
@@ -68,7 +68,7 @@
         "to": "tag",
         "invocationRate": {
           "min": 2.0,
-          "max": 6.0
+          "max": 4.0
         },
         "dataDelay": 10
       }

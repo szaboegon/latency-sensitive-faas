@@ -211,7 +211,8 @@ func (c *slambucCalculator) estimateReplicasPerGroup(layout map[string][]core.Co
 			totalMemory += comp.Memory
 		}
 		arrivalRate := calculateTotalArrivalRate(group, scenario.Links)
-		replicas := calculateRequiredReplicas(totalRuntime, scenario.TargetConcurrency, arrivalRate, scenario.TargetUtilization)
+		fanOutRatio := calculateFanOutRatio(group, scenario.Links)
+		replicas := calculateRequiredReplicas(totalRuntime, scenario.TargetConcurrency, arrivalRate, scenario.TargetUtilization, fanOutRatio)
 
 		// assign updated replicas to each component in this composition
 		for _, comp := range group {

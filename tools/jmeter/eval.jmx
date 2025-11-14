@@ -11,12 +11,12 @@
     <hashTree>
       <kg.apc.jmeter.threads.UltimateThreadGroup guiclass="kg.apc.jmeter.threads.UltimateThreadGroupGui" testclass="kg.apc.jmeter.threads.UltimateThreadGroup" testname="jp@gc - Ultimate Thread Group">
         <collectionProp name="ultimatethreadgroupdata">
-          <collectionProp name="692763650">
-            <stringProp name="53">5</stringProp>
-            <stringProp name="0"></stringProp>
-            <stringProp name="50">2</stringProp>
-            <stringProp name="50803">388</stringProp>
-            <stringProp name="50">2</stringProp>
+          <collectionProp name="413398337">
+            <stringProp name="1598">20</stringProp>
+            <stringProp name="47604">0.2</stringProp>
+            <stringProp name="48">0</stringProp>
+            <stringProp name="49710">240</stringProp>
+            <stringProp name="49">1</stringProp>
           </collectionProp>
         </collectionProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
@@ -28,40 +28,25 @@
       <hashTree>
         <kg.apc.jmeter.timers.VariableThroughputTimer guiclass="kg.apc.jmeter.timers.VariableThroughputTimerGui" testclass="kg.apc.jmeter.timers.VariableThroughputTimer" testname="jp@gc - Throughput Shaping Timer">
           <collectionProp name="load_profile">
-            <collectionProp name="140403195">
-              <stringProp name="48">0</stringProp>
+            <collectionProp name="140439713">
+              <stringProp name="49">1</stringProp>
               <stringProp name="49">1</stringProp>
               <stringProp name="1629">30</stringProp>
             </collectionProp>
-            <collectionProp name="82872764">
+            <collectionProp name="82831533">
               <stringProp name="1">1</stringProp>
-              <stringProp name="49">1</stringProp>
-              <stringProp name="1722">60</stringProp>
-            </collectionProp>
-            <collectionProp name="1340010463">
-              <stringProp name="49">1</stringProp>
-              <stringProp name="49529">2.5</stringProp>
               <stringProp name="50">2</stringProp>
+              <stringProp name="1567">10</stringProp>
             </collectionProp>
-            <collectionProp name="406306547">
-              <stringProp name="49529">2.5</stringProp>
-              <stringProp name="50">2</stringProp>
-              <stringProp name="1722">60</stringProp>
-            </collectionProp>
-            <collectionProp name="1925942337">
+            <collectionProp name="1925903437">
               <stringProp name="50">2</stringProp>
               <stringProp name="50">2</stringProp>
-              <stringProp name="48873">180</stringProp>
+              <stringProp name="48749">140</stringProp>
             </collectionProp>
-            <collectionProp name="141222928">
+            <collectionProp name="85296115">
               <stringProp name="50">2</stringProp>
               <stringProp name="49">1</stringProp>
-              <stringProp name="1629">30</stringProp>
-            </collectionProp>
-            <collectionProp name="82836195">
-              <stringProp name="1">1</stringProp>
-              <stringProp name="48">0</stringProp>
-              <stringProp name="1629">30</stringProp>
+              <stringProp name="60">60</stringProp>
             </collectionProp>
           </collectionProp>
         </kg.apc.jmeter.timers.VariableThroughputTimer>
@@ -69,7 +54,7 @@
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP Request">
           <intProp name="HTTPSampler.connect_timeout">10000</intProp>
           <intProp name="HTTPSampler.response_timeout">10000</intProp>
-          <stringProp name="HTTPSampler.domain">app-31a2dwn8q7np8irlfdy2txltk.application.127.0.0.1.sslip.io</stringProp>
+          <stringProp name="HTTPSampler.domain">app-fgygt25dq9bhedxybrlh8ieb.application.127.0.0.1.sslip.io</stringProp>
           <stringProp name="HTTPSampler.port">80</stringProp>
           <stringProp name="HTTPSampler.protocol">http</stringProp>
           <stringProp name="HTTPSampler.contentEncoding">UTF-8</stringProp>
@@ -88,7 +73,7 @@
           </elementProp>
         </HTTPSamplerProxy>
         <hashTree>
-          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager">
+          <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="HTTP Header Manager" enabled="true">
             <collectionProp name="HeaderManager.headers">
               <elementProp name="" elementType="Header">
                 <stringProp name="Header.name">Content-Type</stringProp>
@@ -105,12 +90,13 @@
             </collectionProp>
           </HeaderManager>
           <hashTree/>
-          <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor">
+          <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor" enabled="true">
             <stringProp name="cacheKey">true</stringProp>
             <stringProp name="filename"></stringProp>
             <stringProp name="parameters"></stringProp>
             <stringProp name="script">import org.apache.commons.io.FileUtils
 import java.util.Base64
+import java.util.UUID
 
 // Path to the file to be encoded
 def filePath = &apos;C:\\Users\\szabo\\source\\repos\\szaboegon\\latency-sensitive-faas\\tools\\jmeter\\test-1.jpg&apos; // Replace with your file path
@@ -131,8 +117,8 @@ payload.put(&apos;image&apos;, base64File)
 payload.put(&apos;original_image&apos;, base64File)
 
 vars.put(&apos;payload&apos;, new groovy.json.JsonBuilder(payload).toPrettyString())
-// Generate a unique ID (UUID) and store it as a variable named &apos;correlation_id&apos;
-vars.put(&quot;correlation_id&quot;, java.util.UUID.randomUUID().toString());</stringProp>
+
+vars.put(&apos;correlation_id&apos;, UUID.randomUUID().toString())</stringProp>
             <stringProp name="scriptLanguage">groovy</stringProp>
           </JSR223PreProcessor>
           <hashTree/>
@@ -309,7 +295,7 @@ vars.put(&quot;correlation_id&quot;, java.util.UUID.randomUUID().toString());</s
           <boolProp name="exclude_checkbox_state">false</boolProp>
         </kg.apc.jmeter.vizualizers.CorrectedResultCollector>
         <hashTree/>
-        <ResultCollector guiclass="SimpleDataWriter" testclass="ResultCollector" testname="Simple Data Writer">
+        <ResultCollector guiclass="SimpleDataWriter" testclass="ResultCollector" testname="Simple Data Writer" enabled="true">
           <boolProp name="ResultCollector.error_logging">false</boolProp>
           <objProp>
             <name>saveConfig</name>

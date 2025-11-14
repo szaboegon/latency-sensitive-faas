@@ -1,11 +1,74 @@
-# type: ignore
 import pandas as pd
 import matplotlib.pyplot as plt
 import sys
 import os
-from typing import Optional
+import redis
+import json
+import re
+from typing import Optional, List, Dict, Any
+from datetime import datetime, timezone
 
-# ---- Config ----
+# ---- Redis Config ----
+REDIS_HOST = "localhost"
+REDIS_PORT = 6379
+# No fallback APP_NAME defined. The script will exit if detection fails.
+# ----------------------
+
+
+# ---- Function to Determine APP_NAME ----
+def determine_app_name(file_path_csv: str) -> str:
+    """
+    Reads the JTL file to find and extract the application ID from the URL format.
+    Exits the script if the APP_NAME cannot be determined.
+    """
+    # Pattern to extract app name from the expected URL structure
+    pattern = re.compile(r"http://app-(.*?)\.application\.127\.0\.0\.1\.sslip\.io")
+
+    try:
+        # Read only the header and first 10 rows to quickly identify the URL
+        df_head = pd.read_csv(file_path_csv, nrows=10)
+
+        # Check for a 'URL' column specifically, then look in all string columns as a fallback
+        search_cols = []
+        if "URL" in df_head.columns:
+            search_cols.append("URL")
+
+        # Add other potential string columns
+        search_cols.extend(
+            col
+            for col in df_head.select_dtypes(include=["object"]).columns
+            if col not in search_cols
+        )
+
+        for col in search_cols:
+            for value in df_head[col].dropna().astype(str):
+                match = pattern.search(value)
+                if match:
+                    app_name = match.group(1)
+                    print(f"✅ Auto-detected APP_NAME: {app_name} from column '{col}'.")
+                    return app_name
+
+    except FileNotFoundError:
+        sys.stderr.write(f"Error: JTL file not found at {file_path_csv}\n")
+        sys.exit(1)
+    except Exception as e:
+        sys.stderr.write(
+            f"Error during APP_NAME auto-detection: {e}. Cannot proceed.\n"
+        )
+        sys.exit(1)
+
+    # If the loop finishes without finding a match, exit
+    sys.stderr.write(
+        "Error: Failed to auto-detect APP_NAME from the JTL file. "
+        "Could not find the pattern 'http://app-{app_name}.application.127.0.0.1.sslip.io' in the inspected rows. Exiting.\n"
+    )
+    sys.exit(1)
+
+
+# ----------------------------------------
+
+
+# ---- Command Line Setup ----
 if len(sys.argv) < 2:
     print(
         "Usage: python plot_jtl_metrics.py <path/to/jtl_results.csv> [path/to/reconfig_events.csv] [target_latency_ms]"
@@ -16,18 +79,116 @@ file_path_csv = sys.argv[1]
 file_path_events = sys.argv[2] if len(sys.argv) > 2 else None
 target_latency_str = sys.argv[3] if len(sys.argv) > 3 else None
 
-granularity = 30  # seconds per bin
+# ---- Auto-Detect APP_NAME and Set Redis Key ----
+APP_NAME = determine_app_name(file_path_csv)
+PERF_KEY = f"perf:{APP_NAME}"
+print(f"Using Redis Key: {PERF_KEY}")
+# ------------------------------------------------
+
+granularity = 10  # seconds per bin
+
+
+# ---- Redis Helper Function ----
+def fetch_redis_perf_data() -> pd.DataFrame:
+    """Connects to Redis, retrieves all performance metrics, and returns a DataFrame."""
+    print(f"Connecting to Redis at {REDIS_HOST}:{REDIS_PORT}...")
+    try:
+        r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+        r.ping()
+        print("Redis connection successful.")
+
+        # Get all elements from the performance list
+        raw_data: List[str] = r.lrange(PERF_KEY, 0, -1)
+
+        if not raw_data:
+            print(f"Warning: No data found in Redis list '{PERF_KEY}'.")
+            return pd.DataFrame()
+
+        # Parse JSON data
+        parsed_data: List[Dict[str, Any]] = [json.loads(item) for item in raw_data]
+        perf_df = pd.DataFrame(parsed_data)
+
+        # --- Keep ALL correlation_id records as requested by the user ---
+
+        required_perf_cols = {"correlation_id", "timestamp"}
+        if not required_perf_cols.issubset(perf_df.columns):
+            sys.exit(
+                f"Error: Redis data missing required fields ({required_perf_cols}). Ensure your FaaS code uses 'timestamp'."
+            )
+
+        # NO de-duplication: Keep all events for a correlation ID to see all timespans
+        print(f"Processing all {len(perf_df)} recorded end-time events from Redis.")
+
+        # 1. Convert ISO string timestamp to milliseconds Unix epoch time (for latency calculation)
+        # pandas.to_datetime returns nanoseconds, so we divide by 10^6 to get milliseconds
+        perf_df["end_time_ms"] = (
+            pd.to_datetime(perf_df["timestamp"], utc=True).astype("int64") // 10**6
+        )
+
+        # 2. Keep only the columns needed for merging: correlation_id and the newly created end_time_ms
+        perf_df = perf_df[["correlation_id", "end_time_ms"]]
+        perf_df["correlation_id"] = perf_df["correlation_id"].astype(str)
+
+        return perf_df
+
+    except redis.exceptions.ConnectionError as e:
+        sys.exit(
+            f"Error: Could not connect to Redis at {REDIS_HOST}:{REDIS_PORT}. Details: {e}"
+        )
+    except Exception as e:
+        sys.exit(f"An unexpected error occurred during Redis operation: {e}")
+
 
 # ---- Load Data ----
 print(f"Loading {file_path_csv} ...")
-df = pd.read_csv(file_path_csv)
+df_jtl = pd.read_csv(file_path_csv)
+df_jtl["correlation_id"] = df_jtl["correlation_id"].astype(str)
 
 # Ensure required columns exist
-required_cols = {"timeStamp", "elapsed"}
-if not required_cols.issubset(df.columns):
-    sys.exit(f"Error: JTL file missing required columns: {required_cols}")
+required_cols = {"timeStamp", "elapsed", "correlation_id"}
+if not required_cols.issubset(df_jtl.columns):
+    sys.exit(
+        f"Error: JTL file missing required columns: {required_cols}. Did you configure sample_variables=correlation_id?"
+    )
+
+# ---- Fetch and Merge Data ----
+df_perf = fetch_redis_perf_data()
+
+if df_perf.empty:
+    sys.exit("Cannot proceed without performance data from Redis.")
+
+# Merge JTL start times with Redis end times on the unique correlation ID
+# Using an 'inner' merge will match every JTL start time against every corresponding Redis end time.
+df_merged = pd.merge(df_jtl, df_perf, on="correlation_id", how="inner")
+
+if df_merged.empty:
+    sys.exit(
+        "Error: Merged DataFrame is empty. Check correlation_id values in JTL and Redis."
+    )
+
+print(
+    f"Successfully merged {len(df_merged)} records (out of {len(df_jtl)} JTL records)."
+)
+if len(df_merged) > len(df_jtl):
+    print(
+        f"Note: The merged DataFrame has more rows ({len(df_merged)}) than the JTL file ({len(df_jtl)}), as requested, because multiple end times were recorded per request."
+    )
+
+# ---- Recalculate End-to-End Latency ----
+
+# 1. Start Time (from JTL, already in milliseconds)
+df_merged["start_time_ms"] = df_merged["timeStamp"]
+
+# 2. End Time (from Redis, already merged as 'end_time_ms')
+
+# 3. Calculate True End-to-End Latency (in milliseconds)
+df_merged["true_latency_ms"] = df_merged["end_time_ms"] - df_merged["start_time_ms"]
+
+# Set the primary DataFrame for plotting to the merged, calculated data
+df = df_merged.copy()
 
 # ---- Convert timestamps ----
+# Time is now based on the JTL Start Time (timeStamp)
 df["time"] = pd.to_datetime(df["timeStamp"], unit="ms")
 start_time = df["time"].min()
 df["rel_time"] = (df["time"] - start_time).dt.total_seconds()
@@ -35,6 +196,7 @@ df["rel_time"] = (df["time"] - start_time).dt.total_seconds()
 max_test_time = df["rel_time"].max()
 
 # ---- Compute average RPS per 30s ----
+# RPS is based on the start time (timeStamp) as this is when the request originated.
 df["time_bin"] = (df["rel_time"] // granularity) * granularity
 rps = df.groupby("time_bin").size().reset_index(name="requests")
 rps["rps"] = rps["requests"] / granularity
@@ -46,6 +208,7 @@ if file_path_events:
     try:
         events_df = pd.read_csv(file_path_events)
 
+        # Assuming event_time in events_df is also in milliseconds since epoch
         events_df["rel_start_time"] = (
             pd.to_datetime(events_df["event_time"], unit="ms") - start_time
         ).dt.total_seconds()
@@ -93,8 +256,15 @@ if target_latency_str:
 fig, ax1 = plt.subplots(figsize=(12, 6))
 ax2 = ax1.twinx()
 
+# Plot the new, calculated true end-to-end latency
+# This scatter will now include multiple points per initial request if multiple end events were logged.
 ax1.scatter(
-    df["rel_time"], df["elapsed"], s=5, color="tab:red", alpha=0.4, label="Latency (ms)"
+    df["rel_time"],
+    df["true_latency_ms"],
+    s=5,
+    color="tab:red",
+    alpha=0.4,
+    label="True End-to-End Latency (ms)",
 )
 
 ax2.plot(
@@ -117,10 +287,9 @@ if reconfig_events is not None and not reconfig_events.empty:
     app_labels_seen = set()
 
     # Determine a suitable y-position for event duration labels
-    # This places labels near the top of the latency axis, adjusted dynamically
     y_min, y_max = ax1.get_ylim()
     y_range = y_max - y_min
-    label_y_pos = y_min + (y_range * 0.05)  # Start 95% up the y-axis
+    label_y_pos = y_min + (y_range * 0.05)
 
     for i, app_id in enumerate(app_ids):
         app_events = reconfig_events[reconfig_events["app_id"] == app_id]
@@ -145,16 +314,16 @@ if reconfig_events is not None and not reconfig_events.empty:
                 alpha=0.7,
             )
 
-            # --- NEW: Add duration label directly on the plot ---
+            # --- Add duration label directly on the plot ---
             event_mid_x = (row["rel_start_time"] + row["rel_end_time"]) / 2
             duration_text = f"{row['duration_s']:.1f}s"
             ax1.text(
                 event_mid_x,
-                label_y_pos,  # Use the dynamically calculated Y position
+                label_y_pos,
                 duration_text,
                 color=event_color,
-                ha="center",  # Horizontal alignment: center
-                va="bottom",  # Vertical alignment: align bottom of text with y-pos
+                ha="center",
+                va="bottom",
                 fontsize=8,
                 weight="bold",
                 bbox=dict(
@@ -162,13 +331,8 @@ if reconfig_events is not None and not reconfig_events.empty:
                     alpha=0.7,
                     edgecolor="none",
                     boxstyle="round,pad=0.2",
-                ),  # Background box for readability
+                ),
             )
-            # You might want to adjust label_y_pos slightly downwards for subsequent events if they are close
-            # Or implement a more sophisticated collision detection for labels if many events overlap
-            # For now, if events are close on X, their labels might overlap.
-            # ---------------------------------------------------
-
             app_labels_seen.add(app_id)
 
     print("Reconfiguration events visualized as shaded regions with duration labels.")
@@ -176,9 +340,9 @@ if reconfig_events is not None and not reconfig_events.empty:
 
 # ---- Labeling ----
 ax1.set_xlabel("Time (seconds from start)")
-ax1.set_ylabel("Latency (ms)", color="tab:red")
+ax1.set_ylabel("True End-to-End Latency (ms)", color="tab:red")
 ax2.set_ylabel("RPS (avg per 30s)", color="tab:blue")
-plt.title("Latency vs Average RPS (30s granularity)")
+plt.title("True End-to-End Latency vs Average RPS (30s granularity)")
 
 # ---- X-axis range ----
 x_limit = ((int(max_test_time) // 60) + 1) * 60

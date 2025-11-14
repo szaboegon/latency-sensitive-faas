@@ -16,8 +16,9 @@ PERF_KEY = f"perf:{APP_NAME}"
 def write_result(event: Any, correlation_id: str = "") -> None:
     # Write the result event to Redis
     key = f"result:{APP_NAME}"
+    timestamp = datetime.now(timezone.utc).isoformat()
     value = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": timestamp,
         "event": event,
     }
     redis_client.rpush(key, json.dumps(value))
@@ -26,14 +27,12 @@ def write_result(event: Any, correlation_id: str = "") -> None:
 
     # For evaluation purposes, we also log the write time with correlation ID
     if correlation_id:
-        write_time_ms = int(time.time() * 1000)  # Get timestamp in milliseconds
-
         perf_data = {
             "correlation_id": correlation_id,
-            "write_time_ms": write_time_ms,
+            "timestamp": timestamp,
         }
 
         # We push the performance data to a separate, dedicated list
         redis_client.rpush(PERF_KEY, json.dumps(perf_data))
-        # Keep only the last 2000 performance entries for memory efficiency
-        redis_client.ltrim(PERF_KEY, -2000, -1)
+        # Keep only the last 1000 performance entries for memory efficiency
+        redis_client.ltrim(PERF_KEY, -1000, -1)
