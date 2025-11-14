@@ -79,7 +79,7 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
         "to": "objectdetect2",
         "invocationRate": {
           "min": 2.0,
-          "max": 6.0
+          "max": 4.0
         },
         "dataDelay": 10
       },
@@ -88,17 +88,18 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
         "to": "tag",
         "invocationRate": {
           "min": 2.0,
-          "max": 6.0
+          "max": 4.0
         },
         "dataDelay": 10
       }
     ],
-    "latencyLimit": 1500,
+    "latencyLimit": 1600,
     "platformManaged": true
   },
   "functionCompositions": [],
   "deployments": []
-}`,
+}
+`,
     },
   });
   const { mutate: bulkCreateFunctionApp } = useBulkCreateFunctionApp();

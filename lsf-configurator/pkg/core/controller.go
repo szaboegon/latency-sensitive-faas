@@ -16,7 +16,7 @@ import (
 const (
 	minimalTraceCount       = 10
 	logInterval             = 1 * time.Minute
-	minConsecutiveDowngrade = 500
+	minConsecutiveDowngrade = 300
 )
 
 type MetricType string

@@ -1,3 +1,4 @@
+# type: ignore
 import pandas as pd
 import matplotlib.pyplot as plt
 import sys
@@ -85,7 +86,7 @@ PERF_KEY = f"perf:{APP_NAME}"
 print(f"Using Redis Key: {PERF_KEY}")
 # ------------------------------------------------
 
-granularity = 10  # seconds per bin
+granularity = 30  # seconds per bin
 
 
 # ---- Redis Helper Function ----
@@ -264,7 +265,7 @@ ax1.scatter(
     s=5,
     color="tab:red",
     alpha=0.4,
-    label="True End-to-End Latency (ms)",
+    label="Latency (ms)",
 )
 
 ax2.plot(
@@ -340,9 +341,9 @@ if reconfig_events is not None and not reconfig_events.empty:
 
 # ---- Labeling ----
 ax1.set_xlabel("Time (seconds from start)")
-ax1.set_ylabel("True End-to-End Latency (ms)", color="tab:red")
-ax2.set_ylabel("RPS (avg per 30s)", color="tab:blue")
-plt.title("True End-to-End Latency vs Average RPS (30s granularity)")
+ax1.set_ylabel("Latency (ms)", color="tab:red")
+ax2.set_ylabel(f"RPS (avg per {granularity}s)", color="tab:blue")
+plt.title("End-to-End Latency vs Average RPS")
 
 # ---- X-axis range ----
 x_limit = ((int(max_test_time) // 60) + 1) * 60
@@ -365,9 +366,79 @@ for line, label in zip(lines, labels):
 
 unique_lines.extend(lines2)
 unique_labels.extend(labels2)
-ax1.legend(unique_lines, unique_labels, loc="upper right")
+ax1.legend(
+    unique_lines,
+    unique_labels,
+    loc="upper left",
+)
 
 fig.tight_layout()
+
+# ---- Statistical Analysis ----
+latency_data = df["true_latency_ms"]
+
+# 1. Total Average Latency (Mean)
+mean_latency = latency_data.mean()
+
+# 2. Spread (Standard Deviation and IQR)
+std_latency = latency_data.std()
+q25 = latency_data.quantile(0.25)
+q75 = latency_data.quantile(0.75)
+iqr_latency = q75 - q25
+
+# 3. Percentage under Target Latency
+percentage_under_target = None
+if target_latency is not None:
+    count_under_target = (latency_data < target_latency).sum()
+    total_count = len(latency_data)
+    percentage_under_target = (count_under_target / total_count) * 100
+
+
+def generate_stats_output(
+    df,
+    mean_latency,
+    std_latency,
+    iqr_latency,
+    q25,
+    q75,
+    target_latency,
+    percentage_under_target,
+) -> str:
+    """Generates the formatted string output for performance statistics."""
+
+    output = []
+    output.append("=" * 50)
+    output.append("           PERFORMANCE STATISTICS")
+    output.append("=" * 50)
+    output.append(f"Total Requests Analyzed: {len(df)}")
+    output.append(f"Overall Mean Latency:    {mean_latency:.2f} ms")
+    output.append("-" * 50)
+    output.append("Latency Spread Measures:")
+    output.append(f"  Standard Deviation:    {std_latency:.2f} ms")
+    output.append(f"  Interquartile Range:   {iqr_latency:.2f} ms")
+    output.append(f"  25th Percentile (Q1):  {q25:.2f} ms")
+    output.append(f"  75th Percentile (Q3):  {q75:.2f} ms")
+
+    if percentage_under_target is not None:
+        output.append("-" * 50)
+        output.append(f"Target Latency ({target_latency} ms):")
+        output.append(f"  % Under Target:        {percentage_under_target:.2f} %")
+    output.append("=" * 50)
+
+    return "\n".join(output)
+
+
+stats_output = generate_stats_output(
+    df,
+    mean_latency,
+    std_latency,
+    iqr_latency,
+    q25,
+    q75,
+    target_latency,
+    percentage_under_target,
+)
+print(stats_output)
 
 
 def save_plot_to_file(fig, base_filename="result.png"):
@@ -383,9 +454,30 @@ def save_plot_to_file(fig, base_filename="result.png"):
     try:
         fig.savefig(filename)
         print(f"\n✅ Plot successfully saved to: {filename}")
+        return filename
     except Exception as e:
         print(f"\n❌ Error saving figure to {filename}: {e}")
+        return None
 
 
-save_plot_to_file(fig)
+def save_stats_to_file(plot_filename: str, stats_data: str):
+    """Creates a .txt file name matching the plot name and saves the statistics."""
+    if plot_filename is None:
+        print("❌ Cannot save statistics: Plot file name is missing.")
+        return
+
+    # Example: result-1.png -> result-1.txt
+    stats_filename = os.path.splitext(plot_filename)[0] + ".txt"
+
+    try:
+        with open(stats_filename, "w") as f:
+            f.write(stats_data)
+        print(f"✅ Statistics successfully saved to: {stats_filename}")
+    except Exception as e:
+        print(f"❌ Error saving statistics to {stats_filename}: {e}")
+
+
+plot_filename = save_plot_to_file(fig)
+save_stats_to_file(plot_filename, stats_output)
+
 plt.show()

@@ -26,7 +26,7 @@ $JtlFile = "results.csv"
 $EventsFile = "reconfig_events.csv"
 $JmeterTestFile = "eval.jmx"
 $PythonPlotter = "plot_rps_latency.py" 
-$TargetLatencyMs = 1500
+$TargetLatencyMs = 1600
 # ---------------------
 
 

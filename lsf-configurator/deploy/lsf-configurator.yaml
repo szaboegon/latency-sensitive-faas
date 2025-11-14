@@ -170,7 +170,7 @@ spec:
             - name: MEMORY_SAFETY_BUFFER_RATIO
               value: "0.4"
             - name: TARGET_UTILIZATION
-              value: "0.7"
+              value: "0.6"
             - name: LATENCY_DOWNGRADE_FACTOR
               value: "0.5"
           volumeMounts:

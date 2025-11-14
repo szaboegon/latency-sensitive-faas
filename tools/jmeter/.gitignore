@@ -1,5 +1,7 @@
 jmeter.log
 *.csv
 *.jtl
+*.txt
 dashboard-report
 *.png
+good_results

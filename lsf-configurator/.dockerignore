@@ -1,0 +1,5 @@
+*.exe
+frontend/dist/
+node_modules/
+db/
+uploads/
