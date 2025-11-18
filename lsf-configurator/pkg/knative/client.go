@@ -91,10 +91,11 @@ func (c *Client) Deploy(ctx context.Context, deployment core.Deployment, image, 
 			Namespace: deployment.Namespace,
 			Options: fn.Options{
 				Scale: &fn.ScaleOptions{
-					Min:    int64Ptr(deployment.Scale.MinReplicas),
-					Max:    int64Ptr(deployment.Scale.MaxReplicas),
-					Metric: strPtr("concurrency"),
-					Target: floatPtr(float64(deployment.Scale.TargetConcurrency)),
+					Min:         int64Ptr(deployment.Scale.MinReplicas),
+					Max:         int64Ptr(deployment.Scale.MaxReplicas),
+					Metric:      strPtr("concurrency"),
+					Target:      floatPtr(float64(deployment.Scale.TargetConcurrency)),
+					Utilization: floatPtr(70),
 				},
 				Resources: &fn.ResourcesOptions{
 					Requests: &fn.ResourcesRequestsOptions{

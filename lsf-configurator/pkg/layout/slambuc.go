@@ -40,24 +40,7 @@ func (c *slambucCalculator) CalculateLayout(scenario core.LayoutScenario) (core.
 			return nil, fmt.Errorf("no valid layout found within latency requirement")
 		}
 
-		// Estimate replicas per composition group
-		updatedProfiles := c.estimateReplicasPerGroup(layout, scenario)
-
-		// Anti oscillation: always run next iteration with max replicas seen so far, so it is monotonous
-		for i, cp := range updatedProfiles {
-			if cp.RequiredReplicas > maxReplicasSeen[cp.Name] {
-				maxReplicasSeen[cp.Name] = cp.RequiredReplicas
-			}
-			cp.RequiredReplicas = maxReplicasSeen[cp.Name]
-			updatedProfiles[i] = cp
-		}
-
-		memSum := 0
-		for _, cp := range updatedProfiles {
-			memSum += cp.EffectiveMemory(scenario.InvocationSharedMemoryRatio, scenario.TargetConcurrency, scenario.MemorySafetyBufferRatio) * cp.RequiredReplicas
-		}
-
-		layoutKey := fmt.Sprintf("%d-%d-%d", len(layout), int(optCost), memSum)
+		layoutKey := fmt.Sprintf("%d-%d", len(layout), int(optCost))
 		if layoutKey == prevLayoutKey {
 			// Convergence reached: recalc final replicas for accuracy, because calculation always uses max seen replicas,
 			// real count may be lower
@@ -67,8 +50,19 @@ func (c *slambucCalculator) CalculateLayout(scenario core.LayoutScenario) (core.
 			return finalLayout, nil
 		}
 
+		// Estimate replicas per composition group
+		updatedProfiles := c.estimateReplicasPerGroup(layout, scenario)
 		prevLayoutKey = layoutKey
 		scenario.Profiles = updatedProfiles
+
+		// Anti oscillation: always run next iteration with max replicas seen so far, so it is monotonous
+		for i, cp := range updatedProfiles {
+			if cp.RequiredReplicas > maxReplicasSeen[cp.Name] {
+				maxReplicasSeen[cp.Name] = cp.RequiredReplicas
+			}
+			cp.RequiredReplicas = maxReplicasSeen[cp.Name]
+			updatedProfiles[i] = cp
+		}
 	}
 
 	return nil, fmt.Errorf("failed to converge layout after %d iterations", c.maxIterations)
@@ -211,8 +205,7 @@ func (c *slambucCalculator) estimateReplicasPerGroup(layout map[string][]core.Co
 			totalMemory += comp.Memory
 		}
 		arrivalRate := calculateTotalArrivalRate(group, scenario.Links)
-		fanOutRatio := calculateFanOutRatio(group, scenario.Links)
-		replicas := calculateRequiredReplicas(totalRuntime, scenario.TargetConcurrency, arrivalRate, scenario.TargetUtilization, fanOutRatio)
+		replicas := calculateRequiredReplicas(totalRuntime, scenario.TargetConcurrency, arrivalRate, scenario.TargetUtilization)
 
 		// assign updated replicas to each component in this composition
 		for _, comp := range group {
