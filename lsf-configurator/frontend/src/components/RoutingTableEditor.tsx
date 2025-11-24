@@ -6,6 +6,8 @@ import {
   Typography,
   Button,
   IconButton,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -91,20 +93,23 @@ const RoutingTableEditor: React.FC<RoutingTableFormProps> = ({
               name={`rules.${index}.component`}
               control={control}
               render={({ field }) => (
-                <Select
-                  {...field}
-                  fullWidth
-                  onChange={(e) => {
-                    field.onChange(e);
-                    notifyChange();
-                  }}
-                >
-                  {Object.keys(deployment.routingTable).map((component) => (
-                    <MenuItem key={component} value={component}>
-                      {component}
-                    </MenuItem>
-                  ))}
-                </Select>
+                <FormControl fullWidth>
+                  <InputLabel>Component</InputLabel>
+                  <Select
+                    {...field}
+                    label="Component"
+                    onChange={(e) => {
+                      field.onChange(e);
+                      notifyChange();
+                    }}
+                  >
+                    {Object.keys(deployment.routingTable).map((component) => (
+                      <MenuItem key={component} value={component}>
+                        {component}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               )}
             />
 
@@ -118,24 +123,27 @@ const RoutingTableEditor: React.FC<RoutingTableFormProps> = ({
               name={`rules.${index}.targetDeployment`}
               control={control}
               render={({ field }) => (
-                <Select
-                  {...field}
-                  fullWidth
-                  value={field.value || "None"}
-                  onChange={(e) => {
-                    field.onChange(e);
-                    notifyChange();
-                  }}
-                >
-                  <MenuItem value="None">None</MenuItem>
-                  {allDeployments
-                    .filter((dep): dep is Deployment => !!dep)
-                    .map((dep) => (
-                      <MenuItem key={dep.id} value={dep.id}>
-                        {dep.id} ({dep.node})
-                      </MenuItem>
-                    ))}
-                </Select>
+                <FormControl fullWidth>
+                  <InputLabel>Target Deployment</InputLabel>
+                  <Select
+                    {...field}
+                    label="Target Deployment"
+                    value={field.value || "None"}
+                    onChange={(e) => {
+                      field.onChange(e);
+                      notifyChange();
+                    }}
+                  >
+                    <MenuItem value="None">None</MenuItem>
+                    {allDeployments
+                      .filter((dep): dep is Deployment => !!dep)
+                      .map((dep) => (
+                        <MenuItem key={dep.id} value={dep.id}>
+                          {dep.id} ({dep.node})
+                        </MenuItem>
+                      ))}
+                  </Select>
+                </FormControl>
               )}
             />
 
@@ -144,22 +152,25 @@ const RoutingTableEditor: React.FC<RoutingTableFormProps> = ({
               name={`rules.${index}.targetComponent`}
               control={control}
               render={({ field }) => (
-                <Select
-                  {...field}
-                  fullWidth
-                  value={field.value || "None"}
-                  onChange={(e) => {
-                    field.onChange(e);
-                    notifyChange();
-                  }}
-                >
-                  <MenuItem value="None">None</MenuItem>
-                  {availableTargetComponents.map((component) => (
-                    <MenuItem key={component} value={component}>
-                      {component}
-                    </MenuItem>
-                  ))}
-                </Select>
+                <FormControl fullWidth>
+                  <InputLabel>Target Component</InputLabel>
+                  <Select
+                    {...field}
+                    label="Target Component"
+                    value={field.value || "None"}
+                    onChange={(e) => {
+                      field.onChange(e);
+                      notifyChange();
+                    }}
+                  >
+                    <MenuItem value="None">None</MenuItem>
+                    {availableTargetComponents.map((component) => (
+                      <MenuItem key={component} value={component}>
+                        {component}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
               )}
             />
 

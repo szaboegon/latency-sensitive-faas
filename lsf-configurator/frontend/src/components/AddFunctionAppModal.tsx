@@ -121,7 +121,7 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
           top: "50%",
           left: "50%",
           transform: "translate(-50%, -50%)",
-          width: 700,
+          width: 800,
           maxHeight: "90vh",
           overflowY: "auto",
           bgcolor: "background.paper",
@@ -150,6 +150,7 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
               <Select
                 {...register("runtime", { required: true })}
                 labelId="runtime-label"
+                label="Runtime"
                 defaultValue=""
               >
                 <MenuItem value="Node.js">Node.js</MenuItem>
@@ -210,6 +211,7 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
                           </InputLabel>
                           <Select
                             labelId={`component-name-label-${index}`}
+                            label="Name"
                             {...field}
                             value={field.value || ""}
                             onChange={(e) => field.onChange(e.target.value)}
@@ -229,7 +231,7 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
                     <TextField
                       label="Memory Limit"
                       type="number"
-                      sx={{ minWidth: "10%", maxWidth: "15%" }}
+                      sx={{ minWidth: "12%", maxWidth: "15%" }}
                       {...register(`components.${index}.memory`, {
                         required: true,
                         valueAsNumber: true,
@@ -238,7 +240,7 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
                     <TextField
                       label="Runtime (ms)"
                       type="number"
-                      sx={{ minWidth: "10%", maxWidth: "15%" }}
+                      sx={{ minWidth: "12%", maxWidth: "15%" }}
                       {...register(`components.${index}.runtime`, {
                         required: true,
                         valueAsNumber: true,
@@ -249,7 +251,7 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
                       control={control}
                       name={`components.${index}.files`}
                       render={({ field }) => (
-                        <FormControl sx={{ minWidth: "30%", maxWidth: "40%" }}>
+                        <FormControl sx={{ minWidth: "26%", maxWidth: "40%" }}>
                           <InputLabel id={`component-files-label-${index}`}>
                             Files
                           </InputLabel>
@@ -338,6 +340,7 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
                           </InputLabel>
                           <Select
                             labelId={`link-from-label-${index}`}
+                            label="From"
                             {...field}
                             value={field.value || ""}
                             onChange={(e) => field.onChange(e.target.value)}
@@ -365,6 +368,7 @@ const AddFunctionAppModal: React.FC<AddFunctionAppModalProps> = ({
                           </InputLabel>
                           <Select
                             labelId={`link-to-label-${index}`}
+                            label="To"
                             {...field}
                             value={field.value || ""}
                             onChange={(e) => field.onChange(e.target.value)}
