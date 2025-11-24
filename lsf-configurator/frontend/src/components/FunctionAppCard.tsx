@@ -23,18 +23,16 @@ const FunctionAppCard: React.FC<FunctionAppCardProps> = ({ app }) => {
 
   return (
     <Paper
-      elevation={0}
+      elevation={2}
       sx={{
-        borderRadius: 3,
-        boxShadow: 4,
-        background: "linear-gradient(135deg, #e0f7fa 0%, #fff 100%)",
-        border: "1px solid #b2ebf2",
-        p: 3,
+        borderRadius: 2,
+        p: 2,
         display: "flex",
         flexDirection: "column",
+        background: "#f5faff",
         transition: "box-shadow 0.2s ease-in-out, transform 0.1s ease-in-out",
         "&:hover": {
-          boxShadow: 6,
+          boxShadow: 4,
           transform: "translateY(-2px)",
         },
         height: "100%",
@@ -62,9 +60,9 @@ const FunctionAppCard: React.FC<FunctionAppCardProps> = ({ app }) => {
             sx={{
               px: 0,
               py: 0.5,
-              borderRadius: 2,
-              backgroundColor: "#f0fafa",
-              boxShadow: 1,
+              borderRadius: 1,
+              backgroundColor: "#f9f9f9",
+              border: "1px solid #e0e0e0",
               mb: 1,
             }}
           >

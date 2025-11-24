@@ -59,11 +59,10 @@ const FunctionCompositionCard: React.FC<Props> = ({
   return (
     <>
       <Card
+        elevation={2}
         sx={{
-          borderRadius: 3,
-          boxShadow: 4,
-          background: "linear-gradient(135deg, #e0f7fa 0%, #fff 100%)",
-          border: "1px solid #b2ebf2",
+          borderRadius: 2,
+          background: "#f5faff",
           height: "600px",
           display: "flex",
           flexDirection: "column",
@@ -118,10 +117,10 @@ const FunctionCompositionCard: React.FC<Props> = ({
                     key={component}
                     sx={{
                       backgroundColor: generateComponentColor(component),
-                      borderRadius: 2,
+                      borderRadius: 1,
                       padding: 1,
                       textAlign: "center",
-                      boxShadow: 1,
+                      border: "1px solid #e0e0e0",
                     }}
                   >
                     <Typography variant="body2">{component}</Typography>
