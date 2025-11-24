@@ -6,8 +6,9 @@ import os
 import redis
 import json
 import re
+import shutil
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone
+from datetime import datetime
 
 # ---- Redis Config ----
 REDIS_HOST = "localhost"
@@ -84,6 +85,17 @@ target_latency_str = sys.argv[3] if len(sys.argv) > 3 else None
 APP_NAME = determine_app_name(file_path_csv)
 PERF_KEY = f"perf:{APP_NAME}"
 print(f"Using Redis Key: {PERF_KEY}")
+
+# ---- Create Results Subfolder with Timestamp ----
+RESULTS_BASE_FOLDER = "results"
+if not os.path.exists(RESULTS_BASE_FOLDER):
+    os.makedirs(RESULTS_BASE_FOLDER)
+
+# Create timestamped subfolder for this run
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+RUN_FOLDER = os.path.join(RESULTS_BASE_FOLDER, timestamp)
+os.makedirs(RUN_FOLDER)
+print(f"Created run folder: {RUN_FOLDER}")
 # ------------------------------------------------
 
 granularity = 30  # seconds per bin
@@ -441,43 +453,56 @@ stats_output = generate_stats_output(
 print(stats_output)
 
 
-def save_plot_to_file(fig, base_filename="result.png"):
-    """Saves the figure to a file, handling name collisions."""
-    name, ext = os.path.splitext(base_filename)
-    counter = 0
-    filename = base_filename
-
-    while os.path.exists(filename):
-        counter += 1
-        filename = f"{name}-{counter}{ext}"
+def save_plot_to_file(fig, run_folder: str, filename="result.png"):
+    """Saves the figure to the run-specific folder."""
+    filepath = os.path.join(run_folder, filename)
 
     try:
-        fig.savefig(filename)
-        print(f"\n✅ Plot successfully saved to: {filename}")
-        return filename
+        fig.savefig(filepath)
+        print(f"\n✅ Plot successfully saved to: {filepath}")
+        return filepath
     except Exception as e:
-        print(f"\n❌ Error saving figure to {filename}: {e}")
+        print(f"\n❌ Error saving figure to {filepath}: {e}")
         return None
 
 
-def save_stats_to_file(plot_filename: str, stats_data: str):
-    """Creates a .txt file name matching the plot name and saves the statistics."""
-    if plot_filename is None:
-        print("❌ Cannot save statistics: Plot file name is missing.")
-        return
-
-    # Example: result-1.png -> result-1.txt
-    stats_filename = os.path.splitext(plot_filename)[0] + ".txt"
+def save_stats_to_file(run_folder: str, stats_data: str, filename="result.txt"):
+    """Saves the statistics to the run-specific folder."""
+    filepath = os.path.join(run_folder, filename)
 
     try:
-        with open(stats_filename, "w") as f:
+        with open(filepath, "w") as f:
             f.write(stats_data)
-        print(f"✅ Statistics successfully saved to: {stats_filename}")
+        print(f"✅ Statistics successfully saved to: {filepath}")
+        return filepath
     except Exception as e:
-        print(f"❌ Error saving statistics to {stats_filename}: {e}")
+        print(f"❌ Error saving statistics to {filepath}: {e}")
+        return None
 
 
-plot_filename = save_plot_to_file(fig)
-save_stats_to_file(plot_filename, stats_output)
+def copy_csv_files(run_folder: str, csv_path: str, events_path: Optional[str]):
+    """Copies the input CSV files to the run-specific folder."""
+    # Copy results CSV
+    if os.path.exists(csv_path):
+        results_csv_dest = os.path.join(run_folder, "results.csv")
+        try:
+            shutil.copy2(csv_path, results_csv_dest)
+            print(f"✅ Results CSV copied to: {results_csv_dest}")
+        except Exception as e:
+            print(f"❌ Error copying results CSV: {e}")
+
+    # Copy reconfig events CSV if provided
+    if events_path and os.path.exists(events_path):
+        events_csv_dest = os.path.join(run_folder, "reconfig_events.csv")
+        try:
+            shutil.copy2(events_path, events_csv_dest)
+            print(f"✅ Reconfig events CSV copied to: {events_csv_dest}")
+        except Exception as e:
+            print(f"❌ Error copying reconfig events CSV: {e}")
+
+
+plot_filename = save_plot_to_file(fig, RUN_FOLDER)
+stats_filename = save_stats_to_file(RUN_FOLDER, stats_output)
+copy_csv_files(RUN_FOLDER, file_path_csv, file_path_events)
 
 plt.show()

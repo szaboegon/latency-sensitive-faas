@@ -117,7 +117,7 @@ const FunctionCompositionCard: React.FC<Props> = ({
                     key={component}
                     sx={{
                       backgroundColor: generateComponentColor(component),
-                      borderRadius: 1,
+                      borderRadius: 2,
                       padding: 1,
                       textAlign: "center",
                       border: "1px solid #e0e0e0",
