@@ -86,7 +86,7 @@ spec:
         name: notify
       params:
         - name: IMAGE
-          value: $(params.IMAGE)
+          value: $(params.IMAGE)@$(tasks.build-function.results.APP_IMAGE_DIGEST)
         - name: NOTIFY_URL
           value: $(params.NOTIFY_URL)
         - name: FC_ID

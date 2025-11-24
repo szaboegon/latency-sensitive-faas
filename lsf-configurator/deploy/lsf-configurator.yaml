@@ -160,7 +160,7 @@ spec:
             - name: RESULT_STORE_ADDRESS
               value: "redis-master.redis.svc.cluster.local"
             - name: TARGET_CONCURRENCY
-              value: "3"
+              value: "5"
             - name: COMPONENT_MCPU_ALLOCATION
               value: "500"
             - name: OVERHEAD_MCPU_ALLOCATION
@@ -170,7 +170,7 @@ spec:
             - name: MEMORY_SAFETY_BUFFER_RATIO
               value: "0.4"
             - name: TARGET_UTILIZATION
-              value: "0.3"
+              value: "0.4"
             - name: LATENCY_DOWNGRADE_FACTOR
               value: "0.5"
           volumeMounts:

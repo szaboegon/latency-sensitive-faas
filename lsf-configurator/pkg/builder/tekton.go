@@ -78,7 +78,7 @@ func (b *TektonBuilder) Build(ctx context.Context, fc core.FunctionComposition, 
 		return fmt.Errorf("failed to create tekton client: %w", err)
 	}
 
-	image := fmt.Sprintf("%s/%s/%s:latest", b.ImageRegistry, b.ImageRepo, fc.Id)
+	image := fmt.Sprintf("%s/%s/%s", b.ImageRegistry, b.ImageRepo, fc.Id)
 	prName := fmt.Sprintf("build-%s", uuid.New())
 
 	uploadsFolder := getEnv("UPLOAD_DIR", "/uploads")

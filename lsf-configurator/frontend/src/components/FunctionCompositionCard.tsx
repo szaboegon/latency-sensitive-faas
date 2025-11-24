@@ -136,7 +136,14 @@ const FunctionCompositionCard: React.FC<Props> = ({
               <Typography variant="subtitle2" color="textSecondary">
                 Last Build:
               </Typography>
-              <Typography variant="body2">
+              <Typography
+                variant="body2"
+                sx={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
                 Image: {composition.build.image || "N/A"}
               </Typography>
               <Typography variant="body2">
