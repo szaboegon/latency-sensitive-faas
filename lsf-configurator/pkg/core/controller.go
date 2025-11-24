@@ -17,6 +17,7 @@ const (
 	minimalTraceCount       = 10
 	logInterval             = 1 * time.Minute
 	minConsecutiveDowngrade = 300
+	reuseDeployments        = true
 )
 
 type MetricType string
@@ -329,7 +330,7 @@ func (c *latencyController) RegisterFunctionApp(creationData FunctionAppCreation
 	}
 
 	go func(appId string, layout Layout) {
-		err = c.deployLayout(appId, layout, false)
+		err = c.deployLayout(appId, layout, false, reuseDeployments)
 		if err != nil {
 			log.Printf("Error deploying layout for app %s: %v", appId, err)
 			return
@@ -368,7 +369,7 @@ func (c *latencyController) handleLayoutChange(app *FunctionApp, path map[string
 	}
 
 	go func() {
-		if err := c.deployLayout(app.Id, nextLayout, isUpgrade); err != nil {
+		if err := c.deployLayout(app.Id, nextLayout, isUpgrade, reuseDeployments); err != nil {
 			log.Printf("Failed to deploy new layout for app %s: %v", app.Id, err)
 		}
 	}()
@@ -377,7 +378,7 @@ func (c *latencyController) handleLayoutChange(app *FunctionApp, path map[string
 	return nextLayoutKey, nil
 }
 
-func (c *latencyController) deployLayout(appId string, layout Layout, isUpgrade bool) error {
+func (c *latencyController) deployLayout(appId string, layout Layout, isUpgrade bool, reuseFunctions bool) error {
 	log.Printf("Deploying layout for app %s: %v", appId, layout)
 
 	app, err := c.composer.GetFunctionApp(appId)
@@ -441,11 +442,13 @@ func (c *latencyController) deployLayout(appId string, layout Layout, isUpgrade 
 			}
 
 			depKey := matchedFc.Id + "@" + node
-			if dep, ok := activeDepsByKey[depKey]; ok {
-				// if a deployment already exists for this fc+node, reuse it
-				log.Printf("Reusing existing deployment %s for node %s", dep.Id, node)
-				resultChan <- depResult{depKey, dep, nil}
-				return
+			if reuseFunctions {
+				if dep, ok := activeDepsByKey[depKey]; ok {
+					// if a deployment already exists for this fc+node, reuse it
+					log.Printf("Reusing existing deployment %s for node %s", dep.Id, node)
+					resultChan <- depResult{depKey, dep, nil}
+					return
+				}
 			}
 
 			// otherwise, create a new deployment, routing table will be set later once all deployments ids are known
