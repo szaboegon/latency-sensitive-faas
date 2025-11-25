@@ -5,6 +5,8 @@
       <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
         <collectionProp name="Arguments.arguments"/>
       </elementProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
     </TestPlan>
     <hashTree>
       <kg.apc.jmeter.threads.UltimateThreadGroup guiclass="kg.apc.jmeter.threads.UltimateThreadGroupGui" testclass="kg.apc.jmeter.threads.UltimateThreadGroup" testname="jp@gc - Ultimate Thread Group">
@@ -31,23 +33,23 @@
               <stringProp name="49">1</stringProp>
               <stringProp name="1629">30</stringProp>
             </collectionProp>
-            <collectionProp name="82831533">
+            <collectionProp name="82900385">
               <stringProp name="1">1</stringProp>
-              <stringProp name="50">2</stringProp>
-              <stringProp name="1567">10</stringProp>
+              <stringProp name="52">4</stringProp>
+              <stringProp name="1722">60</stringProp>
             </collectionProp>
-            <collectionProp name="1927009909">
-              <stringProp name="50">2</stringProp>
-              <stringProp name="50">2</stringProp>
-              <stringProp name="49772">260</stringProp>
+            <collectionProp name="1927042930">
+              <stringProp name="52">4</stringProp>
+              <stringProp name="52">4</stringProp>
+              <stringProp name="49618">211</stringProp>
             </collectionProp>
           </collectionProp>
         </kg.apc.jmeter.timers.VariableThroughputTimer>
         <hashTree/>
-        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP Request">
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP Request" enabled="true">
           <intProp name="HTTPSampler.connect_timeout">10000</intProp>
           <intProp name="HTTPSampler.response_timeout">10000</intProp>
-          <stringProp name="HTTPSampler.domain">app-2zmoo2tbqhqk8amzqhru1iyx0.application.127.0.0.1.sslip.io</stringProp>
+          <stringProp name="HTTPSampler.domain">app-4tlbcusgqomcscdjhtjore7kz.application.127.0.0.1.sslip.io</stringProp>
           <stringProp name="HTTPSampler.port">80</stringProp>
           <stringProp name="HTTPSampler.protocol">http</stringProp>
           <stringProp name="HTTPSampler.contentEncoding">UTF-8</stringProp>

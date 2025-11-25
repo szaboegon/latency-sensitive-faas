@@ -146,7 +146,7 @@ spec:
             - name: CONTROLLER_TICK_DELAY_SECONDS
               value: "1"
             - name: CONTROLLER_METRIC_TYPE
-              value: "AVG"
+              value: "P95"
             - name: CONTROLLER_METRIC_QUERY_TIME_RANGE
               value: "now-15s"
             - name: PLATFORM_NODES

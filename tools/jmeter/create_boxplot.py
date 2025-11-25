@@ -150,7 +150,9 @@ def calculate_statistics(
     return stats
 
 
-def create_boxplot(latency_data: Dict[str, pd.Series], output_folder: str):
+def create_boxplot(
+    latency_data: Dict[str, pd.Series], output_folder: str, target_latency: float = None
+):
     """
     Creates a single box plot visualization combining latency data from all runs.
     """
@@ -228,6 +230,17 @@ def create_boxplot(latency_data: Dict[str, pd.Series], output_folder: str):
     ax.set_title("Latency Distribution (All Test Runs Combined)", fontsize=18)
     ax.grid(True, linestyle="--", alpha=0.3, axis="x")
 
+    # Add target latency line if specified (vertical line for horizontal boxplot)
+    if target_latency is not None:
+        ax.axvline(
+            target_latency,
+            color="black",
+            linestyle="--",
+            linewidth=2,
+            alpha=0.8,
+            label=f"Target Latency ({target_latency}ms)",
+        )
+
     # Add legend explaining the box plot elements
     from matplotlib.patches import Patch
     from matplotlib.lines import Line2D
@@ -265,6 +278,20 @@ def create_boxplot(latency_data: Dict[str, pd.Series], output_folder: str):
             label="Outliers",
         ),
     ]
+
+    # Add target latency to legend if specified
+    if target_latency is not None:
+        legend_elements.append(
+            Line2D(
+                [0],
+                [0],
+                color="black",
+                linestyle="--",
+                linewidth=2,
+                alpha=0.8,
+                label=f"Target Latency ({target_latency}ms)",
+            )
+        )
 
     ax.legend(
         handles=legend_elements,
@@ -355,6 +382,17 @@ def main():
     print("=" * 80)
     print()
 
+    # Parse command line arguments
+    target_latency = None
+    if len(sys.argv) > 1:
+        try:
+            target_latency = float(sys.argv[1])
+            print(f"Target latency set to {target_latency} ms.\n")
+        except ValueError:
+            print(
+                f"Warning: Could not parse target latency '{sys.argv[1]}'. Ignoring.\n"
+            )
+
     # Find all result folders with both JMeter and Redis data
     print(f"Scanning '{RESULTS_FOLDER}' folder for test results...\n")
     run_folders = find_result_folders(RESULTS_FOLDER)
@@ -402,7 +440,7 @@ def main():
 
     # Create box plot
     print("\nGenerating box plot...")
-    plot_path = create_boxplot(latency_data, OUTPUT_FOLDER)
+    plot_path = create_boxplot(latency_data, OUTPUT_FOLDER, target_latency)
 
     # Save statistics to file
     print("\nSaving statistics...")
