@@ -163,8 +163,20 @@ def create_boxplot(latency_data: Dict[str, pd.Series], output_folder: str):
 
     print(f"Combined {len(all_latencies)} samples from {len(latency_data)} test run(s)")
 
+    # Set font sizes to match plot_rps_latency
+    plt.rcParams.update(
+        {
+            "font.size": 14,
+            "axes.labelsize": 16,
+            "axes.titlesize": 18,
+            "xtick.labelsize": 14,
+            "ytick.labelsize": 14,
+            "legend.fontsize": 14,
+        }
+    )
+
     # Create figure - wider for horizontal boxplot
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(12, 6))
 
     # Create horizontal box plot with single box
     bp = ax.boxplot(
@@ -172,19 +184,38 @@ def create_boxplot(latency_data: Dict[str, pd.Series], output_folder: str):
         labels=[""],  # Empty label
         patch_artist=True,
         showmeans=True,
-        meanprops=dict(marker="D", markerfacecolor="red", markersize=8, label="Mean"),
+        meanprops=dict(
+            marker="D",
+            markerfacecolor="#FF6B6B",
+            markeredgecolor="#C92A2A",
+            markersize=10,
+            linewidth=2,
+        ),
+        medianprops=dict(color="#2F9E44", linewidth=2.5),
+        whiskerprops=dict(color="#495057", linewidth=1.5),
+        capprops=dict(color="#495057", linewidth=1.5),
+        flierprops=dict(
+            marker="o",
+            markerfacecolor="#868E96",
+            markersize=6,
+            linestyle="none",
+            markeredgecolor="#495057",
+            alpha=0.5,
+        ),
         vert=False,  # Make horizontal
     )
 
-    # Customize box plot colors
+    # Customize box plot colors with a nice gradient-like appearance
     for patch in bp["boxes"]:
-        patch.set_facecolor("lightblue")
+        patch.set_facecolor("#4DABF7")
+        patch.set_edgecolor("#1971C2")
+        patch.set_linewidth(2)
         patch.set_alpha(0.7)
 
     # Labels and title - swap x and y for horizontal orientation
     ax.set_ylabel("")  # Remove y-axis label
     ax.set_yticks([])  # Remove y-axis ticks
-    ax.set_xlabel("Latency (ms)", fontsize=12, fontweight="bold")
+    ax.set_xlabel("Latency (ms)", fontsize=16)
 
     # Set x-axis ticks at 500, 1500, 2500, etc.
     import numpy as np
@@ -192,11 +223,56 @@ def create_boxplot(latency_data: Dict[str, pd.Series], output_folder: str):
     max_latency = all_latencies.max()
     x_ticks = np.arange(500, max_latency + 1000, 1000)
     ax.set_xticks(x_ticks)
+    ax.tick_params(axis="x", labelsize=14)
 
-    ax.set_title(
-        "Latency Distribution (All Test Runs Combined)", fontsize=14, fontweight="bold"
-    )
+    ax.set_title("Latency Distribution (All Test Runs Combined)", fontsize=18)
     ax.grid(True, linestyle="--", alpha=0.3, axis="x")
+
+    # Add legend explaining the box plot elements
+    from matplotlib.patches import Patch
+    from matplotlib.lines import Line2D
+
+    legend_elements = [
+        Patch(
+            facecolor="#4DABF7",
+            edgecolor="#1971C2",
+            alpha=0.7,
+            label="Box (Q1 to Q3)",
+        ),
+        Line2D([0], [0], color="#2F9E44", linewidth=2.5, label="Median"),
+        Line2D(
+            [0],
+            [0],
+            marker="D",
+            color="w",
+            markerfacecolor="#FF6B6B",
+            markeredgecolor="#C92A2A",
+            markersize=10,
+            linewidth=0,
+            label="Average",
+        ),
+        Line2D([0], [0], color="#495057", linewidth=1.5, label="Whiskers (1.5×IQR)"),
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            markerfacecolor="#868E96",
+            markeredgecolor="#495057",
+            markersize=6,
+            alpha=0.5,
+            linewidth=0,
+            label="Outliers",
+        ),
+    ]
+
+    ax.legend(
+        handles=legend_elements,
+        loc="upper right",
+        fontsize=14,
+        framealpha=0.95,
+        edgecolor="#DEE2E6",
+    )
 
     plt.tight_layout()
 
