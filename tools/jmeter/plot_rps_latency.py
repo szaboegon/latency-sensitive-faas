@@ -170,6 +170,14 @@ df_perf = fetch_redis_perf_data()
 if df_perf.empty:
     sys.exit("Cannot proceed without performance data from Redis.")
 
+# Save Redis results to file for debug purposes
+redis_results_path = os.path.join(RUN_FOLDER, "redis_results.csv")
+try:
+    df_perf.to_csv(redis_results_path, index=False)
+    print(f"✅ Redis results saved to: {redis_results_path}")
+except Exception as e:
+    print(f"⚠️ Warning: Could not save Redis results: {e}")
+
 # Merge JTL start times with Redis end times on the unique correlation ID
 # Using an 'inner' merge will match every JTL start time against every corresponding Redis end time.
 df_merged = pd.merge(df_jtl, df_perf, on="correlation_id", how="inner")
@@ -201,17 +209,23 @@ df_merged["true_latency_ms"] = df_merged["end_time_ms"] - df_merged["start_time_
 df = df_merged.copy()
 
 # ---- Convert timestamps ----
-# Time is now based on the JTL Start Time (timeStamp)
+# Calculate start_time from the ORIGINAL JTL data, not merged data
+# This ensures the full test duration is captured even if some requests don't have Redis results
+df_jtl["time"] = pd.to_datetime(df_jtl["timeStamp"], unit="ms")
+start_time = df_jtl["time"].min()
+df_jtl["rel_time"] = (df_jtl["time"] - start_time).dt.total_seconds()
+
+# Now apply the same start_time to the merged data for consistency
 df["time"] = pd.to_datetime(df["timeStamp"], unit="ms")
-start_time = df["time"].min()
 df["rel_time"] = (df["time"] - start_time).dt.total_seconds()
 
-max_test_time = df["rel_time"].max()
+max_test_time = df_jtl["rel_time"].max()  # Use JTL data for max test time
 
-# ---- Compute average RPS per 30s ----
-# RPS is based on the start time (timeStamp) as this is when the request originated.
-df["time_bin"] = (df["rel_time"] // granularity) * granularity
-rps = df.groupby("time_bin").size().reset_index(name="requests")
+# ---- Compute average RPS per 30s from JMeter data (not merged data) ----
+# Calculate RPS based on original JTL requests (JMeter request rate)
+# Use df_jtl for RPS calculation to show actual JMeter throughput
+df_jtl["time_bin"] = (df_jtl["rel_time"] // granularity) * granularity
+rps = df_jtl.groupby("time_bin").size().reset_index(name="requests")
 rps["rps"] = rps["requests"] / granularity
 
 # ---- Load Reconfiguration Events Data (Optional) ----
@@ -266,6 +280,18 @@ if target_latency_str:
         )
 
 # ---- Plot ----
+# Set larger font sizes for better readability BEFORE creating the figure
+plt.rcParams.update(
+    {
+        "font.size": 12,
+        "axes.labelsize": 14,
+        "axes.titlesize": 16,
+        "xtick.labelsize": 12,
+        "ytick.labelsize": 12,
+        "legend.fontsize": 12,
+    }
+)
+
 fig, ax1 = plt.subplots(figsize=(12, 6))
 ax2 = ax1.twinx()
 
@@ -337,7 +363,7 @@ if reconfig_events is not None and not reconfig_events.empty:
                 color=event_color,
                 ha="center",
                 va="bottom",
-                fontsize=8,
+                fontsize=10,
                 weight="bold",
                 bbox=dict(
                     facecolor="white",
@@ -352,10 +378,12 @@ if reconfig_events is not None and not reconfig_events.empty:
 
 
 # ---- Labeling ----
-ax1.set_xlabel("Time (seconds from start)")
-ax1.set_ylabel("Latency (ms)", color="tab:red")
-ax2.set_ylabel(f"RPS (avg per {granularity}s)", color="tab:blue")
-plt.title("End-to-End Latency vs Average RPS")
+ax1.set_xlabel("Time (seconds from start)", fontsize=16)
+ax1.set_ylabel("Latency (ms)", color="tab:red", fontsize=16)
+ax2.set_ylabel(f"RPS (avg per {granularity}s)", color="tab:blue", fontsize=16)
+ax1.tick_params(axis="both", labelsize=14)
+ax2.tick_params(axis="y", labelsize=14)
+plt.title("End-to-End Latency vs Average RPS", fontsize=18)
 
 # ---- X-axis range ----
 x_limit = ((int(max_test_time) // 60) + 1) * 60

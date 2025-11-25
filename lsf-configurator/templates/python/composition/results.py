@@ -34,5 +34,5 @@ def write_result(event: Any, correlation_id: str = "") -> None:
 
         # We push the performance data to a separate, dedicated list
         redis_client.rpush(PERF_KEY, json.dumps(perf_data))
-        # Keep only the last 1000 performance entries for memory efficiency
-        redis_client.ltrim(PERF_KEY, -1000, -1)
+        # Keep only the last 5000 performance entries for memory efficiency
+        redis_client.ltrim(PERF_KEY, -5000, -1)

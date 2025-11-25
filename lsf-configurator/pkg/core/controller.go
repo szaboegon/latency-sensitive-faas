@@ -231,9 +231,9 @@ func (c *latencyController) Start(ctx context.Context) error {
 				}
 				c.lastReconfigsMu.Unlock()
 
-				// Increment downgrade counter for apps with no runtime (same logic as regular downgrade)
+				// Increment downgrade counter for apps with no runtime, use a higher increment to trigger faster downgrade
 				c.lastReconfigsMu.Lock()
-				c.consecutiveDowngradeEligible[app.Id]++
+				c.consecutiveDowngradeEligible[app.Id] += 20
 				count := c.consecutiveDowngradeEligible[app.Id]
 				c.lastReconfigsMu.Unlock()
 
