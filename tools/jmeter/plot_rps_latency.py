@@ -363,7 +363,7 @@ if reconfig_events is not None and not reconfig_events.empty:
                 color=event_color,
                 ha="center",
                 va="bottom",
-                fontsize=10,
+                fontsize=12,
                 weight="bold",
                 bbox=dict(
                     facecolor="white",
