@@ -52,7 +52,7 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
         "to": "grayscale",
         "invocationRate": {
           "min": 1.0,
-          "max": 2.0
+          "max": 4.0
         },
         "dataDelay": 10
       },
@@ -61,7 +61,7 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
         "to": "objectdetect",
         "invocationRate": {
           "min": 1.0,
-          "max": 2.0
+          "max": 4.0
         },
         "dataDelay": 10
       },
@@ -70,7 +70,7 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
         "to": "cut",
         "invocationRate": {
           "min": 1.0,
-          "max": 2.0
+          "max": 4.0
         },
         "dataDelay": 10
       },
@@ -79,7 +79,7 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
         "to": "objectdetect2",
         "invocationRate": {
           "min": 2.0,
-          "max": 4.0
+          "max": 8.0
         },
         "dataDelay": 10
       },
@@ -88,7 +88,7 @@ const FunctionAppJsonForm: React.FC<FunctionAppJsonFormProps> = ({
         "to": "tag",
         "invocationRate": {
           "min": 2.0,
-          "max": 4.0
+          "max": 8.0
         },
         "dataDelay": 10
       }

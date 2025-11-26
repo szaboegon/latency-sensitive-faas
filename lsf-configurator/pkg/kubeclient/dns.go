@@ -24,7 +24,7 @@ func (c *Client) EnsureDNSRecord(ctx context.Context, namespace, appName, target
 
 	desiredSpec := networkingv1beta1.VirtualService{
 		Hosts:    []string{hostDomain, fmt.Sprintf("%s.%s.svc", targetServiceName, namespace), targetHost},
-		Gateways: []string{"knative-serving/knative-ingress-gateway", "knative-serving/knative-local-gateway"},
+		Gateways: []string{"knative-serving/knative-ingress-gateway"},
 		Http: []*networkingv1beta1.HTTPRoute{
 			{
 				Route: []*networkingv1beta1.HTTPRouteDestination{
